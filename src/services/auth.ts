@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export interface LoginRequest {
   email: string;
@@ -11,64 +11,77 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
 export interface AuthResponse {
   token: string;
-  user: User;
+  refreshToken: string;
+  tipo: "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
+  expiresIn: number;
 }
 
-async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${url}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+interface ApiError {
+  message?: string;
+  error?: string;
+  fields?: Record<string, string>;
+}
 
-  const data = await response.json().catch(() => ({}));
+async function parseResponse<T>(response: Response): Promise<T> {
+  const data = (await response.json().catch(() => ({}))) as T & ApiError;
 
   if (!response.ok) {
-    throw new Error(data.message || "Erro na requisição.");
+    const fieldMessage = data.fields
+      ? Object.values(data.fields).filter(Boolean).join(" ")
+      : "";
+    throw new Error(
+      fieldMessage || data.message || data.error || "Não foi possível concluir a requisição.",
+    );
   }
 
-  return data as T;
+  return data;
 }
 
 export async function login(payload: LoginRequest): Promise<AuthResponse> {
-  const data = await request<AuthResponse>("/auth/login", {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: payload.email, senha: payload.password }),
   });
+  const data = await parseResponse<AuthResponse>(response);
 
   localStorage.setItem("token", data.token);
-  localStorage.setItem("user", JSON.stringify(data.user));
-
+  localStorage.setItem("refreshToken", data.refreshToken);
+  localStorage.setItem("userType", data.tipo);
+  localStorage.setItem("userEmail", payload.email);
   return data;
 }
 
-export async function register(
-  payload: RegisterRequest
-): Promise<AuthResponse> {
-  const data = await request<AuthResponse>("/auth/register", {
+export async function register(payload: RegisterRequest): Promise<void> {
+  const response = await fetch(`${API_URL}/api/usuarios`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nome: payload.name,
+      email: payload.email,
+      senha: payload.password,
+      tipo: "FUNCIONARIO",
+    }),
   });
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("user", JSON.stringify(data.user));
-
-  return data;
+  await parseResponse(response);
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  const refreshToken = localStorage.getItem("refreshToken");
+  if (refreshToken) {
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => undefined);
+  }
+
   localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userType");
+  localStorage.removeItem("userEmail");
 }
 
 export function getToken(): string | null {
@@ -76,5 +89,5 @@ export function getToken(): string | null {
 }
 
 export function isAuthenticated(): boolean {
-  return !!getToken();
+  return Boolean(getToken());
 }
