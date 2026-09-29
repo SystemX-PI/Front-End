@@ -1,91 +1,54 @@
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthShell from "../components/AuthShell";
+import { InlineFeedback } from "../components/IntegrationUi";
 import { login } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       await login({ email, password });
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao entrar.");
+      navigate("/integracoes", { replace: true });
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Erro ao entrar.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-[#161B26] rounded-3xl border border-white/10 p-8 shadow-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">ConsorTech</h1>
-          <p className="text-gray-400 mt-2">
-            Entre na sua conta para continuar.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-gray-300 mb-2">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl bg-[#0B0F17] border border-gray-700 px-4 py-3 text-white outline-none focus:border-[#007BFF]"
-              placeholder="seu@email.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-300 mb-2">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl bg-[#0B0F17] border border-gray-700 px-4 py-3 text-white outline-none focus:border-[#007BFF]"
-              placeholder="********"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-red-300 text-sm">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-[#007BFF] hover:bg-blue-600 transition py-3 font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-gray-400">
-          Não possui conta?{" "}
-          <Link
-            to="/register"
-            className="text-[#007BFF] hover:underline font-medium"
-          >
-            Criar conta
-          </Link>
-        </div>
-      </div>
-    </div>
+    <AuthShell eyebrow="ACESSO SEGURO" title="Bem-vindo de volta" description="Entre com seus dados para acessar a central.">
+      <form onSubmit={handleSubmit} className="auth-form">
+        <label className="field auth-field">
+          <span>E-mail</span>
+          <div className="input-with-icon"><Mail size={18} /><input type="email" required value={email}
+            onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" autoComplete="email" /></div>
+        </label>
+        <label className="field auth-field">
+          <span>Senha</span>
+          <div className="input-with-icon"><LockKeyhole size={18} /><input type={showPassword ? "text" : "password"} required value={password}
+            onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" autoComplete="current-password" />
+            <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button></div>
+        </label>
+        {error ? <InlineFeedback message={error} kind="error" /> : null}
+        <button type="submit" disabled={loading} className="button primary auth-submit">
+          {loading ? <><span className="spinner" /> Entrando...</> : "Entrar na plataforma"}
+        </button>
+      </form>
+      <div className="auth-footer">Ainda não possui uma conta? <Link to="/register">Criar conta</Link></div>
+    </AuthShell>
   );
 }
