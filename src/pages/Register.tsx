@@ -1,4 +1,4 @@
-import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
@@ -10,6 +10,7 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState<"FUNCIONARIO" | "ADMINISTRADOR">("FUNCIONARIO");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +20,7 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      await register({ name, email, password });
+      await register({ name, email, password, userType });
       navigate("/login", { replace: true });
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Erro ao cadastrar.");
@@ -40,6 +41,21 @@ export default function Register() {
           <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button></div></label>
+        <fieldset className="role-selector">
+          <legend>Tipo de acesso</legend>
+          <label className={userType === "FUNCIONARIO" ? "role-option active" : "role-option"}>
+            <input type="radio" name="userType" value="FUNCIONARIO" checked={userType === "FUNCIONARIO"}
+              onChange={() => setUserType("FUNCIONARIO")} />
+            <span className="role-icon"><BriefcaseBusiness size={18} /></span>
+            <span><strong>Funcionário</strong><small>Acesso operacional ao sistema</small></span>
+          </label>
+          <label className={userType === "ADMINISTRADOR" ? "role-option active" : "role-option"}>
+            <input type="radio" name="userType" value="ADMINISTRADOR" checked={userType === "ADMINISTRADOR"}
+              onChange={() => setUserType("ADMINISTRADOR")} />
+            <span className="role-icon"><ShieldCheck size={18} /></span>
+            <span><strong>Administrador</strong><small>Acesso às configurações e integrações</small></span>
+          </label>
+        </fieldset>
         <div className="password-strength"><span className={password.length >= 6 ? "active" : ""} /><span className={password.length >= 8 ? "active" : ""} /><span className={password.length >= 10 ? "active" : ""} /><small>Use 8 ou mais caracteres para maior segurança.</small></div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button type="submit" disabled={loading} className="button primary auth-submit">

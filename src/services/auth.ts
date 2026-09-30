@@ -9,6 +9,7 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  userType: "ADMINISTRADOR" | "FUNCIONARIO";
 }
 
 export interface AuthResponse {
@@ -62,7 +63,7 @@ export async function register(payload: RegisterRequest): Promise<void> {
       nome: payload.name,
       email: payload.email,
       senha: payload.password,
-      tipo: "FUNCIONARIO",
+      tipo: payload.userType,
     }),
   });
   await parseResponse(response);
@@ -86,6 +87,13 @@ export async function logout(): Promise<void> {
 
 export function getToken(): string | null {
   return localStorage.getItem("token");
+}
+
+export function getUserType(): AuthResponse["tipo"] | null {
+  const userType = localStorage.getItem("userType");
+  return userType === "ADMINISTRADOR" || userType === "FUNCIONARIO" || userType === "CLIENTE"
+    ? userType
+    : null;
 }
 
 export function isAuthenticated(): boolean {

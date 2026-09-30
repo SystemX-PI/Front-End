@@ -73,6 +73,40 @@ export interface ClosureResponse {
   observacao: string | null;
 }
 
+export interface ContemplationRequest {
+  origem: string;
+  idExterno: string;
+  nome: string;
+  email: string;
+  telefone?: string;
+  cotaId: number;
+  assembleiaId: number;
+  dataContemplacao: string;
+  tipo: "SORTEIO" | "LANCE";
+  valorCredito: number;
+}
+
+export interface IntegrationResponse {
+  processoId: number;
+  comunicacaoId: number | null;
+  origem: string;
+  idExterno: string;
+  statusProcesso: string;
+  statusComunicacao: string | null;
+  jaExistia: boolean;
+  comunicacaoWhatsAppId: number | null;
+  statusWhatsApp: string | null;
+}
+
+export interface QueueItem {
+  processoId: number;
+  origem: string;
+  idExterno: string;
+  statusProcesso: ProcessStatus;
+  recebidaEm: string;
+  comunicacao: CommunicationResponse;
+}
+
 interface ApiError {
   message?: string;
   error?: string;
@@ -91,12 +125,33 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   const data = (await response.json().catch(() => ({}))) as T & ApiError;
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Erro ao acessar o backend.");
+    const statusMessage = response.status === 401
+      ? "Sua sessão expirou. Entre novamente."
+      : response.status === 403
+        ? "Apenas administradores podem realizar esta configuração."
+        : "Erro ao acessar o backend.";
+    throw new Error(data.message || data.error || statusMessage);
   }
   return data;
 }
 
 export const backend = {
+  configuration: {
+    configureEmail: (payload: { email: string; senhaAplicativo: string }) =>
+      apiRequest<{ configurado: boolean; email: string }>("/api/configuracoes/email", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+  },
+  integrations: {
+    receiveContemplation: (payload: ContemplationRequest, integrationKey: string) =>
+      apiRequest<IntegrationResponse>("/api/integracoes/contemplacoes", {
+        method: "POST",
+        headers: { "X-Integration-Key": integrationKey },
+        body: JSON.stringify(payload),
+      }),
+    queue: () => apiRequest<QueueItem[]>("/api/integracoes/comunicacoes/fila"),
+  },
   users: {
     list: () => apiRequest<UserResponse[]>("/api/usuarios"),
     create: (payload: { nome: string; email: string; senha: string; tipo: UserType }) =>
