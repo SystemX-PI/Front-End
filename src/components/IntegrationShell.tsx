@@ -6,9 +6,9 @@ import {
   Mail,
   MessageCircle,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { BrandLogo } from "./BrandLogo";
 import { logout } from "../services/auth";
 
 type Section = "overview" | "gmail" | "whatsapp" | "notifications";
@@ -28,10 +28,10 @@ const navigation = [
 ] satisfies Array<{ id: Section; label: string; to: string; icon: typeof LayoutGrid }>;
 
 function getUserIdentity() {
-  const email = localStorage.getItem("userEmail") || "usuario@systemx.com";
+  const email = localStorage.getItem("userEmail") || "gestor@consortech.com";
   const rawName = email.split("@")[0].replace(/[._-]/g, " ");
   const initials = rawName.split(" ").filter(Boolean).slice(0, 2)
-    .map((part) => part[0]?.toUpperCase()).join("") || "SX";
+    .map((part) => part[0]?.toUpperCase()).join("") || "CT";
   const name = rawName.replace(/\b\w/g, (letter) => letter.toUpperCase());
   return { email, initials, name };
 }
@@ -49,11 +49,10 @@ export default function IntegrationShell({ active, title, subtitle, children }: 
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-row">
-          <div className="brand-mark"><Sparkles size={21} /></div>
-          <div><strong>SystemX</strong><span>Integrações</span></div>
+          <BrandLogo compact />
         </div>
 
-        <p className="nav-section-label">MENU PRINCIPAL</p>
+        <p className="nav-section-label">Menu principal</p>
         <nav className="sidebar-nav" aria-label="Navegação das integrações">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -70,15 +69,15 @@ export default function IntegrationShell({ active, title, subtitle, children }: 
 
         <div className="sidebar-trust">
           <ShieldCheck size={20} />
-          <div><strong>Ambiente protegido</strong><span>Conexões criptografadas</span></div>
+          <div><strong>Ambiente protegido</strong><span>Dados da operação</span></div>
         </div>
-        <p className="sidebar-version">SystemX · v1.0</p>
+        <p className="sidebar-version">ConsorTech · v1.0</p>
       </aside>
 
       <div className="app-column">
         <header className="topbar">
           <div className="topbar-copy">
-            <div className="breadcrumb"><span>SystemX</span><b>/</b>{title}</div>
+            <div className="breadcrumb"><span>ConsorTech</span><b>/</b>{title}</div>
             <h1>{title}</h1>
             <p>{subtitle}</p>
           </div>
@@ -86,7 +85,7 @@ export default function IntegrationShell({ active, title, subtitle, children }: 
             <span className="avatar">{user.initials}</span>
             <span className="user-copy"><strong>{user.name}</strong><small>{user.email}</small></span>
             <ChevronDown size={15} />
-            <button type="button" onClick={handleLogout} aria-label="Sair do sistema" title="Sair">
+            <button type="button" onClick={() => void handleLogout()} aria-label="Sair do sistema" title="Sair">
               <LogOut size={17} />
             </button>
           </div>
