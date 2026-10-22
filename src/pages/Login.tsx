@@ -21,14 +21,18 @@ export default function Login() {
       await login({ email, password });
       navigate("/integracoes", { replace: true });
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Erro ao entrar.");
+      setError(requestError instanceof Error ? requestError.message : "Não foi possível entrar no sistema.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <AuthShell eyebrow="ACESSO SEGURO" title="Bem-vindo de volta" description="Entre com seus dados para acessar a central.">
+    <AuthShell
+      eyebrow="ACESSO"
+      title="Entrar"
+      description="Use suas credenciais para continuar."
+    >
       <form onSubmit={handleSubmit} className="auth-form">
         <label className="field auth-field">
           <span>E-mail</span>
@@ -45,10 +49,10 @@ export default function Login() {
         </label>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button type="submit" disabled={loading} className="button primary auth-submit">
-          {loading ? <><span className="spinner" /> Entrando...</> : "Entrar na plataforma"}
+          {loading ? <><span className="spinner" /> Entrando...</> : "Entrar"}
         </button>
       </form>
-      <div className="auth-footer">Ainda não possui uma conta? <Link to="/register">Criar conta</Link></div>
+      <div className="auth-footer">Não tem acesso? <Link to="/register">Solicitar cadastro</Link></div>
     </AuthShell>
   );
 }
