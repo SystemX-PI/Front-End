@@ -61,6 +61,7 @@ export default function AuthShell({ children, eyebrow, title, description }: {
             </div>
 
             <div className="auth-heading">
+              <span className="eyebrow">{eyebrow}</span>
               <h2>{title}</h2>
               <p>{description}</p>
             </div>
