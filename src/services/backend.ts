@@ -1,8 +1,10 @@
 import { clearSession, getToken } from "./auth";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { ApiError, request } from "./http";
+import { normalizeContemplation } from "./format";
 
 export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
+export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
+export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS";
 export type ProcessStatus =
   | "CONTEMPLADO"
   | "AGUARDANDO_COMUNICACAO"
@@ -52,7 +54,7 @@ export interface ProcessResponse {
 export interface ChannelResponse {
   id: number;
   destinatario: string;
-  status: string;
+  status: CommunicationStatus;
   erro: string | null;
   criadaEm: string;
   enviadaEm: string | null;
@@ -60,7 +62,7 @@ export interface ChannelResponse {
 
 export interface CommunicationResponse {
   processoId: number;
-  statusGeral: string;
+  statusGeral: CommunicationSummary;
   email: ChannelResponse | null;
   whatsapp: ChannelResponse | null;
 }
@@ -91,66 +93,86 @@ export interface IntegrationResponse {
   comunicacaoId: number | null;
   origem: string;
   idExterno: string;
-  statusProcesso: string;
-  statusComunicacao: string | null;
+  statusProcesso: ProcessStatus;
+  statusComunicacao: CommunicationStatus | null;
   jaExistia: boolean;
   comunicacaoWhatsAppId: number | null;
-  statusWhatsApp: string | null;
+  statusWhatsApp: CommunicationStatus | null;
 }
 
-interface ApiError {
-  message?: string;
-  error?: string;
+export interface QueueItem {
+  processoId: number;
+  origem: string | null;
+  idExterno: string | null;
+  statusProcesso: ProcessStatus;
+  recebidaEm: string | null;
+  comunicacao: CommunicationResponse;
 }
 
-async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
-  let response: Response;
+export interface EvolutionStatusResponse {
+  instanceName: string;
+  state: string;
+  code: string | null;
+  qrCode: string | null;
+  pairingCode: string | null;
+}
+
+async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
   try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    });
-  } catch {
-    throw new Error(
-      "Não foi possível conectar ao backend. Verifique a API e a configuração de VITE_API_URL.",
-    );
-  }
-  const data = (await response.json().catch(() => ({}))) as T & ApiError;
-
-  if (!response.ok) {
-    if (response.status === 401) {
+    return (await request(path, options, getToken())) as T;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
       clearSession();
       window.dispatchEvent(new Event("auth:session-expired"));
     }
-    const statusMessage = response.status === 401
-      ? "Sua sessão expirou. Entre novamente."
-      : response.status === 403
-        ? "Apenas administradores podem realizar esta configuração."
-        : response.status === 404
-          ? "A operação solicitada não está disponível no backend."
-          : "Erro ao acessar o backend.";
-    throw new Error(data.message || data.error || statusMessage);
+    throw error;
   }
-  return data;
 }
 
 export const backend = {
+  configuration: {
+    configureEmail: (payload: { email: string; senhaAplicativo: string }) =>
+      apiRequest<{ configurado: boolean; email: string }>(
+        "/api/configuracoes/email",
+        { method: "PUT", body: JSON.stringify(payload) },
+      ),
+  },
+  whatsapp: {
+    generateQr: (instanceName: string) =>
+      apiRequest<EvolutionStatusResponse>("/api/integracoes/whatsapp/qr", {
+        method: "POST",
+        body: JSON.stringify({ instanceName }),
+      }),
+    status: (instanceName: string) =>
+      apiRequest<EvolutionStatusResponse>(
+        `/api/integracoes/whatsapp/status?instanceName=${encodeURIComponent(instanceName)}`,
+      ),
+  },
   integrations: {
-    receiveContemplation: (payload: ContemplationRequest, integrationKey: string) =>
+    queue: (signal?: AbortSignal) =>
+      apiRequest<QueueItem[]>("/api/integracoes/comunicacoes/fila", { signal }),
+    receiveContemplation: (
+      payload: ContemplationRequest,
+      integrationKey: string,
+    ) =>
       apiRequest<IntegrationResponse>("/api/integracoes/contemplacoes", {
         method: "POST",
         headers: { "X-Integration-Key": integrationKey },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizeContemplation(payload)),
       }),
   },
   users: {
-    list: () => apiRequest<UserResponse[]>("/api/usuarios"),
-    create: (payload: { nome: string; email: string; senha: string; tipo: UserType }) =>
+    list: (signal?: AbortSignal) =>
+      apiRequest<UserResponse[]>("/api/usuarios", { signal }),
+    create: (payload: {
+      nome: string;
+      email: string;
+      senha: string;
+      tipo: UserType;
+    }) =>
       apiRequest<UserResponse>("/api/usuarios", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -166,24 +188,35 @@ export const backend = {
   },
   quotas: {
     list: () => apiRequest<QuotaResponse[]>("/api/cotas"),
-    create: (payload: { numero: string; grupoId: number; valorCredito: number }) =>
+    create: (payload: {
+      numero: string;
+      grupoId: number;
+      valorCredito: number;
+    }) =>
       apiRequest<QuotaResponse>("/api/cotas", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
   },
   processes: {
-    get: (id: number) => apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`),
+    get: (id: number) =>
+      apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`),
     updateStatus: (
       id: number,
-      payload: { status: ProcessStatus; observacao?: string; usuarioId: number },
+      payload: {
+        status: ProcessStatus;
+        observacao?: string;
+        usuarioId: number;
+      },
     ) =>
       apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify(payload),
       }),
     communication: (id: number) =>
-      apiRequest<CommunicationResponse>(`/api/integracoes/processos/${id}/comunicacao`),
+      apiRequest<CommunicationResponse>(
+        `/api/integracoes/processos/${id}/comunicacao`,
+      ),
     resendCommunication: (id: number) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/reenvio`,

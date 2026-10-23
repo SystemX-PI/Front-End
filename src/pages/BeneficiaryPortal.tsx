@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LogOut, Mail, Phone, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../components/BrandLogo";
+import ThemeSwitcher from "../components/ThemeSwitcher";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { logout } from "../services/auth";
 
@@ -43,8 +44,8 @@ export default function BeneficiaryPortal() {
           <span>Portal do Contemplado</span>
         </Link>
         <div className="portal-identity">
+          <ThemeSwitcher />
           <span>{email || "Cliente autenticado"}</span>
-          <span>CPF não disponibilizado</span>
         </div>
         <button
           type="button"
@@ -67,10 +68,16 @@ export default function BeneficiaryPortal() {
           <div className="portal-progress">
             <span />
           </div>
-          <small>Progresso indisponível: a API não fornece etapas do cliente.</small>
+          <small>
+            As etapas serão exibidas quando seu processo estiver disponível.
+          </small>
         </section>
 
-        <div className="portal-tabs" role="tablist" aria-label="Informações do processo">
+        <div
+          className="portal-tabs"
+          role="tablist"
+          aria-label="Informações do processo"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -80,14 +87,21 @@ export default function BeneficiaryPortal() {
               aria-selected={activeTab === tab.id}
               aria-controls={`portal-panel-${tab.id}`}
               tabIndex={activeTab === tab.id ? 0 : -1}
-              className={activeTab === tab.id ? "portal-tab active" : "portal-tab"}
+              className={
+                activeTab === tab.id ? "portal-tab active" : "portal-tab"
+              }
               onClick={() => setActiveTab(tab.id)}
               onKeyDown={(event) => {
-                const currentIndex = tabs.findIndex(({ id }) => id === activeTab);
+                const currentIndex = tabs.findIndex(
+                  ({ id }) => id === activeTab,
+                );
                 if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
                   event.preventDefault();
                   const direction = event.key === "ArrowRight" ? 1 : -1;
-                  const nextTab = tabs[(currentIndex + direction + tabs.length) % tabs.length];
+                  const nextTab =
+                    tabs[
+                      (currentIndex + direction + tabs.length) % tabs.length
+                    ];
                   setActiveTab(nextTab.id);
                   document.getElementById(`portal-tab-${nextTab.id}`)?.focus();
                 }
@@ -106,18 +120,18 @@ export default function BeneficiaryPortal() {
           tabIndex={0}
           hidden={activeTab !== "processo"}
         >
-              <h2>Meu processo</h2>
-              <InlineFeedback
-                kind="info"
-                message="A API permite consultar um processo por identificador, mas não disponibiliza associação do processo ao cliente autenticado, responsável ou timeline."
-              />
-              <div className="portal-empty-detail">
-                <strong>Situação, responsável e etapas não disponíveis</strong>
-                <p>
-                  Nenhum dado de processo será exibido sem confirmação de que
-                  pertence à sua conta.
-                </p>
-              </div>
+          <h2>Meu processo</h2>
+          <InlineFeedback
+            kind="info"
+            message="Seu processo ainda não está disponível para consulta nesta conta."
+          />
+          <div className="portal-empty-detail">
+            <strong>Situação, responsável e etapas não disponíveis</strong>
+            <p>
+              Assim que o acompanhamento for liberado, você poderá consultar a
+              situação e os próximos passos aqui.
+            </p>
+          </div>
         </section>
         <section
           className="portal-panel"
@@ -127,15 +141,15 @@ export default function BeneficiaryPortal() {
           tabIndex={0}
           hidden={activeTab !== "documentos"}
         >
-              <h2>Documentos</h2>
-              <InlineFeedback
-                kind="info"
-                message="O backend não disponibiliza uma consulta de documentos associados ao cliente neste fluxo."
-              />
-              <div className="portal-empty-detail">
-                <strong>Documentos indisponíveis</strong>
-                <p>Não há status de entrega para exibir nesta conta.</p>
-              </div>
+          <h2>Documentos</h2>
+          <InlineFeedback
+            kind="info"
+            message="A consulta dos seus documentos ainda não foi liberada."
+          />
+          <div className="portal-empty-detail">
+            <strong>Documentos indisponíveis</strong>
+            <p>Não há status de entrega para exibir nesta conta.</p>
+          </div>
         </section>
         <section
           className="portal-panel"
@@ -145,15 +159,17 @@ export default function BeneficiaryPortal() {
           tabIndex={0}
           hidden={activeTab !== "historico"}
         >
-              <h2>Histórico</h2>
-              <InlineFeedback
-                kind="info"
-                message="O backend não oferece uma consulta de histórico vinculada ao cliente autenticado."
-              />
-              <div className="portal-empty-detail">
-                <strong>Histórico indisponível</strong>
-                <p>Nenhuma comunicação fictícia será apresentada.</p>
-              </div>
+          <h2>Histórico</h2>
+          <InlineFeedback
+            kind="info"
+            message="O histórico do seu atendimento ainda não está disponível."
+          />
+          <div className="portal-empty-detail">
+            <strong>Histórico indisponível</strong>
+            <p>
+              As movimentações aparecerão aqui quando a consulta for liberada.
+            </p>
+          </div>
         </section>
 
         <section className="portal-contact">
@@ -174,7 +190,7 @@ export default function BeneficiaryPortal() {
         </section>
         <p className="portal-profile-note">
           <UserRound size={14} aria-hidden="true" />
-          Nome e CPF não são retornados pelos dados de autenticação disponíveis.
+          Área exclusiva para informações vinculadas à sua conta.
         </p>
       </main>
     </div>

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { logout } from "../services/auth";
 
 const links = [
@@ -96,6 +97,7 @@ export default function AdminShell({
             <p>{subtitle}</p>
           </div>
           <div className="user-chip">
+            <ThemeSwitcher />
             <span className="user-copy">
               <strong>{email || "Usuário conectado"}</strong>
               <small>Área administrativa</small>
@@ -110,7 +112,9 @@ export default function AdminShell({
             </button>
           </div>
         </header>
-        <main className="integration-main admin-main">{children}</main>
+        <main id="main-content" className="integration-main admin-main">
+          {children}
+        </main>
       </div>
     </div>
   );

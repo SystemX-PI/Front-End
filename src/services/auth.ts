@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { request } from "./http";
 
 export interface LoginRequest {
   email: string;
@@ -25,36 +25,23 @@ const USER_TYPES: AuthResponse["tipo"][] = [
   "CLIENTE",
 ];
 
-interface ApiError {
-  message?: string;
-  error?: string;
-  fields?: Record<string, string>;
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json().catch(() => ({}))) as T & ApiError;
-
-  if (!response.ok) {
-    const fieldMessage = data.fields
-      ? Object.values(data.fields).filter(Boolean).join(" ")
-      : "";
-    throw new Error(
-      fieldMessage || data.message || data.error || "Não foi possível concluir a requisição.",
-    );
-  }
-
-  return data;
-}
-
 export async function login(payload: LoginRequest): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: payload.email, senha: payload.password }),
-  });
-  const data = await parseResponse<AuthResponse>(response);
+  const data = (await request(
+    "/api/auth/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: payload.email.trim(),
+        senha: payload.password,
+      }),
+    },
+    null,
+    true,
+  )) as AuthResponse;
 
   if (
+    !data ||
     typeof data.token !== "string" ||
     !data.token ||
     typeof data.refreshToken !== "string" ||
@@ -62,28 +49,30 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
     !USER_TYPES.includes(data.tipo) ||
     !Number.isFinite(data.expiresIn)
   ) {
-    throw new Error("O backend retornou uma resposta de autenticação inválida.");
+    throw new Error(
+      "O backend retornou uma resposta de autenticação inválida.",
+    );
   }
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("refreshToken", data.refreshToken);
   localStorage.setItem("userType", data.tipo);
-  localStorage.setItem("userEmail", payload.email);
+  localStorage.setItem("userEmail", payload.email.trim());
   return data;
 }
 
 export async function register(payload: RegisterRequest): Promise<void> {
-  const response = await fetch(`${API_URL}/api/usuarios`, {
+  if (!payload.name.trim()) throw new Error("Informe seu nome.");
+  await request("/api/usuarios", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      nome: payload.name,
-      email: payload.email,
+      nome: payload.name.trim(),
+      email: payload.email.trim(),
       senha: payload.password,
       tipo: payload.userType,
     }),
   });
-  await parseResponse(response);
 }
 
 export async function logout(): Promise<void> {
@@ -91,12 +80,12 @@ export async function logout(): Promise<void> {
   let serverLogoutSucceeded = !refreshToken;
   if (refreshToken) {
     try {
-      const response = await fetch(`${API_URL}/api/auth/logout`, {
+      await request("/api/auth/logout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });
-      serverLogoutSucceeded = response.ok;
+      serverLogoutSucceeded = true;
     } catch {
       serverLogoutSucceeded = false;
     }
@@ -123,7 +112,9 @@ export function getToken(): string | null {
 
 export function getUserType(): AuthResponse["tipo"] | null {
   const userType = localStorage.getItem("userType");
-  return userType === "ADMINISTRADOR" || userType === "FUNCIONARIO" || userType === "CLIENTE"
+  return userType === "ADMINISTRADOR" ||
+    userType === "FUNCIONARIO" ||
+    userType === "CLIENTE"
     ? userType
     : null;
 }

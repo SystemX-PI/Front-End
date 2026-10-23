@@ -1,7 +1,12 @@
 import { Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
+import { EmptyState, Skeleton } from "../components/DataUi";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { ChannelStatus } from "../components/CommunicationQueue";
+import { notify } from "../services/notifications";
 import {
   backend,
   type CommunicationResponse,
@@ -39,19 +44,25 @@ function formatDate(value: string) {
 }
 
 export default function Contemplated() {
-  const [processId, setProcessId] = useState("");
+  const [params] = useSearchParams();
+  const [processId, setProcessId] = useState(params.get("processo") || "");
   const [process, setProcess] = useState<ProcessResponse | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [communication, setCommunication] = useState<CommunicationResponse | null>(null);
+  const [communication, setCommunication] =
+    useState<CommunicationResponse | null>(null);
   const [resending, setResending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = Number(processId);
     if (!Number.isSafeInteger(id) || id <= 0) {
-      setFeedback({ kind: "error", message: "Informe um identificador de processo válido." });
+      setFeedback({
+        kind: "error",
+        message: "Informe um identificador de processo válido.",
+      });
       setProcess(null);
       return;
     }
@@ -62,7 +73,13 @@ export default function Contemplated() {
       setProcess(await backend.processes.get(id));
     } catch (error) {
       setProcess(null);
-      setFeedback({ kind: "error", message: error instanceof Error ? error.message : "Não foi possível consultar o processo." });
+      setFeedback({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível consultar o processo.",
+      });
     } finally {
       setLoading(false);
     }
@@ -74,34 +91,53 @@ export default function Contemplated() {
       setCommunication(await backend.processes.communication(process.id));
       setFeedback(null);
     } catch (error) {
-      setFeedback({ kind: "error", message: error instanceof Error ? error.message : "Não foi possível consultar a comunicação." });
+      setFeedback({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível consultar a comunicação.",
+      });
     }
   }
 
   async function handleResend() {
     if (!process || resending) return;
-    const confirmed = window.confirm(
-      `Solicitar reenvio da comunicação do processo #${process.id}?`,
-    );
-    if (!confirmed) return;
+    setConfirming(false);
     setResending(true);
     setFeedback(null);
     try {
       const response = await backend.processes.resendCommunication(process.id);
       setCommunication(response);
+      const errors = [response.email?.erro, response.whatsapp?.erro]
+        .filter(Boolean)
+        .join(" ");
+      notify(
+        errors ||
+          "Solicitação de envio processada. Confira o resultado de cada canal.",
+        errors ? "error" : "info",
+      );
       setFeedback({
         kind: "info",
         message: `Solicitação de reenvio processada. Status retornado pelo backend: ${readable(response.statusGeral)}. Isso não confirma a entrega.`,
       });
     } catch (error) {
-      setFeedback({ kind: "error", message: error instanceof Error ? error.message : "Não foi possível solicitar o reenvio." });
+      setFeedback({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível solicitar o reenvio.",
+      });
     } finally {
       setResending(false);
     }
   }
 
   const filteredProcess =
-    process && (!filterStatus || process.status === filterStatus) ? process : null;
+    process && (!filterStatus || process.status === filterStatus)
+      ? process
+      : null;
 
   return (
     <AdminShell
@@ -112,8 +148,8 @@ export default function Contemplated() {
         <div>
           <h2>Consultar processo</h2>
           <p>
-            O backend não oferece listagem ou pesquisa por cliente; a consulta
-            disponível exige o ID do processo.
+            Consulte os dados e acompanhe a comunicação de um processo pelo
+            identificador.
           </p>
         </div>
       </section>
@@ -133,10 +169,15 @@ export default function Contemplated() {
         </label>
         <label className="field">
           <span>Filtrar status</span>
-          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+          <select
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
             <option value="">Todos os status</option>
             {statuses.map((status) => (
-              <option key={status} value={status}>{readable(status)}</option>
+              <option key={status} value={status}>
+                {readable(status)}
+              </option>
             ))}
           </select>
         </label>
@@ -146,35 +187,66 @@ export default function Contemplated() {
         </button>
       </form>
 
-      {feedback ? <InlineFeedback kind={feedback.kind} message={feedback.message} /> : null}
+      {feedback ? (
+        <InlineFeedback kind={feedback.kind} message={feedback.message} />
+      ) : null}
 
       <section className="panel data-panel">
         <div className="data-panel-heading">
           <div>
             <h3>Resultado da consulta</h3>
-            <p>Somente campos efetivamente retornados pelo backend.</p>
+            <p>Detalhes do registro e ações de comunicação.</p>
           </div>
         </div>
-        {filteredProcess ? (
+        {loading ? (
+          <Skeleton rows={2} />
+        ) : filteredProcess ? (
           <div className="table-scroll">
             <table className="admin-table">
               <thead>
-                <tr><th>Processo</th><th>Contemplação</th><th>Responsável ID</th><th>Status</th><th>Criado em</th><th>Atualizado em</th><th>Ações</th></tr>
+                <tr>
+                  <th>Processo</th>
+                  <th>Contemplação</th>
+                  <th>Responsável ID</th>
+                  <th>Status</th>
+                  <th>Criado em</th>
+                  <th>Atualizado em</th>
+                  <th>Ações</th>
+                </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>#{filteredProcess.id}</td>
                   <td>#{filteredProcess.contemplacaoId}</td>
                   <td>{filteredProcess.responsavelId ?? "Não informado"}</td>
-                  <td><StatusPill tone={filteredProcess.status === "FINALIZADO" ? "green" : "amber"}>{readable(filteredProcess.status)}</StatusPill></td>
+                  <td>
+                    <StatusPill
+                      tone={
+                        filteredProcess.status === "FINALIZADO"
+                          ? "green"
+                          : "amber"
+                      }
+                    >
+                      {readable(filteredProcess.status)}
+                    </StatusPill>
+                  </td>
                   <td>{formatDate(filteredProcess.criadoEm)}</td>
                   <td>{formatDate(filteredProcess.atualizadoEm)}</td>
                   <td>
                     <div className="admin-row-actions">
-                      <button className="button secondary compact" type="button" onClick={() => void handleCommunication()}>
+                      <button
+                        className="button secondary compact"
+                        type="button"
+                        onClick={() => void handleCommunication()}
+                      >
                         Consultar comunicação
                       </button>
-                      <button className="button primary compact" type="button" disabled={resending} onClick={() => void handleResend()}>
+                      <button
+                        className="button primary compact"
+                        type="button"
+                        disabled={resending}
+                        onClick={() => setConfirming(true)}
+                      >
                         {resending ? "Solicitando..." : "Solicitar reenvio"}
                       </button>
                     </div>
@@ -184,23 +256,35 @@ export default function Contemplated() {
             </table>
           </div>
         ) : (
-          <p className="admin-table-state">
-            {process && filterStatus
-              ? "O processo consultado não corresponde ao filtro de status."
-              : "Pesquise um processo pelo identificador para exibir seus dados."}
-          </p>
+          <EmptyState
+            title={
+              process && filterStatus
+                ? "Nenhum resultado neste status"
+                : "Encontre uma contemplação"
+            }
+            description={
+              process && filterStatus
+                ? "Altere o filtro para visualizar o processo consultado."
+                : "Informe o identificador para consultar os dados e os canais de contato."
+            }
+          />
         )}
         {communication ? (
           <div className="communication-result" aria-live="polite">
-            <strong>Status geral retornado: {readable(communication.statusGeral)}</strong>
-            <span>E-mail: {communication.email?.status ?? "Sem dado de canal"}</span>
-            <span>WhatsApp: {communication.whatsapp?.status ?? "Sem dado de canal"}</span>
+            <strong>
+              Status geral retornado: {readable(communication.statusGeral)}
+            </strong>
+            <ChannelStatus channel={communication.email} name="E-mail" />
+            <ChannelStatus channel={communication.whatsapp} name="WhatsApp" />
           </div>
         ) : null}
       </section>
-      <InlineFeedback
-        kind="info"
-        message="Cliente, consórcio, crédito, tentativas de contato e ação de baixa não podem ser apresentados nesta listagem: a API não oferece consulta agregada nem associação autorizada de usuário para essas operações."
+      <ConfirmDialog
+        open={confirming}
+        title={`Enviar comunicação do processo #${process?.id}?`}
+        description="A solicitação enviará novamente pelos canais disponíveis. Destinatários já contatados também podem receber outra mensagem."
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => void handleResend()}
       />
     </AdminShell>
   );

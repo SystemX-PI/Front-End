@@ -17,7 +17,11 @@ const serviceIcons: Record<Service, LucideIcon> = {
   notifications: BellRing,
 };
 
-export function StatusPill({ children, tone = "neutral", dot = true }: {
+export function StatusPill({
+  children,
+  tone = "neutral",
+  dot = true,
+}: {
   children: React.ReactNode;
   tone?: Tone;
   dot?: boolean;
@@ -30,7 +34,10 @@ export function StatusPill({ children, tone = "neutral", dot = true }: {
   );
 }
 
-export function ServiceIcon({ service, tone }: {
+export function ServiceIcon({
+  service,
+  tone,
+}: {
   service: Service;
   tone: "red" | "green" | "purple";
 }) {
@@ -42,13 +49,20 @@ export function ServiceIcon({ service, tone }: {
   );
 }
 
-export function InlineFeedback({ message, kind = "info" }: {
+export function InlineFeedback({
+  message,
+  kind = "info",
+}: {
   message: string;
   kind?: "info" | "success" | "error";
 }) {
-  const FeedbackIcon = kind === "success" ? Check : kind === "error" ? CircleAlert : Info;
+  const FeedbackIcon =
+    kind === "success" ? Check : kind === "error" ? CircleAlert : Info;
   return (
-    <div className={`inline-feedback feedback-${kind}`} role="status">
+    <div
+      className={`inline-feedback feedback-${kind}`}
+      role={kind === "error" ? "alert" : "status"}
+    >
       <FeedbackIcon size={17} aria-hidden="true" />
       <span>{message}</span>
     </div>
