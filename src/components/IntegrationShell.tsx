@@ -41,8 +41,20 @@ export default function IntegrationShell({ active, title, subtitle, children }: 
   const user = getUserIdentity();
 
   async function handleLogout() {
-    await logout();
-    navigate("/login", { replace: true });
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      navigate("/login", {
+        replace: true,
+        state: {
+          logoutWarning:
+            error instanceof Error
+              ? error.message
+              : "A sessão local foi encerrada, mas o backend não confirmou o logout.",
+        },
+      });
+    }
   }
 
   return (

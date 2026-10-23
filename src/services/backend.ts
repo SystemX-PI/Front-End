@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+import { clearSession, getToken } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -98,15 +98,6 @@ export interface IntegrationResponse {
   statusWhatsApp: string | null;
 }
 
-export interface QueueItem {
-  processoId: number;
-  origem: string;
-  idExterno: string;
-  statusProcesso: ProcessStatus;
-  recebidaEm: string;
-  comunicacao: CommunicationResponse;
-}
-
 interface ApiError {
   message?: string;
   error?: string;
@@ -114,35 +105,41 @@ interface ApiError {
 
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar ao backend. Verifique a API e a configuração de VITE_API_URL.",
+    );
+  }
   const data = (await response.json().catch(() => ({}))) as T & ApiError;
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      window.dispatchEvent(new Event("auth:session-expired"));
+    }
     const statusMessage = response.status === 401
       ? "Sua sessão expirou. Entre novamente."
       : response.status === 403
         ? "Apenas administradores podem realizar esta configuração."
-        : "Erro ao acessar o backend.";
+        : response.status === 404
+          ? "A operação solicitada não está disponível no backend."
+          : "Erro ao acessar o backend.";
     throw new Error(data.message || data.error || statusMessage);
   }
   return data;
 }
 
 export const backend = {
-  configuration: {
-    configureEmail: (payload: { email: string; senhaAplicativo: string }) =>
-      apiRequest<{ configurado: boolean; email: string }>("/api/configuracoes/email", {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      }),
-  },
   integrations: {
     receiveContemplation: (payload: ContemplationRequest, integrationKey: string) =>
       apiRequest<IntegrationResponse>("/api/integracoes/contemplacoes", {
@@ -150,7 +147,6 @@ export const backend = {
         headers: { "X-Integration-Key": integrationKey },
         body: JSON.stringify(payload),
       }),
-    queue: () => apiRequest<QueueItem[]>("/api/integracoes/comunicacoes/fila"),
   },
   users: {
     list: () => apiRequest<UserResponse[]>("/api/usuarios"),

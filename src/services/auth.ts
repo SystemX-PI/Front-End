@@ -19,6 +19,12 @@ export interface AuthResponse {
   expiresIn: number;
 }
 
+const USER_TYPES: AuthResponse["tipo"][] = [
+  "ADMINISTRADOR",
+  "FUNCIONARIO",
+  "CLIENTE",
+];
+
 interface ApiError {
   message?: string;
   error?: string;
@@ -48,6 +54,17 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
   });
   const data = await parseResponse<AuthResponse>(response);
 
+  if (
+    typeof data.token !== "string" ||
+    !data.token ||
+    typeof data.refreshToken !== "string" ||
+    !data.refreshToken ||
+    !USER_TYPES.includes(data.tipo) ||
+    !Number.isFinite(data.expiresIn)
+  ) {
+    throw new Error("O backend retornou uma resposta de autenticação inválida.");
+  }
+
   localStorage.setItem("token", data.token);
   localStorage.setItem("refreshToken", data.refreshToken);
   localStorage.setItem("userType", data.tipo);
@@ -71,14 +88,29 @@ export async function register(payload: RegisterRequest): Promise<void> {
 
 export async function logout(): Promise<void> {
   const refreshToken = localStorage.getItem("refreshToken");
+  let serverLogoutSucceeded = !refreshToken;
   if (refreshToken) {
-    await fetch(`${API_URL}/api/auth/logout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    }).catch(() => undefined);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      serverLogoutSucceeded = response.ok;
+    } catch {
+      serverLogoutSucceeded = false;
+    }
   }
 
+  clearSession();
+  if (!serverLogoutSucceeded) {
+    throw new Error(
+      "A sessão local foi encerrada, mas o backend não confirmou o logout.",
+    );
+  }
+}
+
+export function clearSession(): void {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userType");

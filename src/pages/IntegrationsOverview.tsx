@@ -7,11 +7,11 @@ const services = [
 	{
 		title: "Gmail",
 		description:
-			"Configuração do e-mail de envio para comunicação com clientes e notificações internas.",
+			"Envio de e-mail configurado no servidor. O backend não oferece edição de credenciais nesta interface.",
 		service: "gmail" as const,
 		iconTone: "red" as const,
-		status: "Configuração necessária",
-		statusTone: "red" as const,
+		status: "Configuração no servidor",
+		statusTone: "neutral" as const,
 		action: "Configurar Gmail",
 		to: "/integracoes/gmail",
 	},
@@ -21,9 +21,9 @@ const services = [
 			"Conexão para envio de mensagens e acompanhamento de eventos operacionais.",
 		service: "whatsapp" as const,
 		iconTone: "green" as const,
-		status: "Configuração necessária",
-		statusTone: "green" as const,
-		action: "Configurar WhatsApp",
+		status: "Configuração no servidor",
+		statusTone: "neutral" as const,
+		action: "Ver detalhes",
 		to: "/integracoes/whatsapp",
 	},
 	{
@@ -74,7 +74,7 @@ export default function IntegrationsOverview() {
 					<Workflow size={19} />
 					<span>
 						<strong>3</strong>
-						<small>Canais ativos</small>
+						<small>Áreas disponíveis</small>
 					</span>
 				</div>
 				<div className="metric-card">

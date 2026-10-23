@@ -1,129 +1,77 @@
-import { useState, type FormEvent } from "react";
+import { ArrowLeft, MessageCircle, ShieldAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import IntegrationShell from "../components/IntegrationShell";
-import {
-  InlineFeedback,
-  ServiceIcon,
-  StatusPill,
-} from "../components/IntegrationUi";
-
-const qrCells = Array.from({ length: 225 }, (_, index) => {
-  const row = Math.floor(index / 15);
-  const column = index % 15;
-  const finder =
-    ((row < 5 || row > 9) && (column < 5 || column > 9)) ||
-    (row >= 5 && row <= 9 && column >= 5 && column <= 9);
-  return finder || (row * 3 + column * 5 + index) % 7 < 3;
-});
+import { ServiceIcon, StatusPill } from "../components/IntegrationUi";
 
 export default function WhatsAppIntegration() {
   const navigate = useNavigate();
-  const [instance, setInstance] = useState("consorcio");
-  const [description, setDescription] = useState(
-    "WhatsApp principal para notificações automáticas.",
-  );
-  const [feedback, setFeedback] = useState("");
-
-  function explainServerConfiguration(event: FormEvent) {
-    event.preventDefault();
-    setFeedback(
-      "O backend usa a instância definida por EVOLUTION_INSTANCE. A rota atual envia mensagens, mas não cria instâncias nem gera QR Code.",
-    );
-  }
 
   return (
     <IntegrationShell
       active="whatsapp"
       title="WhatsApp"
-      subtitle="Crie uma instância e conecte o aparelho pelo QR Code"
+      subtitle="Estado e limitações da integração"
     >
       <section className="page-intro">
-        <h2>Conectar WhatsApp</h2>
+        <h2>Integração com WhatsApp</h2>
         <p>
-          Defina um nome para a instância, gere o QR Code e faça a leitura pelo
-          WhatsApp do aparelho.
+          O front-end não possui operações para criar instâncias, consultar
+          conexão ou gerar QR Code. Nenhum estado de conexão pode ser confirmado
+          nesta tela.
         </p>
       </section>
 
       <div className="configuration-grid whatsapp-grid">
-        <form className="panel integration-form" onSubmit={explainServerConfiguration}>
+        <section className="panel integration-form">
           <div className="form-heading">
             <ServiceIcon service="whatsapp" tone="green" />
             <div>
-              <h3>Nova instância</h3>
+              <h3>Envio de mensagens</h3>
               <p>
-                A instância identifica qual conexão será usada pelos outros sistemas.
+                O serviço do front-end possui uma chamada de envio para um
+                processo existente. A conexão e a instância são configuradas
+                pelo backend.
               </p>
             </div>
           </div>
 
-          <label className="field">
-            <span>Nome da instância</span>
-            <input
-              type="text"
-              value={instance}
-              onChange={(event) => setInstance(event.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            <span>Descrição</span>
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </label>
-
-          <div className="connection-steps">
-            <strong>Etapas da conexão</strong>
-            {[
-              "Criar a instância",
-              "Gerar QR Code",
-              "Ler com o WhatsApp",
-              "Confirmar conexão",
-            ].map((step, index) => (
-              <div className={index === 0 ? "connection-step active" : "connection-step"} key={step}>
-                <span />
-                {index + 1}. {step}
-              </div>
-            ))}
+          <div className="permission-notice">
+            <ShieldAlert size={20} />
+            <div>
+              <strong>Configuração não disponível nesta interface</strong>
+              <p>
+                A criação da instância, a geração de QR Code e a confirmação de
+                conexão dependem de operações do backend que não estão
+                implementadas no front-end.
+              </p>
+            </div>
           </div>
 
-          {feedback && <InlineFeedback message={feedback} />}
-
-          <div className="split-actions">
-            <button className="button primary" type="submit">
-              Gerar QR Code
-            </button>
+          <div className="form-actions">
             <button
               className="button secondary"
               type="button"
               onClick={() => navigate("/integracoes")}
             >
-              Cancelar
+              <ArrowLeft size={16} />
+              Voltar às integrações
+            </button>
+            <button className="button primary" type="button" disabled>
+              <MessageCircle size={16} />
+              Conexão não disponível
             </button>
           </div>
-        </form>
+        </section>
 
-        <aside className="panel qr-panel">
-          <h3>QR Code de conexão</h3>
-          <StatusPill tone="amber">Aguardando configuração</StatusPill>
-          <div className="qr-placeholder" aria-label="Prévia ilustrativa do QR Code">
-            {qrCells.map((active, index) => (
-              <span className={active ? "filled" : ""} key={index} />
-            ))}
-          </div>
-          <p className="qr-caption">
-            Aponte a câmera do WhatsApp para este QR Code quando ele for gerado
-            pela Evolution API.
-          </p>
-          <div className="success-tip">
-            <strong>Depois da leitura</strong>
-            <p>
-              O status muda para Conectado e a instância fica disponível para os
-              outros sistemas.
-            </p>
-          </div>
+        <aside className="panel status-panel">
+          <h3>Status da conexão</h3>
+          <StatusPill tone="neutral">Não consultado</StatusPill>
+          <h4>O que já existe no front-end</h4>
+          <ul className="feature-list">
+            <li>Chamada de envio de WhatsApp associada a um processo</li>
+            <li>Configuração da instância mantida no backend</li>
+            <li>Sem QR Code ou indicador de conexão nesta interface</li>
+          </ul>
         </aside>
       </div>
     </IntegrationShell>
