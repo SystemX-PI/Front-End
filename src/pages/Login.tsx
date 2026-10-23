@@ -1,12 +1,15 @@
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { login } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationState =
+    location.state as { sessionExpired?: boolean; logoutWarning?: string } | null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,8 +21,11 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      await login({ email, password });
-      navigate("/integracoes", { replace: true });
+      const response = await login({ email, password });
+      navigate(
+        response.tipo === "CLIENTE" ? "/portal" : "/admin/dashboard",
+        { replace: true },
+      );
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Não foi possível entrar no sistema.");
     } finally {
@@ -34,6 +40,12 @@ export default function Login() {
       description="Use suas credenciais para continuar."
     >
       <form onSubmit={handleSubmit} className="auth-form">
+        {navigationState?.sessionExpired ? (
+          <InlineFeedback message="Sua sessão expirou. Entre novamente." kind="info" />
+        ) : null}
+        {navigationState?.logoutWarning ? (
+          <InlineFeedback message={navigationState.logoutWarning} kind="error" />
+        ) : null}
         <label className="field auth-field">
           <span>E-mail</span>
           <div className="input-with-icon"><Mail size={18} /><input type="email" required value={email}
