@@ -49,6 +49,7 @@ export default function Register() {
 
   return (
     <AuthShell
+      registration
       eyebrow="CADASTRO"
       title="Criar conta"
       description="Organize sua rotina, conecte sua equipe e acompanhe cada próximo passo."

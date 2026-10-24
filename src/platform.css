@@ -381,3 +381,67 @@
  .workspace-sidebar.is-open .workspace-account { grid-column: 1/-1; grid-row: 3; display: block; margin-top: 0; }
  .workspace-drawer-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 45; background: #06102070; border: 0; border-radius: 0; }
 }
+
+/* Personal profile and compact sidebar navigation. */
+.sidebar-avatar { overflow: hidden; }
+.sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-page { display: flex; flex-direction: column; gap: 25px; width: min(100%,720px); margin-inline: auto; }
+.profile-heading { justify-content: center; text-align: center; }
+.profile-heading h1 { font-size: 30px; }
+.profile-card { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 35px; }
+.profile-photo { width: 108px; height: 108px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-alt); color: var(--tenant-primary); border: 4px solid var(--workspace-surface); box-shadow: 0 0 0 1px var(--line); overflow: hidden; }
+.profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+.profile-card h2 { font-size: 25px; margin: 0; }
+.profile-info { width: 100%; margin: 10px 0; }
+.profile-info>div { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding: 17px 0; }
+.profile-info dt { font-size: 10px; color: var(--workspace-muted); }
+.profile-info dd { font-size: 12px; margin: 0; overflow-wrap: anywhere; text-align: right; }
+.profile-edit-form { width: 100%; max-width: 490px; }
+.profile-edit-actions { display: flex; justify-content: center; gap: 12px; margin-top: 5px; }
+.profile-edit-actions button { flex: 1; }
+.profile-security { width: 100%; }
+.profile-security .saas-panel-heading { margin-bottom: 15px; }
+.profile-security h2 { margin-top: 9px; font-size: 21px; }
+.profile-security>.saas-panel-heading>svg { color: var(--tenant-primary); }
+.profile-security>p { font-size: 11px; line-height: 1.8; color: var(--workspace-muted); margin: 0 0 25px; }
+.profile-forgot-link { text-align: center; color: var(--tenant-primary); font-size: 11px; padding-block: 8px; }
+.workspace-sidebar nav { scrollbar-width: none; -ms-overflow-style: none; }
+.workspace-sidebar nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
+@media (min-width: 761px) and (max-height: 800px) {
+ .workspace-sidebar { gap: 17px; padding-top: 21px; padding-bottom: 18px; }
+ .workspace-sidebar nav>a { min-height: 38px; padding-top: 10px; padding-bottom: 10px; }
+ .workspace-sidebar nav>small { margin-top: 14px; margin-bottom: 5px; }
+}
+@media (max-width: 480px) {
+ .profile-card { padding: 27px 21px; }
+ .profile-heading h1 { font-size: 26px; }
+ .profile-info>div { align-items: flex-start; flex-direction: column; gap: 9px; }
+ .profile-info dd { text-align: left; }
+ .profile-edit-actions { flex-wrap: wrap; }
+}
+
+/* Integration hierarchy, team directory and direct avatar editing. */
+.integration-nav>a,.integration-subpages>a { display:flex;align-items:center;gap:12px;color:#afbdd1;text-decoration:none;border-radius:10px;padding:12px 14px;font-size:12px;min-height:42px; }
+.integration-nav>a:hover,.integration-subpages>a:hover { background:#ffffff08;color:#fff; }
+.integration-nav>a.selected,.integration-subpages>a.selected { color:#fff;background:color-mix(in srgb,var(--tenant-primary) 28%,#13233b);font-weight:700; }
+.integration-subpages { margin:3px 0 4px 22px;padding-left:12px;border-left:1px solid #ffffff26;display:grid;gap:3px; }
+.integration-subpages>a { position:relative;font-size:11px;min-height:36px;padding:9px 12px; }
+.integration-subpages>a:before { content:"";position:absolute;left:-13px;top:50%;width:10px;border-top:1px solid #ffffff26; }
+.profile-avatar-editor { position:relative;width:108px;height:108px;flex-shrink:0; }
+.profile-photo-edit { position:absolute;right:-2px;bottom:0;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;border:3px solid var(--workspace-surface);background:var(--tenant-primary);color:var(--tenant-on-primary,#fff);cursor:pointer;box-shadow:0 2px 8px #0002; }
+.profile-photo-edit:disabled { opacity:.6;cursor:wait; }
+.team-toolbar { display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px; }
+.team-search { display:flex;align-items:center;gap:10px;flex:1;min-width:210px;max-width:480px;padding:0 13px;border:1px solid var(--line);border-radius:10px;background:var(--workspace-surface);color:var(--workspace-muted); }
+.team-search input { width:100%;min-width:0;border:0;background:transparent;color:var(--workspace-text);padding:13px 0;outline:none;font:inherit;font-size:12px; }
+.team-search:focus-within { outline:2px solid var(--tenant-primary);outline-offset:2px; }
+.team-page-size { display:flex;align-items:center;gap:10px;font-size:11px;color:var(--workspace-muted); }
+.team-page-size select { border:1px solid var(--line);border-radius:8px;padding:9px;background:var(--workspace-surface);color:var(--workspace-text); }
+.team-list .team-member { min-width:0;flex:1;overflow-wrap:anywhere; }
+.team-pagination,.team-pagination>div { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.team-pagination { margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;color:var(--workspace-muted);flex-wrap:wrap; }
+.team-pagination .saas-button { padding:9px;min-width:36px; }
+.team-modal { margin:auto;width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow-y:auto;border:1px solid var(--line);color:var(--workspace-text);background:var(--workspace-surface);box-shadow:0 24px 90px #0004;padding:28px; }
+.team-modal::backdrop { background:#07132299;backdrop-filter:blur(4px); }
+.team-modal .saas-form { margin-top:22px; }
+.team-modal-actions { display:flex;justify-content:flex-end;gap:12px;margin-top:10px; }
+@media(max-width:480px) { .team-search { max-width:none;flex-basis:100%;min-width:0; }.team-list>article { gap:10px; }.team-list .account-avatar { width:34px;height:34px; }.team-pagination { justify-content:center; }.team-modal { padding:22px; }.workspace-breadcrumb { flex-wrap:wrap;row-gap:4px; } }

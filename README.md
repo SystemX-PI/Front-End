@@ -18,13 +18,13 @@ Acesse o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Sem m
 | Rota | Finalidade |
 | --- | --- |
 | `/` | Apresentação do produto e início do teste gratuito |
-| `/login`, `/register` | Acesso e cadastro de uma empresa |
+| `/login`, `/register`, `/forgot-password` | Acesso, cadastro e recuperação de senha |
 | `/app` | Clientes para o administrador; resumo da conta para os demais perfis |
 | `/app/integracoes` | Central dos canais e suas configurações |
 | `/app/whatsapp`, `/app/gmail` | Instâncias e remetentes da conta |
 | `/app/equipe`, `/app/marca` | Usuários da equipe e identidade visual |
 | `/app/assinatura`, `/app/upgrade` | Limites e compra simulada por Pix ou cartão |
-| `/app/perfil` | Dados do acesso e da conta |
+| `/app/perfil` | Foto, nome e troca de senha com validação da senha atual |
 
 O cadastro e a demonstração incluem um WhatsApp e um Gmail por três dias. Somente a confirmação da compra simulada libera três WhatsApps e dois Gmails por 30 dias. Os preços são ilustrativos e nenhuma cobrança real é realizada.
 
@@ -44,3 +44,5 @@ Os módulos antigos de consórcios permanecem no código e não integram a naveg
 
 - [Relatório da plataforma e das validações](RELATORIO_PLATAFORMA.md)
 - [Checklist de evolução da interface](CHECKLIST_FRONTEND.md)
+
+A recuperação por e-mail exige o remetente Gmail da plataforma configurado no backend. O código expira em cinco minutos. O aviso do teste permanece somente na visão geral, além de uma notificação após o login.

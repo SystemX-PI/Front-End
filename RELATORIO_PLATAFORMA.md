@@ -89,3 +89,15 @@ O backend continua em 8080. Para reconstruir e iniciar posteriormente, execute `
 - Seis cenários de navegador aprovados para as alterações, além de um teste específico de rolagem no computador e no celular. O QR foi substituído automaticamente pela resposta atualizada da API e a compra só liberou 3+2 após confirmar.
 - Build de produção aprovado. Nenhuma dependência nova foi instalada.
 - Backend atualizado em 8080: login e lista de clientes com HTTP 200. A conta existente permaneceu em TRIAL com limites 1+1 e seu WhatsApp permaneceu `open`.
+
+## Perfil e recuperação de senha — 24/10/2026
+
+- Card esquerdo do cadastro alinhado mais acima, sem alterar os campos ou a adaptação ao celular.
+- Perfil centralizado, com edição do nome e da foto, prévia da imagem, redimensionamento e gravação no backend. O avatar também aparece no rodapé do menu.
+- Troca de senha no perfil exige a senha atual e confirma a nova senha. Ao concluir, invalida os acessos anteriores e emite uma sessão nova para manter o usuário atual conectado.
+- Login e perfil oferecem recuperação por e-mail. O código tem oito dígitos, é de uso único e expira em cinco minutos. O servidor guarda somente um HMAC do código, limita tentativas e solicitações e não confirma publicamente se o e-mail está cadastrado.
+- O e-mail é enviado pelo remetente Gmail da plataforma após a transação, sem segurar a resposta da API. As contas Gmail dos clientes permanecem separadas desse remetente.
+- O ambiente local ainda não tem `MAIL_USERNAME` e `MAIL_PASSWORD`. Nesse estado, a API informa que o remetente precisa ser configurado; não simula um envio bem-sucedido. O envio real não foi validado com uma caixa Gmail nesta entrega.
+- O aviso do teste deixou de aparecer em todas as páginas: há uma notificação única após login e o aviso permanente fica somente na visão geral. A navegação foi compactada e sua barra de rolagem visual foi ocultada, preservando acesso às opções em janelas curtas.
+- Migração V11: foto do usuário e registro de códigos de recuperação. Rotas novas: `PUT /api/platform/profile`, `PUT /api/platform/profile/password`, `POST /api/auth/forgot-password` e `POST /api/auth/reset-password`.
+- Validação: quatro testes novos de backend (foto/senha, uso único, prazo/tentativas e remetente ausente), totalizando 15 testes aprovados; quatro testes de navegador focados aprovados. As entregas de e-mail dos testes foram capturadas por um remetente simulado, sem enviar mensagens reais.

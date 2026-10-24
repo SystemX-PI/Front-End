@@ -40,6 +40,13 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
     true,
   )) as AuthResponse;
 
+  storeAuthResponse(data);
+  localStorage.setItem("userEmail", payload.email.trim());
+  sessionStorage.setItem("show-trial-notice", "true");
+  return data;
+}
+
+export function storeAuthResponse(data: AuthResponse): void {
   if (
     !data ||
     typeof data.token !== "string" ||
@@ -57,8 +64,6 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
   localStorage.setItem("token", data.token);
   localStorage.setItem("refreshToken", data.refreshToken);
   localStorage.setItem("userType", data.tipo);
-  localStorage.setItem("userEmail", payload.email.trim());
-  return data;
 }
 
 export async function register(payload: RegisterRequest): Promise<void> {
@@ -153,4 +158,11 @@ export function getUserType(): AuthResponse["tipo"] | null {
 
 export function isAuthenticated(): boolean {
   return Boolean(getToken());
+}
+
+export async function requestPasswordReset(email: string): Promise<{message:string;expiresIn:number}> {
+ return await request("/api/auth/forgot-password",{method:"POST",body:JSON.stringify({email:email.trim()})}) as {message:string;expiresIn:number};
+}
+export async function resetPassword(email: string, token: string, newPassword: string): Promise<void> {
+ await request("/api/auth/reset-password",{method:"POST",body:JSON.stringify({email:email.trim(),token,newPassword})});
 }

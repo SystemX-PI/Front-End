@@ -1863,3 +1863,19 @@ textarea:focus-visible {
   .qr-stage { min-height: 250px; }
   .admin-search-form, .admin-form { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Registration content starts higher; authentication controls share one border. */
+@media (min-width: 901px) {
+ .registration-page .auth-visual-panel { justify-content: flex-start; padding-top: 76px; }
+ .registration-page .auth-feature-list { margin-top: 34px; }
+ .registration-page .auth-tagline { margin-top: 35px; }
+}
+.forgot-password-link { align-self: flex-end; font-size: 11px; font-weight: 500; color: var(--primary); text-decoration: none; margin-top: -5px; }
+.reset-instructions { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border: 1px solid var(--line); background: var(--surface-alt); border-radius: 12px; }
+.reset-instructions>svg { flex-shrink: 0; color: var(--primary); margin-top: 2px; }
+.reset-instructions p { font-size: 11px; color: var(--text-soft); line-height: 1.8; margin: 0; overflow-wrap: anywhere; }
+.reset-countdown { font-size: 11px; color: var(--text-soft); margin: 18px 0; }
+.reset-countdown.expired { color: var(--danger); }
+.reset-resend { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-top: 22px; }
+.reset-resend button { border: 0; padding: 6px 0; color: var(--primary); font-size: 11px; background: transparent; }
+.auth-footer>a { display: inline-flex; gap: 7px; align-items: center; }

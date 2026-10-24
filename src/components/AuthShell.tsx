@@ -1,5 +1,4 @@
 import { MessageCircle, ShieldCheck, PlugZap } from "lucide-react";
-import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -9,14 +8,16 @@ export default function AuthShell({
   eyebrow,
   title,
   description,
+  registration = false,
 }: {
   children: ReactNode;
   eyebrow: string;
   title: string;
   description: string;
+  registration?: boolean;
 }) {
   return (
-    <div className="auth-page">
+    <div className={registration ? "auth-page registration-page" : "auth-page"}>
       <div className="auth-shell">
         <aside
           className="auth-visual-panel"
@@ -86,7 +87,6 @@ export default function AuthShell({
             </div>
 
             {children}
-            <Link to="/" className="auth-back-link">← Voltar ao site</Link>
           </div>
         </main>
       </div>

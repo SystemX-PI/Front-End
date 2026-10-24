@@ -12,8 +12,10 @@ export default function Login() {
     sessionExpired?: boolean;
     logoutWarning?: string;
     registered?: boolean;
+    passwordReset?: boolean;
+    email?: string;
   } | null;
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(navigationState?.email || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,7 @@ export default function Login() {
       description="Use suas credenciais para continuar."
     >
       <form onSubmit={handleSubmit} className="auth-form">
+        {navigationState?.passwordReset ? <InlineFeedback message="Senha redefinida. Entre com sua nova senha." kind="success" /> : null}
         {navigationState?.registered ? (
           <InlineFeedback
             message="Conta criada. Entre com seu e-mail e senha."
@@ -100,6 +103,7 @@ export default function Login() {
             </button>
           </div>
         </label>
+        <Link className="forgot-password-link" to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>Esqueci minha senha</Link>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button
           type="submit"
