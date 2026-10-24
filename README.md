@@ -2,6 +2,28 @@
 
 Plataforma por contas de clientes, com React, TypeScript e Vite. Inclui landing page, teste gratuito, visão geral da conta, integrações WhatsApp/Gmail, equipe, identidade da marca e compra simulada.
 
+## Docker: forma recomendada para a equipe
+
+Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-end`, execute:
+
+```powershell
+docker compose --profile full up --build -d --wait --wait-timeout 600
+```
+
+Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evolution, PostgreSQL e Redis. Acesse http://localhost:5173. O backend permanece em 8080; o Nginx encaminha `/api` automaticamente. Não é necessário instalar Node ou Java. Veja o guia completo em `Back-end/LOCAL.md`.
+
+Após receber mudanças, faça `git pull --ff-only` nos dois repositórios e repita o comando com `--build`. O cache reutiliza imagens e dependências; não use `--no-cache`. As imagens são geradas localmente a partir do código recebido, sem publicação automática em um registro Docker.
+
+Se a API já estiver rodando em localhost:8080, também é possível iniciar **somente o frontend**, nesta pasta:
+
+```powershell
+docker compose up --build -d --wait --wait-timeout 600
+```
+
+Ou `./start.ps1`. O site usa a mesma porta 5173 e encaminha chamadas ao backend do computador. Escolha esta opção **ou** o perfil `full`, pois ambos usam a porta 5173. Para parar, use `docker compose down` na composição escolhida. O frontend tem limite de 128 MB e 0,5 CPU durante a execução; a compilação usa recursos separados.
+
+O contexto Docker exclui `.env`, `node_modules`, resultados de testes e arquivos locais. A imagem contém apenas Nginx e o site compilado, sem credenciais nem ferramentas de desenvolvimento.
+
 ## Executar localmente
 
 Com o backend disponível em `http://localhost:8080`:

@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.env
+.env.*
+*.local
+test-results
+playwright-report
+tests
+*.log
+
+*.md
+start.ps1
+docker-compose.yml

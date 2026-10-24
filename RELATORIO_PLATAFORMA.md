@@ -101,3 +101,9 @@ O backend continua em 8080. Para reconstruir e iniciar posteriormente, execute `
 - O aviso do teste deixou de aparecer em todas as páginas: há uma notificação única após login e o aviso permanente fica somente na visão geral. A navegação foi compactada e sua barra de rolagem visual foi ocultada, preservando acesso às opções em janelas curtas.
 - Migração V11: foto do usuário e registro de códigos de recuperação. Rotas novas: `PUT /api/platform/profile`, `PUT /api/platform/profile/password`, `POST /api/auth/forgot-password` e `POST /api/auth/reset-password`.
 - Validação: quatro testes novos de backend (foto/senha, uso único, prazo/tentativas e remetente ausente), totalizando 15 testes aprovados; quatro testes de navegador focados aprovados. As entregas de e-mail dos testes foram capturadas por um remetente simulado, sem enviar mensagens reais.
+
+## Docker para a equipe
+
+Frontend com build em Node e imagem final Nginx, rotas SPA e proxy `/api` para o backend em 8080. O backend oferece o perfil Compose `full`: clonar `Front-End` ao lado de `Back-end` e executar `docker compose --profile full up --build -d --wait --wait-timeout 600` na pasta do backend. Os dois repositórios incluem `start.ps1` e instruções de atualização. O cache npm/Maven é preservado; os dados permanecem em volumes. A configuração do frontend independente também está disponível. O envio ao GitHub versiona as receitas; cada colega constrói suas imagens localmente.
+
+Validação local do Docker: seis serviços saudáveis; site, login e rota interna com HTTP 200; login real e contexto autenticado pelo proxy do frontend com HTTP 200; configuração Nginx válida. Backend e dependências npm reutilizados por cache nas reconstruções.
