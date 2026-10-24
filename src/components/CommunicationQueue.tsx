@@ -1,11 +1,11 @@
 import { Mail, MessageCircle, RefreshCw, Search, Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useResource } from "../hooks/useResource";
 import { backend, type ChannelResponse } from "../services/backend";
 import { formatDate, readable } from "../services/format";
 import { EmptyState, ErrorState, Pagination, Skeleton } from "./DataUi";
-import { usePagination } from "../hooks/usePagination";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { InlineFeedback, StatusPill } from "./IntegrationUi";
 import { notify } from "../services/notifications";
 
@@ -39,26 +39,16 @@ export function ChannelStatus({
 }
 
 export default function CommunicationQueue() {
-  const { data, loading, error, refresh } = useResource(
-    backend.integrations.queue,
-  );
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const term = useDebouncedValue(search);
+  const load = useCallback((signal: AbortSignal) => backend.integrations.queuePage(page - 1, term, status, signal), [page, term, status]);
+  const { data, loading, error, refresh } = useResource(load);
   const [busy, setBusy] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
-  const queue = data || [];
-  const filtered = queue.filter(
-    (item) =>
-      (!status ||
-        (status === "FALHA"
-          ? item.comunicacao.email?.status === "FALHA" ||
-            item.comunicacao.whatsapp?.status === "FALHA"
-          : item.comunicacao.statusGeral === status)) &&
-      `${item.processoId} ${item.idExterno || ""} ${item.origem || ""} ${item.comunicacao.email?.destinatario || ""} ${item.comunicacao.whatsapp?.destinatario || ""}`
-        .toLocaleLowerCase("pt-BR")
-        .includes(search.toLocaleLowerCase("pt-BR")),
-  );
-  const { page, setPage, pageItems, size } = usePagination(filtered);
+  const queue = data?.items || [];
+  const size = 20;
   async function send(id: number) {
     if (busy !== null) return;
     setBusy(id);
@@ -106,7 +96,7 @@ export default function CommunicationQueue() {
         aria-label="Resumo da comunicação"
       >
         {[
-          { label: "Recebidos", value: queue.length },
+          { label: "Nesta pagina", value: queue.length },
           {
             label: "Pendentes",
             value: queue.filter(
@@ -138,7 +128,7 @@ export default function CommunicationQueue() {
         <div className="data-panel-heading">
           <div>
             <h3>Fila de comunicação</h3>
-            <p>Acompanhe os canais e solicite o envio de cada processo.</p>
+            <p>Busque em toda a fila. Os indicadores resumem a pagina atual.</p>
           </div>
           <button
             type="button"
@@ -183,7 +173,7 @@ export default function CommunicationQueue() {
           <ErrorState message={error} retry={refresh} />
         ) : loading ? (
           <Skeleton />
-        ) : !filtered.length ? (
+        ) : !queue.length ? (
           <EmptyState
             title={
               search || status
@@ -199,7 +189,7 @@ export default function CommunicationQueue() {
         ) : (
           <>
             <div className="communication-list">
-              {pageItems.map((item) => (
+              {queue.map((item) => (
                 <article className="communication-card" key={item.processoId}>
                   <div className="communication-card-heading">
                     <div>
@@ -246,7 +236,7 @@ export default function CommunicationQueue() {
               ))}
             </div>
             <Pagination
-              total={filtered.length}
+              total={data?.total || 0}
               page={page}
               onChange={setPage}
               size={size}

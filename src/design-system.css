@@ -1769,3 +1769,97 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* Consistent surfaces and navigation across the application. */
+.auth-field .input-with-icon,
+.auth-field .input-with-icon:focus-within {
+  background: var(--surface);
+  color: var(--text);
+}
+.auth-field .input-with-icon input {
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  min-height: 0;
+  padding: 14px 0;
+  box-shadow: none;
+}
+.auth-field .input-with-icon input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.auth-back-link {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 22px;
+  text-decoration: none;
+}
+.auth-field input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+}
+.auth-field .input-with-icon:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+.app-column, .topbar-copy, .panel, .configuration-grid > * { min-width: 0; }
+.integration-main { width: 100%; max-width: 1600px; margin-inline: auto; }
+.panel, .service-card, .metric-card {
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+.topbar, .admin-app-shell .topbar {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.sidebar .nav-item { border-radius: 12px; min-height: 46px; }
+.sidebar .nav-item.active { box-shadow: inset 3px 0 0 #94b7ff; }
+.sidebar .brand-row { display: flex; align-items: center; }
+.mobile-menu-toggle { display: none; }
+.button { min-height: 44px; border-radius: 11px; font-weight: 600; }
+.split-actions { display: flex; flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 12px; }
+.user-chip { max-width: 450px; flex-shrink: 0; }
+.user-chip > .theme-switcher { flex-shrink: 0; }
+.user-copy { max-width: 180px; }
+.user-copy strong, .user-copy small { white-space: nowrap; }
+.field input, .field select, .field textarea { font-size: 14px; }
+.field input:disabled { cursor: not-allowed; }
+.qr-stage { border-radius: 18px; min-height: 290px; }
+.qr-stage img { width: min(100%, 270px); height: auto; background: white; padding: 12px; border-radius: 14px; }
+.qr-panel .status-pill { margin-block: 12px; }
+.qr-caption { line-height: 1.7; }
+.setup-guide { list-style: decimal; padding-left: 24px; line-height: 1.8; color: var(--text-soft); }
+.setup-guide li { padding-left: 5px; margin-bottom: 10px; }
+@media (min-width: 901px) and (max-width: 1150px) {
+  .user-copy, .user-chip > svg { display: none; }
+  .topbar-copy > p { max-width: 290px; }
+}
+@media (max-width: 900px) {
+  .sidebar .brand-row { width: 100%; }
+  .mobile-menu-toggle {
+    display: grid; place-items: center; margin-left: auto;
+    width: 44px; height: 44px; border-radius: 12px;
+    border: 1px solid #41516d; color: #e6edf9; background: #ffffff0a;
+  }
+  .sidebar .sidebar-nav { display: none; }
+  .sidebar.menu-open .sidebar-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .sidebar .nav-section-label, .sidebar .sidebar-trust, .sidebar .sidebar-version { display: none; }
+  .configuration-grid, .whatsapp-grid { grid-template-columns: minmax(0, 1fr); }
+  .topbar { gap: 12px; }
+  .user-chip { flex-shrink: 0; }
+}
+@media (max-width: 620px) {
+  .sidebar, .admin-sidebar { padding: 12px 16px; }
+  .sidebar.menu-open .sidebar-nav { gap: 6px; }
+  .sidebar .nav-item { font-size: 12px; padding-inline: 10px; }
+  .breadcrumb { flex-wrap: wrap; font-size: 10px; }
+  .auth-field input, .field input, .field select, .field textarea { font-size: 16px; }
+  .split-actions > .button { flex: 1 1 180px; justify-content: center; }
+  .qr-stage { min-height: 250px; }
+  .admin-search-form, .admin-form { grid-template-columns: minmax(0, 1fr); }
+}

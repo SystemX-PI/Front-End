@@ -1,5 +1,5 @@
 import { QrCode, RefreshCw, Smartphone } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import IntegrationShell from "../components/IntegrationShell";
 import {
   InlineFeedback,
@@ -23,7 +23,40 @@ export default function WhatsAppIntegration() {
   const [result, setResult] = useState<EvolutionStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [watching, setWatching] = useState(false);
   const administrator = getUserType() === "ADMINISTRADOR";
+  useEffect(() => {
+    if (!administrator) return;
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const deadline = Date.now() + 180000;
+    let failures = 0;
+    async function check() {
+      try {
+        const response = await backend.whatsapp.status(instance);
+        if (disposed) return;
+        failures = 0;
+        setResult(current => ({ ...response, qrCode: response.state === "connecting" ? current?.qrCode ?? null : null }));
+        if (response.state === "open") {
+          setWatching(false);
+          setError("");
+          if (watching) notify("WhatsApp conectado com sucesso.", "success");
+          return;
+        }
+      } catch {
+        if (disposed) return;
+        failures++;
+      }
+      if (watching && Date.now() < deadline && failures < 3) {
+        timer = setTimeout(() => { void check(); }, 5000);
+      } else if (watching) {
+        setWatching(false);
+        setError(failures >= 3 ? "Não foi possível acompanhar a conexão. Consulte o status para tentar novamente." : "O acompanhamento terminou. Se ainda não conectou, gere um novo QR Code.");
+      }
+    }
+    timer = setTimeout(() => { void check(); }, watching ? 5000 : 0);
+    return () => { disposed = true; clearTimeout(timer); };
+  }, [administrator, instance, watching]);
   async function connect(generate: boolean) {
     if (loading || !administrator) return;
     if (!/^[A-Za-z0-9_-]{1,60}$/.test(instance)) {
@@ -45,6 +78,7 @@ export default function WhatsAppIntegration() {
           ? { ...response, qrCode: current.qrCode }
           : response,
       );
+      setWatching(response.state === "connecting" || (generate && response.state !== "open"));
       if (response.state === "open")
         notify("WhatsApp conectado com sucesso.", "success");
     } catch (error) {
@@ -67,7 +101,7 @@ export default function WhatsAppIntegration() {
     <IntegrationShell
       active="whatsapp"
       title="WhatsApp"
-      subtitle="Conecte seu canal de atendimento à Evolution API"
+      subtitle="Conecte seu canal de atendimento e acompanhe suas conversas"
     >
       <PageHeading
         eyebrow="CANAIS DE COMUNICAÇÃO"
@@ -84,7 +118,7 @@ export default function WhatsAppIntegration() {
             <ServiceIcon service="whatsapp" tone="green" />
             <div>
               <h3>Conectar aparelho</h3>
-              <p>O QR Code é gerado pela Evolution API da sua operação.</p>
+              <p>Vincule seu WhatsApp com segurança em poucos passos.</p>
             </div>
           </div>
           {!administrator ? (
@@ -100,6 +134,7 @@ export default function WhatsAppIntegration() {
               disabled={loading || !administrator}
               onChange={(event) => {
                 setInstance(event.target.value);
+                setWatching(false);
                 setResult(null);
               }}
             />
@@ -112,7 +147,7 @@ export default function WhatsAppIntegration() {
             <li>Gere o QR Code para a instância.</li>
             <li>No WhatsApp, abra Aparelhos conectados.</li>
             <li>Toque em Conectar aparelho e escaneie o código.</li>
-            <li>Atualize o status para confirmar a conexão.</li>
+            <li>Aguarde a confirmação automática nesta página.</li>
           </ol>
           {error ? <InlineFeedback kind="error" message={error} /> : null}
           <div className="split-actions">
@@ -135,7 +170,7 @@ export default function WhatsAppIntegration() {
             </button>
           </div>
         </form>
-        <aside className="panel qr-panel">
+        <aside className="panel qr-panel" aria-live="polite">
           <h3>Conexão do aparelho</h3>
           <StatusPill tone={result?.state === "open" ? "green" : "amber"}>
             {result
@@ -156,7 +191,7 @@ export default function WhatsAppIntegration() {
                     ? "Aparelho conectado"
                     : "Pronto para conectar"}
                 </strong>
-                <p>Gere um código para vincular seu WhatsApp.</p>
+                <p>{result?.state === "open" ? "Tudo pronto. Seu canal está disponível para os atendimentos." : "Gere um código para vincular seu WhatsApp."}</p>
               </>
             )}
           </div>
@@ -166,7 +201,7 @@ export default function WhatsAppIntegration() {
             </p>
           ) : null}
           <p className="qr-caption">
-            Se o código expirar, gere um novo e repita a leitura.
+            {watching ? "Verificando a conexão automaticamente a cada 5 segundos…" : result?.state === "open" ? "Conexão confirmada pela plataforma." : "Se o código expirar, gere um novo e repita a leitura."}
           </p>
         </aside>
       </div>

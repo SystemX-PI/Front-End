@@ -25,8 +25,8 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const response = await login({ email, password });
-      navigate(response.tipo === "CLIENTE" ? "/portal" : "/admin/dashboard", {
+      await login({ email, password });
+      navigate("/app", {
         replace: true,
       });
     } catch (requestError) {

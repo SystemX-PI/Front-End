@@ -19,7 +19,7 @@ const statusMessages: Record<number, string> = {
   401: "Sua sessão expirou. Entre novamente.",
   403: "Seu perfil não tem permissão para realizar esta ação.",
   404: "O registro ou recurso solicitado não foi encontrado.",
-  409: "Já existe um registro com esses dados.",
+  409: "Operacao em conflito: confira valores duplicados ou registros vinculados.",
   422: "Os dados enviados não puderam ser processados.",
   429: "Muitas tentativas. Aguarde um momento antes de tentar novamente.",
   500: "O servidor encontrou um problema. Tente novamente em instantes.",

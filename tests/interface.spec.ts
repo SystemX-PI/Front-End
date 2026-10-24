@@ -1,404 +1,57 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test,expect,type Page } from "@playwright/test";
+const future=()=>new Date(Date.now()+259200000).toISOString();
+function context(role="CLIENTE"){return {role,name:"Empresa Aurora",email:"aurora@example.com",active:true,simulationEnabled:true,subscription:{tier:"TRIAL" as "TRIAL"|"PRO",whatsappLimit:1,gmailLimit:1,upgradePriceCents:9990,currency:"BRL"},account:role==="ADMINISTRADOR"?null:{id:7,nome:"Aurora",brandName:"Aurora",logo:"",primaryColor:"#315fe8",accentColor:"#35cda0",createdAt:new Date().toISOString(),trialEndsAt:future(),paidUntil:null as string|null,professional:false,suspended:false},instances:[{id:1,name:"vendas"}],mailboxes:[{id:1,name:"Financeiro",email:"financeiro@example.com",verified:true}],users:[{id:1,name:"Ana",email:"ana@example.com",active:true}]};}
+async function seed(page:Page,role="CLIENTE"){await page.addInitScript(role=>{localStorage.setItem("token","test-token");localStorage.setItem("refreshToken","test-refresh");localStorage.setItem("userType",role);},role);}
 
-test("tema escuro cobre as telas e a preferência permanece após recarregar", async ({
-  page,
-}) => {
-  test.setTimeout(60000);
-  await session(page);
-  await page.goto("/register");
-  await page.getByRole("button", { name: "Tema escuro", exact: true }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Tema escuro", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  for (const path of [
-    "/login",
-    "/register",
-    "/admin/dashboard",
-    "/admin/clientes",
-    "/admin/usuarios",
-    "/admin/contemplados",
-    "/admin/auditoria",
-    "/integracoes",
-    "/integracoes/gmail",
-    "/integracoes/whatsapp",
-    "/integracoes/notificacoes",
-  ]) {
-    await page.goto(path);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    if (await page.locator(".panel").count())
-      expect(
-        await page
-          .locator(".panel")
-          .first()
-          .evaluate((element) => getComputedStyle(element).backgroundColor),
-      ).not.toBe("rgb(255, 255, 255)");
-  }
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 1000 });
-    await page.goto("/register");
-    await page.screenshot({
-      path: `test-results/cadastro-dark-${width}.png`,
-      fullPage: true,
-    });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBeTruthy();
-  }
-  await page.getByRole("button", { name: "Tema claro", exact: true }).click();
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.screenshot({
-    path: "test-results/cadastro-light.png",
-    fullPage: true,
-  });
+test("landing, cadastro sem caracteres corrompidos e campos com uma unica borda",async({page})=>{
+ await page.goto("/");await expect(page.getByRole("heading",{name:/Mais conexões/})).toBeVisible();await page.getByRole("link",{name:"Experimente por 3 dias"}).click();await expect(page).toHaveURL(/register$/);await expect(page.getByText("Já tem acesso?")).toBeVisible();
+ for(const input of await page.locator(".input-with-icon input").all()){await expect(input).toHaveCSS("border-top-width","0px");await input.focus();await expect(input).toHaveCSS("outline-style","none");}
+ await page.getByRole("button",{name:"Tema claro",exact:true}).click();await expect(page.locator(".input-with-icon").first()).toHaveCSS("background-color","rgb(255, 255, 255)");await page.screenshot({path:"test-results/register-single-border.png",fullPage:true});
+ let body:unknown;await page.route("**/api/auth/register",async route=>{body=route.request().postDataJSON();await route.fulfill({status:201,json:{id:7,tipo:"CLIENTE"}});});await page.getByLabel("Nome da sua empresa").fill("Aurora");await page.getByLabel("E-mail",{exact:true}).fill("aurora@example.com");await page.getByLabel("Senha",{exact:true}).fill("senha123");await page.getByLabel("Confirmar senha").fill("senha123");await page.getByRole("button",{name:"Criar minha conta"}).click();await expect(page).toHaveURL(/login$/);expect(body).toEqual({nome:"Aurora",email:"aurora@example.com",senha:"senha123"});
+ await page.goto("/");await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:"test-results/landing-desktop.png",fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:"test-results/landing-mobile.png",fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test("cadastro valida confirmação e envia somente o DTO de funcionário", async ({
-  page,
-}) => {
-  await page.goto("/register");
-  await page.getByLabel("Nome completo", { exact: true }).fill("Maria Teste");
-  await page.getByLabel("E-mail", { exact: true }).fill("maria@example.com");
-  await page.getByPlaceholder("Mínimo 6 caracteres").fill("senha-teste-123");
-  await page.getByLabel("Confirmar senha", { exact: true }).fill("outra-senha");
-  await page.getByRole("button", { name: "Criar minha conta" }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "As senhas não coincidem",
-  );
-  let body: unknown;
-  await page.route("**/api/usuarios", async (route) => {
-    body = route.request().postDataJSON();
-    await route.fulfill({
-      status: 201,
-      json: {
-        id: 21,
-        nome: "Maria Teste",
-        email: "maria@example.com",
-        tipo: "FUNCIONARIO",
-        ativo: true,
-      },
-    });
-  });
-  await page
-    .getByLabel("Confirmar senha", { exact: true })
-    .fill("senha-teste-123");
-  await page.getByRole("button", { name: "Criar minha conta" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  expect(body).toEqual({
-    nome: "Maria Teste",
-    email: "maria@example.com",
-    senha: "senha-teste-123",
-    tipo: "FUNCIONARIO",
-  });
-  await expect(
-    page.getByText("Conta criada. Entre com seu e-mail e senha."),
-  ).toBeVisible();
+test("administrador ve clientes e totais por conta",async({page})=>{
+ await seed(page,"ADMINISTRADOR");await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/clients")?[{id:7,nome:"Aurora",email:"aurora@example.com",trialEndsAt:future(),paidUntil:null,suspended:false,instances:3,gmails:2,users:5}]:context("ADMINISTRADOR")}));await page.goto("/app");await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();await expect(page.getByRole("navigation").getByRole("link")).toHaveCount(1);await expect(page.getByRole("link",{name:"Abrir conta"})).toHaveAttribute("href","/app?account=7");await page.screenshot({path:"test-results/admin-clients.png",fullPage:true});
 });
 
-const users = Array.from({ length: 20 }, (_, index) => ({
-  id: index + 1,
-  nome: `Pessoa ${index + 1}`,
-  email: `pessoa${index + 1}@example.com`,
-  ativo: index % 3 !== 0,
-  tipo: index < 10 ? "CLIENTE" : "FUNCIONARIO",
-}));
-const communication = {
-  processoId: 1,
-  statusGeral: "PENDENTE",
-  email: {
-    id: 1,
-    destinatario: "cliente@example.com",
-    status: "FALHA",
-    erro: "Credenciais do Gmail recusadas.",
-    criadaEm: "2026-10-23T12:00:00",
-    enviadaEm: null,
-  },
-  whatsapp: null,
-};
-const queue = [
-  {
-    processoId: 1,
-    idExterno: "CONT-TESTE",
-    origem: "parceiro",
-    statusProcesso: "AGUARDANDO_COMUNICACAO",
-    recebidaEm: "2026-10-23T12:00:00",
-    comunicacao: communication,
-  },
-];
-
-async function session(page: Page, tipo = "ADMINISTRADOR") {
-  await page.addInitScript((role) => {
-    localStorage.setItem("token", "test-token");
-    localStorage.setItem("userType", role);
-    localStorage.setItem("userEmail", "gestor@example.com");
-  }, tipo);
-}
-
-test.beforeEach(async ({ page }) => {
-  await page.route("**/api/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
-    const data =
-      path === "/api/usuarios"
-        ? users
-        : path.endsWith("/fila")
-          ? queue
-          : path.endsWith("/reenvio") || path.endsWith("/comunicacao")
-            ? communication
-            : path.startsWith("/api/processos-contemplacao/")
-              ? {
-                  id: 1,
-                  contemplacaoId: 1,
-                  responsavelId: 1,
-                  status: "AGUARDANDO_COMUNICACAO",
-                  criadoEm: "2026-10-23T12:00:00",
-                  atualizadoEm: "2026-10-23T12:00:00",
-                }
-              : {};
-    await route.fulfill({ json: data });
-  });
+test("menu consistente, responsividade e tema escuro",async({page})=>{
+ test.setTimeout(90000);await seed(page);await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/status")?{instanceName:"vendas",state:"open",qrCode:null}:context()}));
+ for(const width of [1440,768,360]){await page.setViewportSize({width,height:950});for(const path of ["/app","/app/integracoes","/app/whatsapp","/app/gmail","/app/equipe","/app/marca","/app/assinatura","/app/perfil","/app/upgrade"]){await page.goto(path);await expect(page.locator(".workspace-heading h1")).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${path} ${width}`).toBe(true);expect(await page.locator("body").innerText()).not.toMatch(/Ã[£§¡©ª³]|Â·/);}}
+ await page.setViewportSize({width:1440,height:800});await page.goto("/app");await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toBeVisible();await expect(page.locator(".workspace-topbar").getByText("Titular da conta")).toHaveCount(0);await expect(page.locator(".workspace-account").getByRole("button",{name:"Sair",exact:true})).toBeVisible();
+ const before=await page.locator(".workspace-account").boundingBox();await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));const after=await page.locator(".workspace-account").boundingBox();expect(Math.abs(before!.y-after!.y)).toBeLessThan(2);expect(after!.y+after!.height).toBeLessThanOrEqual(800);await page.goto("/app/integracoes");await expect(page.getByRole("heading",{name:"Central de integrações."})).toBeVisible();await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toHaveCount(0);
+ await page.setViewportSize({width:390,height:844});await page.goto("/app/whatsapp");await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Integrações",exact:true}).click();await page.getByRole("button",{name:"Abrir menu"}).click();await expect(page.getByRole("navigation").getByRole("link",{name:"WhatsApp",exact:true})).toBeVisible();await page.screenshot({path:"test-results/workspace-mobile.png",fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.goto("/app");await page.screenshot({path:"test-results/workspace-desktop.png",fullPage:true});await page.getByRole("button",{name:"Tema escuro",exact:true}).click();await page.screenshot({path:"test-results/workspace-dark.png",fullPage:true});
 });
 
-test("todas as telas renderizam em desktop e mobile sem erros nem vazamento horizontal", async ({
-  page,
-}) => {
-  await session(page);
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 950 });
-    for (const path of [
-      "/admin/dashboard",
-      "/admin/clientes",
-      "/admin/usuarios",
-      "/admin/contemplados",
-      "/admin/auditoria",
-      "/integracoes",
-      "/integracoes/gmail",
-      "/integracoes/whatsapp",
-      "/integracoes/notificacoes",
-      "/login",
-      "/register",
-    ]) {
-      await page.goto(path);
-      await expect(page.locator("main")).toBeVisible();
-      await expect(
-        page.getByText("Carregando dados", { exact: true }),
-      ).toHaveCount(0);
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= window.innerWidth,
-        ),
-        path + " at " + width,
-      ).toBeTruthy();
-      if (
-        path === "/admin/dashboard" ||
-        path === "/login" ||
-        path === "/integracoes/notificacoes"
-      )
-        await page.screenshot({
-          path: `test-results/${path.split("/").pop()}-${width}.png`,
-          fullPage: true,
-        });
-    }
-  }
-  expect(errors).toEqual([]);
+test("WhatsApp desconecta, reconecta por QR e adiciona outra instancia",async({page})=>{
+ await seed(page);const c=context();c.subscription={...c.subscription,tier:"PRO",whatsappLimit:3,gmailLimit:2};c.account!.professional=true;c.account!.paidUntil=future();let state="open";let qrCalls=0;
+ await page.route("**/api/platform/**",async route=>{const url=route.request().url();if(url.includes("/context"))return route.fulfill({json:c});if(url.includes("/disconnect")){state="close";return route.fulfill({status:204});}if(url.includes("/qr")){qrCalls++;state=qrCalls>=3?"open":"connecting";return route.fulfill({json:{instanceName:"vendas",state,qrCode:state==="open"?null:`data:image/png;base64,${qrCalls===1?"iVBORw0KGgo=":"dGVzdA=="}`}});}if(url.includes("/status")){if(state==="connecting")state="open";return route.fulfill({json:{instanceName:"vendas",state,qrCode:null}});}if(url.endsWith("/instances")&&route.request().method()==="POST"){expect(route.request().postDataJSON()).toEqual({name:"suporte"});c.instances.push({id:2,name:"suporte"});return route.fulfill({status:201,json:c.instances[1]});}return route.fulfill({json:{}});});
+ await page.goto("/app/whatsapp");await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible();page.on("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:"Desconectar",exact:true}).click();await expect(page.getByText("Desconectado",{exact:true}).first()).toBeVisible();await page.getByRole("button",{name:"Gerar QR Code",exact:true}).click();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toBeVisible();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toHaveAttribute("src","data:image/png;base64,dGVzdA==",{timeout:10000});await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible({timeout:15000});await page.getByLabel("Nome da nova instância").fill("suporte");await page.getByRole("button",{name:"Adicionar instância"}).click();await expect(page.getByRole("button",{name:/suporte/})).toBeVisible();await page.screenshot({path:"test-results/whatsapp-multiple.png",fullPage:true});
 });
 
-test("clientes e usuários têm busca e paginação real", async ({ page }) => {
-  await session(page);
-  await page.goto("/admin/clientes");
-  await expect(page.locator("tbody tr")).toHaveCount(8);
-  await page.getByRole("button", { name: "Próxima página" }).click();
-  await expect(page.locator("tbody tr")).toHaveCount(2);
-  await page
-    .getByRole("textbox", { name: "Buscar clientes" })
-    .fill("pessoa1@example.com");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await page.goto("/admin/usuarios");
-  await page
-    .getByRole("textbox", { name: "Buscar usuários" })
-    .fill("sem-resultado");
-  await expect(
-    page.getByRole("heading", { name: "Nenhum usuário encontrado" }),
-  ).toBeVisible();
+test("marca persiste na conta",async({page})=>{
+ await seed(page);const c=context();let saved:unknown;await page.route("**/api/platform/**",async route=>{if(route.request().url().includes("/brand")){saved=route.request().postDataJSON();c.account!.brandName="Nova Marca";return route.fulfill({status:204});}return route.fulfill({json:c});});await page.goto("/app/marca");await page.getByLabel("Nome da marca").fill("Nova Marca");await page.getByRole("button",{name:"Salvar identidade"}).click();await expect(page.locator(".workspace-sidebar .workspace-brand")).toContainText("Nova Marca");expect(saved).toMatchObject({name:"Nova Marca",primary:"#315fe8",accent:"#35cda0"});
+});
+for(const method of ["PIX","CARD"] as const) test(`upgrade por ${method} mantem 1+1 ate confirmar e libera 3+2`,async({page})=>{
+ await seed(page);const c=context();let confirmed=false;let opened=false;
+ const order={id:"order-"+method,paymentMethod:method,status:"PENDING",amountCents:9990,currency:"BRL",expiresAt:future(),paidAt:null,simulation:true,pixCode:method==="PIX"?"SIMULACAO-SEM-VALOR-PIX-order":null};
+ await page.route("**/api/platform/**",async route=>{const url=route.request().url();if(url.endsWith("/confirm")){confirmed=true;c.active=true;c.subscription={...c.subscription,tier:"PRO",whatsappLimit:3,gmailLimit:2};c.account!.professional=true;c.account!.paidUntil=future();return route.fulfill({json:{...order,status:"PAID"}});}if(url.endsWith("/checkout")){opened=true;expect(route.request().postDataJSON()).toEqual({paymentMethod:method});return route.fulfill({status:201,json:order});}if(url.includes("/status"))return route.fulfill({json:{instanceName:"vendas",state:"open",qrCode:null}});return route.fulfill({json:c});});
+ await page.goto(method==="PIX"?"/app/whatsapp":"/app/gmail");await expect(page.getByLabel(method==="PIX"?"Nome da nova instância":"E-mail Gmail")).toHaveCount(0);await page.getByRole("link",{name:method==="PIX"?"Liberar mais WhatsApps":"Liberar mais Gmails"}).click();await expect(page).toHaveURL(/upgrade/);await expect(page.getByText("3 WhatsApps + 2 Gmails",{exact:true})).toBeVisible();
+ if(method==="CARD")await page.getByRole("button",{name:/Cartão de crédito/}).click();await page.getByRole("button",{name:method==="PIX"?"Continuar com Pix":"Continuar com cartão"}).click();expect(opened).toBe(true);expect(confirmed).toBe(false);expect(c.subscription.whatsappLimit).toBe(1);expect(c.subscription.gmailLimit).toBe(1);
+ await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:`test-results/checkout-${method}.png`,fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/checkout-${method}-mobile.png`,fullPage:true});
+ await page.getByRole("button",{name:method==="PIX"?"Confirmar Pix de teste":"Simular pagamento com cartão"}).click();await expect(page.getByRole("heading",{name:"Mais espaço para suas conexões."})).toBeVisible();expect(confirmed).toBe(true);await page.getByRole("link",{name:"Voltar e adicionar conexão"}).click();await expect(page.getByLabel(method==="PIX"?"Nome da nova instância":"E-mail Gmail")).toBeVisible();
 });
 
-test("contemplação envia números, data ISO e telefone sem máscara", async ({
-  page,
-}) => {
-  await session(page);
-  await page.goto("/integracoes/notificacoes");
-  await page.getByLabel("Origem", { exact: true }).fill(" parceiro ");
-  await page.getByLabel("ID externo", { exact: true }).fill("CONT-123");
-  await page
-    .getByLabel("Nome do contemplado", { exact: true })
-    .fill("Maria da Silva");
-  await page.getByLabel("E-mail do contemplado").fill("maria@example.com");
-  await page.getByLabel("Telefone", { exact: true }).fill("5511999999999");
-  await page.getByLabel("ID da cota").fill("1");
-  await page.getByLabel("ID da assembleia").fill("2");
-  await page.getByLabel("Data da contemplação").fill("2026-10-23");
-  await page.getByLabel("Valor do crédito").fill("50000.15");
-  await page.getByLabel("Chave de integração").fill("test-key");
-  let body: Record<string, unknown> | null = null;
-  await page.route("**/api/integracoes/contemplacoes", async (route) => {
-    body = route.request().postDataJSON();
-    expect(route.request().headers()["x-integration-key"]).toBe("test-key");
-    await route.fulfill({
-      status: 201,
-      json: {
-        processoId: 2,
-        origem: "parceiro",
-        idExterno: "CONT-123",
-        statusProcesso: "AGUARDANDO_COMUNICACAO",
-        statusComunicacao: "PENDENTE",
-        jaExistia: false,
-      },
-    });
-  });
-  await page.getByRole("button", { name: "Adicionar à fila" }).click();
-  await expect(
-    page.getByText("Contemplação recebida e adicionada à fila.", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  expect(body).toMatchObject({
-    origem: "parceiro",
-    cotaId: 1,
-    assembleiaId: 2,
-    valorCredito: 50000.15,
-    telefone: "5511999999999",
-    dataContemplacao: "2026-10-23",
-    tipo: "SORTEIO",
-  });
-});
-
-test("fila mostra erro real do canal e permite envio explícito", async ({
-  page,
-}) => {
-  await session(page);
-  await page.goto("/integracoes/notificacoes");
-  await expect(
-    page.getByText("Credenciais do Gmail recusadas.", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Notificar", exact: true }).click();
-  await expect(page.locator(".toast-error")).toContainText(
-    "Credenciais do Gmail recusadas.",
-  );
-});
-
-test("erros HTTP 400, 403, 404 e 500 têm feedback e retentativa", async ({
-  page,
-}) => {
-  await session(page);
-  for (const status of [400, 403, 404, 500]) {
-    await page.route("**/api/usuarios", (route) =>
-      route.fulfill({
-        status,
-        json: {
-          message:
-            status === 500
-              ? "detalhe interno que não deve aparecer"
-              : `Falha controlada ${status}`,
-        },
-      }),
-    );
-    await page.goto("/admin/clientes");
-    await expect(page.getByRole("alert")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Tentar novamente" }),
-    ).toBeVisible();
-    if (status === 500)
-      await expect(page.getByRole("alert")).not.toContainText(
-        "detalhe interno",
-      );
-  }
-});
-
-test("401 encerra sessão e volta para o login", async ({ page }) => {
-  await session(page);
-  await page.route("**/api/usuarios", (route) =>
-    route.fulfill({ status: 401, json: {} }),
-  );
-  await page.goto("/admin/clientes");
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(
-    page.getByText("Sua sessão expirou. Entre novamente."),
-  ).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
-});
-
-test("Gmail usa contrato correto sem persistir senha", async ({ page }) => {
-  await session(page);
-  await page.goto("/integracoes/gmail");
-  let body: unknown;
-  await page.route("**/api/configuracoes/email", async (route) => {
-    expect(route.request().method()).toBe("PUT");
-    body = route.request().postDataJSON();
-    await route.fulfill({
-      json: { configurado: true, email: "remetente@example.com" },
-    });
-  });
-  await page.getByLabel("E-mail do remetente").fill("remetente@example.com");
-  await page
-    .getByLabel("Senha de aplicativo", { exact: true })
-    .fill("abcd efgh ijkl mnop");
-  await page.getByRole("button", { name: "Salvar configuração" }).click();
-  await expect(page.getByText("Configurado nesta sessão")).toBeVisible();
-  expect(body).toEqual({
-    email: "remetente@example.com",
-    senhaAplicativo: "abcdefghijklmnop",
-  });
-  await expect(
-    page.getByLabel("Senha de aplicativo", { exact: true }),
-  ).toHaveValue("");
-  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
-    "abcdefghijklmnop",
-  );
-});
-
-test("WhatsApp consulta status real e não exibe QR ilustrativo", async ({
-  page,
-}) => {
-  await session(page);
-  await page.goto("/integracoes/whatsapp");
-  await expect(page.getByRole("img", { name: /QR Code/ })).toHaveCount(0);
-  await page.route("**/api/integracoes/whatsapp/status?*", (route) =>
-    route.fulfill({
-      json: {
-        instanceName: "consorcio",
-        state: "open",
-        code: null,
-        qrCode: null,
-        pairingCode: null,
-      },
-    }),
-  );
-  await page.getByRole("button", { name: "Consultar status" }).click();
-  await expect(page.getByText("Conectado", { exact: true })).toBeVisible();
-});
-
-test("portal respeita o perfil Cliente e protege a administração", async ({
-  page,
-}) => {
-  await session(page, "CLIENTE");
-  await page.goto("/admin/dashboard");
-  await expect(page).toHaveURL(/\/portal$/);
-  await expect(page.getByRole("tab", { name: "Meu processo" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  await page.getByRole("tab", { name: "Documentos" }).click();
-  await expect(
-    page.getByRole("tabpanel", { name: "Documentos" }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: "test-results/portal-desktop.png",
-    fullPage: true,
-  });
+test("menu fixo ocupa a janela e rodape nao sobe ao rolar",async({page})=>{
+ await seed(page);await page.route("**/api/platform/**",route=>route.fulfill({json:context()}));
+ for(const width of [1440,390]) {
+  await page.setViewportSize({width,height:800});await page.goto("/app/upgrade");await expect(page.getByRole("heading",{name:"Mais canais. Mais possibilidades."})).toBeVisible();
+  if(width===390)await page.getByRole("button",{name:"Abrir menu"}).click();
+  const sidebar=page.locator(".workspace-sidebar");const footer=page.locator(".workspace-account");
+  const before=await footer.boundingBox();expect((await sidebar.boundingBox())!.y).toBe(0);
+  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+  const after=await footer.boundingBox();expect(Math.abs(before!.y-after!.y)).toBeLessThan(2);expect(after!.y+after!.height).toBeLessThanOrEqual(800);
+  expect((await sidebar.boundingBox())!.height).toBe(800);
+  await page.screenshot({path:`test-results/fixed-sidebar-${width}.png`});
+ }
 });

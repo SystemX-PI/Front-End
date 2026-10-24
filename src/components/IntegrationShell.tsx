@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import {
   BellRing,
   ChevronDown,
@@ -50,7 +52,7 @@ const navigation = [
 }>;
 
 function getUserIdentity() {
-  const email = localStorage.getItem("userEmail") || "gestor@consortech.com";
+  const email = localStorage.getItem("userEmail") || "Usuário conectado";
   const rawName = email.split("@")[0].replace(/[._-]/g, " ");
   const initials =
     rawName
@@ -70,6 +72,7 @@ export default function IntegrationShell({
   children,
 }: IntegrationShellProps) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const user = getUserIdentity();
 
   async function handleLogout() {
@@ -91,14 +94,17 @@ export default function IntegrationShell({
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className={`sidebar ${menuOpen ? "menu-open" : ""}`}>
         <div className="brand-row">
           <BrandLogo compact />
           <strong>ConsorTech</strong>
+          <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(value => !value)}>
+            {menuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
         </div>
 
         <p className="nav-section-label">Menu principal</p>
-        <nav className="sidebar-nav" aria-label="Navegação das integrações">
+        <nav id="main-navigation" className="sidebar-nav" onClick={() => setMenuOpen(false)} aria-label="Navegação das integrações">
           <NavLink to="/admin/dashboard" className="nav-item">
             <LayoutDashboard size={18} />
             <span>Dashboard</span>

@@ -1,4 +1,4 @@
-import { clearSession, getToken } from "./auth";
+import { getToken, renewSession } from "./auth";
 import { ApiError, request } from "./http";
 import { normalizeContemplation } from "./format";
 
@@ -117,19 +117,40 @@ export interface EvolutionStatusResponse {
   pairingCode: string | null;
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const originalToken = getToken();
   try {
-    return (await request(path, options, getToken())) as T;
+    return (await request(path, options, originalToken)) as T;
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      clearSession();
-      window.dispatchEvent(new Event("auth:session-expired"));
+    if (error instanceof ApiError && error.status === 401 && originalToken) {
+      // Another request may already have renewed this same expired token.
+      const token = getToken() !== originalToken ? getToken() : await renewSession();
+      options.signal?.throwIfAborted();
+      return (await request(path, options, token)) as T;
     }
     throw error;
   }
+}
+
+export interface PageResponse<T> { items: T[]; total: number; page: number; size: number }
+export interface GroupResponse { id: number; numero: string; consorcioId: number; quantidadeCotas: number | null; valorParcela: number | null }
+export interface ConsortiumTypeResponse { id: number; nome: string }
+export interface PortalProcessResponse {
+  processo: ProcessResponse; responsavel: string | null; cota: string; valorCredito: number;
+  documentos: { id: number; tipo: string; status: string; nomeArquivo: string | null; observacao: string | null }[];
+  historico: { id: number; statusAnterior: string | null; novoStatus: string; data: string; observacao: string | null }[];
+}
+
+function crudApi<T>(resource: string) {
+  return {
+    get: (id: number) => apiRequest<T>(`/api/${resource}/${id}`),
+    update: (id: number, payload: object) => apiRequest<T>(`/api/${resource}/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/api/${resource}/${id}`, { method: "DELETE" }),
+    page: (page = 0, q = "", signal?: AbortSignal) => apiRequest<PageResponse<T>>(`/api/${resource}/pagina?${new URLSearchParams({ page: String(page), size: "20", q })}`, { signal }),
+  };
 }
 
 export const backend = {
@@ -152,6 +173,8 @@ export const backend = {
       ),
   },
   integrations: {
+    queuePage: (page = 0, q = "", status = "", signal?: AbortSignal) => apiRequest<PageResponse<QueueItem>>(
+      `/api/integracoes/comunicacoes/fila/pagina?${new URLSearchParams({ page: String(page), size: "20", q, status })}`, { signal }),
     queue: (signal?: AbortSignal) =>
       apiRequest<QueueItem[]>("/api/integracoes/comunicacoes/fila", { signal }),
     receiveContemplation: (
@@ -165,6 +188,8 @@ export const backend = {
       }),
   },
   users: {
+    ...crudApi<UserResponse>("usuarios"),
+    changePassword: (id: number, senha: string) => apiRequest<void>(`/api/usuarios/${id}/senha`, { method: "PUT", body: JSON.stringify({ senha }) }),
     list: (signal?: AbortSignal) =>
       apiRequest<UserResponse[]>("/api/usuarios", { signal }),
     create: (payload: {
@@ -179,6 +204,7 @@ export const backend = {
       }),
   },
   consortiums: {
+    ...crudApi<ConsortiumResponse>("consorcios"),
     list: () => apiRequest<ConsortiumResponse[]>("/api/consorcios"),
     create: (payload: { nome: string; tipoId: number }) =>
       apiRequest<ConsortiumResponse>("/api/consorcios", {
@@ -187,6 +213,7 @@ export const backend = {
       }),
   },
   quotas: {
+    ...crudApi<QuotaResponse>("cotas"),
     list: () => apiRequest<QuotaResponse[]>("/api/cotas"),
     create: (payload: {
       numero: string;
@@ -197,6 +224,12 @@ export const backend = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+  },
+  groups: { ...crudApi<GroupResponse>("grupos"), create: (payload: object) => apiRequest<GroupResponse>("/api/grupos", { method: "POST", body: JSON.stringify(payload) }) },
+  consortiumTypes: { ...crudApi<ConsortiumTypeResponse>("tipos-consorcio"), create: (payload: { nome: string }) => apiRequest<ConsortiumTypeResponse>("/api/tipos-consorcio", { method: "POST", body: JSON.stringify(payload) }) },
+  portal: {
+    list: (page = 0, signal?: AbortSignal) => apiRequest<PageResponse<ProcessResponse>>(`/api/portal/processos?page=${page}&size=20`, { signal }),
+    get: (id: number, signal?: AbortSignal) => apiRequest<PortalProcessResponse>(`/api/portal/processos/${id}`, { signal }),
   },
   processes: {
     get: (id: number) =>

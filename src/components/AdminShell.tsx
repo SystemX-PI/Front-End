@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import {
   BellRing,
   ClipboardList,
@@ -9,11 +11,12 @@ import {
 import { NavLink, useNavigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
-import { logout } from "../services/auth";
+import { getUserType, logout } from "../services/auth";
 
 const links = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/contemplados", label: "Contemplados", icon: BellRing },
+  { to: "/admin/cadastros", label: "Cadastros", icon: ClipboardList },
   { to: "/admin/clientes", label: "Clientes", icon: UserRound },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
@@ -29,6 +32,7 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const email = localStorage.getItem("userEmail") || "";
 
   async function handleLogout() {
@@ -50,14 +54,17 @@ export default function AdminShell({
 
   return (
     <div className="app-shell admin-app-shell">
-      <aside className="sidebar admin-sidebar">
+      <aside className={`sidebar admin-sidebar ${menuOpen ? "menu-open" : ""}`}>
         <div className="brand-row">
           <BrandLogo compact />
           <strong className="admin-brand-name">ConsorTech</strong>
+          <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(value => !value)}>
+            {menuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
         </div>
         <p className="nav-section-label admin-section-label">Administração</p>
-        <nav className="sidebar-nav" aria-label="Navegação administrativa">
-          {links.map(({ to, label, icon: Icon }) => (
+        <nav id="main-navigation" className="sidebar-nav" onClick={() => setMenuOpen(false)} aria-label="Navegação administrativa">
+          {links.filter(link => link.to !== "/admin/usuarios" || getUserType() === "ADMINISTRADOR").map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

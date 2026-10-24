@@ -34,7 +34,7 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      await register({ name, email, password, userType: "FUNCIONARIO" });
+      await register({ name, email, password });
       navigate("/login", { replace: true, state: { registered: true } });
     } catch (requestError) {
       setError(
@@ -63,13 +63,13 @@ export default function Register() {
             <UserRound size={19} />
           </span>
           <div>
-            <strong>Seu espaço na operação</strong>
-            <p>Cadastro de integrante da equipe</p>
+            <strong>Sua conta, sua marca</strong>
+            <p>Três dias grátis para conhecer a plataforma</p>
           </div>
-          <span className="registration-badge">Funcionário</span>
+          <span className="registration-badge">3 dias grátis</span>
         </div>
         <label className="field auth-field">
-          <span>Nome completo</span>
+          <span>Nome da sua empresa</span>
           <div className="input-with-icon">
             <UserRound size={18} />
             <input
@@ -78,7 +78,7 @@ export default function Register() {
               maxLength={255}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Como podemos chamar você?"
+              placeholder="Como sua empresa se chama?"
               autoComplete="name"
             />
           </div>
@@ -153,8 +153,7 @@ export default function Register() {
           ) : null}
         </label>
         <p className="form-note">
-          Sua conta terá o perfil Funcionário. Para acesso administrativo, entre
-          em contato com o responsável pela operação.
+          Sua empresa ganha três dias gratuitos. Depois desse período, uma assinatura é necessária para continuar.
         </p>
         <div className="password-strength" aria-label="Orientação de senha">
           <span className={password.length >= 6 ? "active" : ""} />
@@ -171,11 +170,11 @@ export default function Register() {
         <div className="registration-checklist">
           <span>
             <Check size={14} />
-            Acompanhe os processos
+            Conecte seus canais
           </span>
           <span>
             <Check size={14} />
-            Centralize o atendimento
+            Convide sua equipe
           </span>
         </div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
@@ -196,7 +195,7 @@ export default function Register() {
         </button>
         <p className="registration-security">
           <ShieldCheck size={15} />
-          Seus dados são usados para identificar seu acesso à operação.
+          Seu cadastro cria um espaço exclusivo para sua empresa e sua equipe.
         </p>
       </form>
       <div className="auth-footer">

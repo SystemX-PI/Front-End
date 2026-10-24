@@ -1,3 +1,5 @@
+import { MessageCircle, ShieldCheck, PlugZap } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -24,30 +26,28 @@ export default function AuthShell({
             <BrandLogo compact />
             <div className="auth-brand-meta">
               <strong>ConsorTech</strong>
-              <small>Gestão de consórcios, mais simples.</small>
+              <small>Sua operação, com a sua marca.</small>
             </div>
           </div>
 
           <h1 className="auth-visual-title">
-            Controle de processos, comerciais e integrações.
+            Seu espaço. Sua equipe. Suas conexões.
           </h1>
 
           <p className="auth-visual-copy">
-            Uma plataforma completa para gerenciar clientes contemplados,
-            acompanhar processos, centralizar comunicações e integrar seus
-            canais de atendimento.
+            Organize seus números de WhatsApp, conecte suas contas Gmail e reúna sua equipe em um espaço com a identidade da sua empresa.
           </p>
 
           <ul className="auth-feature-list">
             <li>
-              <span className="feature-icon">◌</span>
+              <span className="feature-icon"><MessageCircle size={18} aria-hidden="true" /></span>
               <div>
-                <strong>Clientes e processos</strong>
-                <small>Acompanhe cada etapa com organização e controle.</small>
+                <strong>Canais organizados</strong>
+                <small>Cada número e cada remetente no seu lugar.</small>
               </div>
             </li>
             <li>
-              <span className="feature-icon">◌</span>
+              <span className="feature-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
               <div>
                 <strong>Segurança e acesso</strong>
                 <small>
@@ -56,7 +56,7 @@ export default function AuthShell({
               </div>
             </li>
             <li>
-              <span className="feature-icon">◌</span>
+              <span className="feature-icon"><PlugZap size={18} aria-hidden="true" /></span>
               <div>
                 <strong>Integrações</strong>
                 <small>
@@ -67,7 +67,7 @@ export default function AuthShell({
           </ul>
 
           <div className="auth-tagline">
-            Tecnologia que impulsiona a gestão de consórcios
+            Três dias grátis para experimentar seu novo espaço.
           </div>
         </aside>
 
@@ -86,6 +86,7 @@ export default function AuthShell({
             </div>
 
             {children}
+            <Link to="/" className="auth-back-link">← Voltar ao site</Link>
           </div>
         </main>
       </div>
