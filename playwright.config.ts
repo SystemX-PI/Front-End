@@ -13,6 +13,9 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 5174 --strictPort",
+    env: {
+      VITE_GOOGLE_CLIENT_ID: process.env.PLAYWRIGHT_GOOGLE_CLIENT_ID || "test-google-client-id.apps.googleusercontent.com",
+    },
     url: "http://127.0.0.1:5174",
     reuseExistingServer: true,
     timeout: 30000,

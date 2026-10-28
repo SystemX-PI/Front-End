@@ -16,6 +16,7 @@ export interface AuthResponse {
   refreshToken: string;
   tipo: "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE" | "USUARIO";
   expiresIn: number;
+  email?: string;
 }
 
 const USER_TYPES: AuthResponse["tipo"][] = [
@@ -46,6 +47,22 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
   return data;
 }
 
+export async function loginWithGoogle(credential: string): Promise<AuthResponse> {
+  const data = (await request(
+    "/api/auth/google",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    },
+    null,
+  )) as AuthResponse;
+
+  storeAuthResponse(data);
+  sessionStorage.setItem("show-trial-notice", "true");
+  return data;
+}
+
 export function storeAuthResponse(data: AuthResponse): void {
   if (
     !data ||
@@ -64,6 +81,11 @@ export function storeAuthResponse(data: AuthResponse): void {
   localStorage.setItem("token", data.token);
   localStorage.setItem("refreshToken", data.refreshToken);
   localStorage.setItem("userType", data.tipo);
+  if (typeof data.email === "string" && data.email) {
+    localStorage.setItem("userEmail", data.email);
+  } else {
+    localStorage.removeItem("userEmail");
+  }
 }
 
 export async function register(payload: RegisterRequest): Promise<void> {
