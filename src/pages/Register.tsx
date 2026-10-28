@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ArrowLeft,
   Check,
   Eye,
   EyeOff,
@@ -11,8 +12,9 @@ import {
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { register } from "../services/auth";
+import { register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -23,6 +25,80 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
+
+  async function handleGoogleRegistration(event: FormEvent) {
+    event.preventDefault();
+    if (loading || !googleCredential) return;
+    setLoading(true);
+    setError("");
+    try {
+      await registerWithGoogle(googleCredential, name);
+      navigate("/app", { replace: true });
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível concluir o cadastro com Google.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (googleCredential) {
+    return (
+      <AuthShell
+        registration
+        eyebrow="CADASTRO COM GOOGLE"
+        title="Quase lá"
+        description="Informe somente o nome da sua empresa para criar seu espaço."
+      >
+        <form onSubmit={handleGoogleRegistration} className="auth-form register-form" aria-busy={loading}>
+          <div className="registration-welcome">
+            <span className="registration-icon"><UserRound size={19} /></span>
+            <div>
+              <strong>Fazer Cadastro com o Google</strong>
+              <p>Três dias grátis para conhecer a plataforma</p>
+            </div>
+            <span className="registration-badge">3 dias grátis</span>
+          </div>
+          <label className="field auth-field">
+            <span>Nome da sua empresa</span>
+            <div className="input-with-icon">
+              <UserRound size={18} />
+              <input
+                type="text"
+                required
+                minLength={2}
+                maxLength={255}
+                autoFocus
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Como sua empresa se chama?"
+                autoComplete="organization"
+              />
+            </div>
+          </label>
+          {error ? <InlineFeedback message={error} kind="error" /> : null}
+          <button type="submit" disabled={loading} className="button primary auth-submit">
+            {loading ? <><span className="spinner" /> Cadastrando...</> : <>Concluir cadastro <ArrowRight size={17} /></>}
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            disabled={loading}
+            onClick={() => { setGoogleCredential(null); setName(""); setError(""); }}
+          >
+            <ArrowLeft size={16} /> Voltar e escolher outra conta
+          </button>
+        </form>
+        <div className="auth-footer">
+          Já tem acesso? <Link to="/login">Entrar</Link>
+        </div>
+      </AuthShell>
+    );
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -59,6 +135,16 @@ export default function Register() {
         className="auth-form register-form"
         aria-busy={loading}
       >
+        <div className="google-register-entry">
+          <strong>Fazer Cadastro com o Google</strong>
+          <GoogleSignInButton
+            purpose="register"
+            busy={loading}
+            onCredential={(credential) => { setError(""); setName(""); setGoogleCredential(credential); }}
+            onError={setError}
+          />
+        </div>
+        <div className="auth-divider"><span>ou cadastre com e-mail</span></div>
         <div className="registration-welcome">
           <span className="registration-icon">
             <UserRound size={19} />

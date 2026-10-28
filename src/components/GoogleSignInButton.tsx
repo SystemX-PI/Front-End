@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type GoogleCredentialResponse = { credential?: string };
-type GoogleSignInPurpose = "signin" | "link";
+type GoogleSignInPurpose = "signin" | "link" | "register";
 
 interface GoogleIdentitySdk {
   accounts: {
@@ -19,7 +19,7 @@ interface GoogleIdentitySdk {
           theme: "outline";
           size: "large";
           shape: "rectangular";
-          text: "signin_with" | "continue_with";
+          text: "signin_with" | "signup_with" | "continue_with";
           width: number;
           locale: "pt-BR";
         },
@@ -114,7 +114,7 @@ export default function GoogleSignInButton({
         theme: "outline",
         size: "large",
         shape: "rectangular",
-        text: purpose === "signin" ? "signin_with" : "continue_with",
+        text: purpose === "signin" ? "signin_with" : purpose === "register" ? "signup_with" : "continue_with",
         width: Math.max(180, Math.min(400, Math.round(target.clientWidth || 400))),
         locale: "pt-BR",
       });

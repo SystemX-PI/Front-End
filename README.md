@@ -41,6 +41,8 @@ Copie `.env.example` para `.env` e defina `VITE_GOOGLE_CLIENT_ID` com o Client I
 
 O login Google pode criar uma nova conta de cliente. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](../Back-end/README.md#login-com-google).
 
+Na tela `/register`, o botão **Fazer Cadastro com o Google** inicia um cadastro separado: depois de selecionar a conta Google, a pessoa informa somente o nome da empresa. Ao concluir, a aplicação cria a conta e abre uma sessão. O cadastro por e-mail e senha permanece disponível.
+
 ## Áreas do produto
 
 | Rota | Finalidade |

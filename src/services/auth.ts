@@ -63,6 +63,25 @@ export async function loginWithGoogle(credential: string): Promise<AuthResponse>
   return data;
 }
 
+export async function registerWithGoogle(
+  credential: string,
+  companyName: string,
+): Promise<AuthResponse> {
+  const data = (await request(
+    "/api/auth/google/register",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential, companyName: companyName.trim() }),
+    },
+    null,
+  )) as AuthResponse;
+
+  storeAuthResponse(data);
+  sessionStorage.setItem("show-trial-notice", "true");
+  return data;
+}
+
 export function storeAuthResponse(data: AuthResponse): void {
   if (
     !data ||

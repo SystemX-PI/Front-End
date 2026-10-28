@@ -175,6 +175,16 @@
 .register-form {
   gap: 16px;
 }
+.google-register-entry {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.google-register-entry > strong {
+  color: var(--text-soft);
+  font-size: 12px;
+}
 
 :root[data-theme="dark"] {
   color-scheme: dark;
