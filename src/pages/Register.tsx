@@ -10,7 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
@@ -18,6 +18,8 @@ import { register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const preauthorizedCredential = (location.state as { googleRegistrationCredential?: string } | null)?.googleRegistrationCredential;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +27,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
+  const [googleCredential, setGoogleCredential] = useState<string | null>(preauthorizedCredential || null);
 
   async function handleGoogleRegistration(event: FormEvent) {
     event.preventDefault();

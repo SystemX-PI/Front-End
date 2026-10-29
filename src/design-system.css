@@ -1588,6 +1588,58 @@ textarea:focus-visible {
   gap: 10px;
   margin-top: 26px;
 }
+.google-signup-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #101e3670;
+  backdrop-filter: blur(3px);
+}
+.google-signup-prompt {
+  width: min(460px, 100%);
+  padding: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: var(--surface, #fff);
+  color: var(--text);
+  box-shadow: 0 25px 80px #10213d38;
+  animation: enter 0.18s ease-out;
+}
+.google-signup-prompt-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--primary, #315ee8);
+  background: color-mix(in srgb, var(--primary, #315ee8) 12%, transparent);
+}
+.google-signup-prompt h2 {
+  margin: 20px 0 10px;
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+.google-signup-prompt p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.google-signup-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+.google-signup-cancel {
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  background: transparent;
+}
 .fatal-error {
   max-width: 700px;
   margin: 15vh auto;
