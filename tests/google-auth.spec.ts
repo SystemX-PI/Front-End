@@ -65,3 +65,28 @@ test("Google registration asks only for company name and sends the token after c
   await page.getByRole("button", { name: "Concluir cadastro" }).click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("token"))).toBe("mock-google-register-jwt");
 });
+
+
+test("unknown Google account goes straight to registration and waits for confirmation", async ({ page }) => {
+  await page.route("https://accounts.google.com/gsi/client", route => route.fulfill({
+    contentType: "application/javascript",
+    body: `window.google={accounts:{id:{initialize(options){window.__googleCredentialCallback=options.callback;},renderButton(element){const button=document.createElement("button");button.type="button";button.textContent="Entrar com Google";button.onclick=()=>window.__googleCredentialCallback({credential:"new-google-id-token"});element.appendChild(button);}}}};`,
+  }));
+  await page.route("**/api/auth/google", route => route.fulfill({status:403,json:{message:"Esta conta Google ainda não possui cadastro."}}));
+  let registrations = 0;
+  await page.route("**/api/auth/google/register", async route => {
+    registrations++;
+    expect(route.request().postDataJSON()).toEqual({credential:"new-google-id-token",companyName:"Empresa Nova"});
+    await route.fulfill({status:201,json:{token:"new-session",refreshToken:"new-refresh",tipo:"CLIENTE",expiresIn:900}});
+  });
+  await page.goto("/login");
+  await page.getByRole("button", {name:"Entrar com Google"}).click();
+  await expect(page).toHaveURL(/register$/);
+  await expect(page.getByLabel("Nome da sua empresa")).toBeVisible();
+  await expect(page.getByLabel("Senha", {exact:true})).toHaveCount(0);
+  expect(registrations).toBe(0);
+  await page.getByLabel("Nome da sua empresa").fill("Empresa Nova");
+  await page.getByRole("button", {name:"Concluir cadastro"}).click();
+  await expect(page).toHaveURL(/app$/);
+  expect(registrations).toBe(1);
+});
