@@ -4,6 +4,9 @@ import { useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
 import { EmptyState, Skeleton } from "../components/DataUi";
+import ProcessStatusEditor from "../components/ProcessStatusEditor";
+import OperationHistory from "../components/OperationHistory";
+import { Link } from "react-router-dom";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { ChannelStatus } from "../components/CommunicationQueue";
 import { notify } from "../services/notifications";
@@ -279,6 +282,7 @@ export default function Contemplated() {
           </div>
         ) : null}
       </section>
+      {process && <><ProcessStatusEditor key={`${process.id}-${process.status}`} process={process} onChange={setProcess}/><section className="panel"><Link className="button secondary" to={`/admin/baixas?processo=${process.id}`}>Conferir baixa deste processo</Link></section><OperationHistory key={process.id} processId={process.id}/></>}
       <ConfirmDialog
         open={confirming}
         title={`Enviar comunicação do processo #${process?.id}?`}

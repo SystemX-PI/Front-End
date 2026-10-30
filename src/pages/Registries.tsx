@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import AdminShell from "../components/AdminShell";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { ErrorState } from "../components/DataUi";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { apiRequest, backend, type PageResponse } from "../services/backend";
@@ -13,11 +14,11 @@ type Field = { key: string; label: string; type?: string; optional?: boolean; re
 const fields: Record<Resource, Field[]> = {
   usuarios: [{ key: "nome", label: "Nome" }, { key: "email", label: "E-mail", type: "email" }, { key: "tipo", label: "Perfil", options: ["CLIENTE", "FUNCIONARIO", "ADMINISTRADOR"] }, { key: "ativo", label: "Ativo", type: "checkbox" }],
   consorcios: [{ key: "nome", label: "Nome" }, { key: "tipoId", label: "Tipo de consorcio", relation: "tipos-consorcio" }],
-  grupos: [{ key: "numero", label: "Numero" }, { key: "consorcioId", label: "Consorcio", relation: "consorcios" }, { key: "quantidadeCotas", label: "Quantidade de cotas", type: "number", optional: true }, { key: "valorParcela", label: "Valor da parcela", type: "number", optional: true }],
-  cotas: [{ key: "numero", label: "Numero" }, { key: "grupoId", label: "Grupo", relation: "grupos" }, { key: "valorCredito", label: "Valor do credito", type: "number" }],
+  grupos: [{ key: "numero", label: "Número" }, { key: "consorcioId", label: "Consorcio", relation: "consorcios" }, { key: "quantidadeCotas", label: "Quantidade de cotas", type: "number", optional: true }, { key: "valorParcela", label: "Valor da parcela", type: "number", optional: true }],
+  cotas: [{ key: "numero", label: "Número" }, { key: "grupoId", label: "Grupo", relation: "grupos" }, { key: "valorCredito", label: "Valor do crédito", type: "number" }],
   "tipos-consorcio": [{ key: "nome", label: "Nome" }],
 };
-const titles: Record<Resource, string> = { usuarios: "Usuarios", consorcios: "Consorcios", grupos: "Grupos", cotas: "Cotas", "tipos-consorcio": "Tipos de consorcio" };
+const titles: Record<Resource, string> = { usuarios: "Usuários", consorcios: "Consórcios", grupos: "Grupos", cotas: "Cotas", "tipos-consorcio": "Tipos de consorcio" };
 
 function RelationPicker({ resource, value, onChange }: { resource: Resource; value: string; onChange: (value: string) => void }) {
   const [search, setSearch] = useState("");
@@ -89,18 +90,18 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
   }
   async function remove() {
     if (!deleting || busy) return; setBusy(true); setFeedback("");
-    try { await apiRequest(`${url}/${deleting.id}`, { method: "DELETE" }); reset(); setFeedback("Registro excluido."); setRevision(v => v + 1); }
-    catch (e) { setFeedback(e instanceof Error ? e.message : "Falha na exclusao."); }
+    try { await apiRequest(`${url}/${deleting.id}`, { method: "DELETE" }); reset(); setFeedback("Registro excluído."); setRevision(v => v + 1); }
+    catch (e) { setFeedback(e instanceof Error ? e.message : "Falha na exclusão."); }
     finally { setBusy(false); }
   }
   async function changePassword(event: FormEvent) {
     event.preventDefault(); if (passwordId === null || busy) return; setBusy(true); setFeedback("");
-    try { await backend.users.changePassword(passwordId, password); reset(); setFeedback("Senha alterada. As sessoes anteriores foram invalidadas."); }
+    try { await backend.users.changePassword(passwordId, password); reset(); setFeedback("Senha alterada. As sessões anteriores foram invalidadas."); }
     catch (e) { setFeedback(e instanceof Error ? e.message : "Falha na troca de senha."); }
     finally { setBusy(false); }
   }
   const title = clientsOnly ? "Clientes" : titles[resource];
-  return <AdminShell title={title} subtitle="Consulta e manutencao dos cadastros">
+  return <AdminShell title={title} subtitle="Consulta e manutenção dos cadastros">
     {!locked && <nav className="list-toolbar" aria-label="Cadastros">{(Object.keys(titles) as Resource[]).filter(key => admin || key !== "usuarios").map(key => <button key={key} className={`button ${resource === key ? "primary" : "secondary"}`} disabled={busy} onClick={() => { setResource(key); setPage(1); setSearch(""); reset(); setFeedback(""); }}>{titles[key]}</button>)}</nav>}
     <section className="panel data-panel">
       <div className="data-panel-heading"><h2>{title}</h2><div className="form-actions">
@@ -112,13 +113,13 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
       {feedback && <InlineFeedback message={feedback} />}
       {loading ? <p role="status">Carregando...</p> : <>
         <p>{data?.total || 0} registros encontrados</p>
-        <div className="table-scroll"><table className="admin-table"><thead><tr><th>ID</th>{fields[resource].map(field => <th key={field.key}>{field.label}</th>)}<th>Acoes</th></tr></thead>
-          <tbody>{data?.items.map(row => <tr key={row.id}><td>{row.id}</td>{fields[resource].map(field => <td key={field.key}>{typeof row[field.key] === "boolean" ? row[field.key] ? "Sim" : "Nao" : String(row[field.key] ?? "-")}</td>)}<td><div className="form-actions">
+        <div className="table-scroll"><table className="admin-table"><thead><tr><th>ID</th>{fields[resource].map(field => <th key={field.key}>{field.label}</th>)}<th>Ações</th></tr></thead>
+          <tbody>{data?.items.map(row => <tr key={row.id}><td>{row.id}</td>{fields[resource].map(field => <td key={field.key}>{typeof row[field.key] === "boolean" ? row[field.key] ? "Sim" : "Nao" : field.key.startsWith('valor') ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(row[field.key]||0)) : String(row[field.key.replace('Id','Nome')] || row[field.key.replace('Id','Número')] || row[field.key] || "—")}</td>)}<td><div className="form-actions">
             {admin && <><button className="button secondary compact" disabled={busy} onClick={() => void inspect(row.id, false)}>Consultar</button><button className="button secondary compact" disabled={busy} onClick={() => void inspect(row.id, true)}>Editar</button><button className="button secondary compact" disabled={busy} onClick={() => { reset(); setDeleting(row); }}>Excluir</button></>}
             {admin && resource === "usuarios" && <button className="button secondary compact" disabled={busy} onClick={() => { reset(); setPasswordId(row.id); }}>Trocar senha</button>}
           </div></td></tr>)}</tbody></table></div>
         {!data?.items.length && <p>Nenhum registro encontrado.</p>}
-        <div className="form-actions"><button className="button secondary" disabled={page <= 1 || busy} onClick={() => setPage(v => v - 1)}>Anterior</button><span>Pagina {page} de {Math.max(1, Math.ceil((data?.total || 0) / 20))}</span><button className="button secondary" disabled={page * 20 >= (data?.total || 0) || busy} onClick={() => setPage(v => v + 1)}>Proxima</button></div>
+        <div className="form-actions"><button className="button secondary" disabled={page <= 1 || busy} onClick={() => setPage(v => v - 1)}>Anterior</button><span>Página {page} de {Math.max(1, Math.ceil((data?.total || 0) / 20))}</span><button className="button secondary" disabled={page * 20 >= (data?.total || 0) || busy} onClick={() => setPage(v => v + 1)}>Próxima</button></div>
       </>}
     </section>
     {detail && <section className="panel"><h3>Registro #{detail.id}</h3><dl>{Object.entries(detail).map(([key, value]) => <div key={key}><dt>{fields[resource].find(f => f.key === key)?.label || key}</dt><dd>{String(value ?? "-")}</dd></div>)}</dl><button className="button secondary" onClick={reset}>Fechar</button></section>}
@@ -128,7 +129,7 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
       </label>)}
       {resource === "usuarios" && editing === null && <label className="field"><span>Senha inicial</span><input type="password" autoComplete="new-password" required minLength={6} maxLength={72} value={String(draft.senha || "")} onChange={e => setDraft({ ...draft, senha: e.target.value })} /></label>}
     </div><div className="form-actions"><button className="button primary" disabled={busy}>Salvar</button><button className="button secondary" type="button" disabled={busy} onClick={reset}>Cancelar</button></div></form>}
-    {deleting && <section className="panel" role="alertdialog" aria-label="Confirmar exclusao"><h3>Excluir registro #{deleting.id}?</h3><p>A exclusao e definitiva. Registros com vinculos serao preservados pelo sistema.</p><div className="form-actions"><button className="button primary" disabled={busy} onClick={() => void remove()}>Confirmar exclusao</button><button className="button secondary" disabled={busy} onClick={reset}>Cancelar</button></div></section>}
+    <ConfirmDialog open={!!deleting} title={`Excluir registro #${deleting?.id}?`} description="A exclusão remove este registro. Registros com vínculos serão preservados pelo serviço." confirmLabel="Confirmar exclusão" onCancel={()=>setDeleting(null)} onConfirm={()=>void remove()}/>
     {passwordId !== null && <form className="panel admin-form" onSubmit={changePassword}><h3>Trocar senha do usuario #{passwordId}</h3><label className="field"><span>Nova senha</span><input required type="password" autoComplete="new-password" minLength={6} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} /></label><p>O usuario precisara entrar novamente.</p><div className="form-actions"><button className="button primary" disabled={busy}>Alterar senha</button><button type="button" className="button secondary" disabled={busy} onClick={reset}>Cancelar</button></div></form>}
   </AdminShell>;
 }

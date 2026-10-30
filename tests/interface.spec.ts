@@ -12,7 +12,7 @@ test("landing, cadastro sem caracteres corrompidos e campos com uma unica borda"
 });
 
 test("administrador ve clientes e totais por conta",async({page})=>{
- await seed(page,"ADMINISTRADOR");await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/clients")?[{id:7,nome:"Aurora",email:"aurora@example.com",trialEndsAt:future(),paidUntil:null,suspended:false,instances:3,gmails:2,users:5}]:context("ADMINISTRADOR")}));await page.goto("/app");await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();await expect(page.getByRole("navigation").getByRole("link")).toHaveCount(1);await expect(page.getByRole("link",{name:"Abrir conta"})).toHaveAttribute("href","/app?account=7");await page.screenshot({path:"test-results/admin-clients.png",fullPage:true});
+ await seed(page,"ADMINISTRADOR");await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/clients")?[{id:7,nome:"Aurora",email:"aurora@example.com",trialEndsAt:future(),paidUntil:null,suspended:false,instances:3,gmails:2,users:5}]:context("ADMINISTRADOR")}));await page.goto("/app");await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();await expect(page.getByRole("navigation").getByRole("link",{name:"Operação de consórcios",exact:true})).toHaveAttribute("href","/admin/dashboard");await expect(page.getByRole("navigation").getByRole("link",{name:"Clientes",exact:true})).toBeVisible();await expect(page.getByRole("link",{name:"Abrir conta"})).toHaveAttribute("href","/app?account=7");await page.screenshot({path:"test-results/admin-clients.png",fullPage:true});
 });
 
 test("menu consistente, responsividade e tema escuro",async({page})=>{

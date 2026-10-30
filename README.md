@@ -70,7 +70,7 @@ npm run test:ui
 
 O build gera `dist`. Os testes de interface usam respostas controladas e um navegador local; o teste real em `tests/live.spec.ts` é opcional e exige `SYSTEMX_TEST_TOKEN` de administrador e backend ativo. O servidor de testes usa 5174 para isolar a execução do desenvolvimento.
 
-Os módulos antigos de consórcios permanecem no código e não integram a navegação principal atual.
+A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. Os endpoints futuros e os estados de indisponibilidade estão descritos em [CONTRATO_OPERACAO.md](CONTRATO_OPERACAO.md). Veja [a entrega do frontend](ENTREGA_FRONTEND.md) para validações e pendências de integração.
 
 - [Relatório da plataforma e das validações](RELATORIO_PLATAFORMA.md)
 - [Checklist de evolução da interface](CHECKLIST_FRONTEND.md)
