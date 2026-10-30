@@ -453,12 +453,7 @@
 /* ConsorTech identity and focused landing hero. */
 .marketing{background:#f8faf9}
 .marketing-brand{gap:10px;letter-spacing:-1px;flex-shrink:0}
-.marketing-brand strong{font-size:23px;font-weight:800;line-height:1;white-space:nowrap}
-.marketing-brand .logo-dot{margin-left:0;color:#1bb99e}
-.marketing-brand .brand-logo.compact .brand-mark-group{width:49px;height:32px;flex:0 0 49px}
-.marketing-brand .brand-logo.compact .brand-pill{width:30px;height:30px;border-radius:50%;box-shadow:none}
-.marketing-brand .brand-logo.compact .brand-pill-blue{left:0}
-.marketing-brand .brand-logo.compact .brand-pill-green{right:0;opacity:.94}
+.marketing-brand strong{font-size:23px;font-weight:700;letter-spacing:-.06em;line-height:1;white-space:nowrap}
 .marketing-nav{padding-top:26px;padding-bottom:26px}
 .marketing-nav nav>a:not(.saas-button):hover{color:#12694f}
 .marketing-hero{grid-template-columns:1.08fr 1fr;gap:64px;padding-top:68px;padding-bottom:112px;min-height:700px}
@@ -481,9 +476,6 @@
 .preview-browser>span:first-child{background:#e9c9be}.preview-browser>span:nth-child(2){background:#e4dba8}.preview-browser>span:nth-child(3){background:#aed9c4}
 .preview-content{padding:26px}
 .preview-monogram{background:#eef6f2;border-radius:12px;width:45px;height:45px;flex-shrink:0}
-.preview-monogram .brand-logo.compact .brand-mark-group{width:32px;height:23px;flex:0 0 32px}
-.preview-monogram .brand-logo.compact .brand-pill{width:21px;height:21px}
-.preview-monogram .brand-logo.compact .brand-pill-blue{left:0}.preview-monogram .brand-logo.compact .brand-pill-green{right:0}
 .preview-content>h2{font-size:27px;line-height:1.25;max-width:330px;font-weight:600;letter-spacing:-1.1px;margin:25px 0 22px}
 .preview-stats article{background:#f7faf8;border-color:#e0ebe5;gap:10px;padding:18px 15px}.preview-stats svg{color:#168e72}
 .preview-workflow{display:flex;align-items:center;gap:8px;background:#f5f8f6;border:1px solid #e5ece7;border-radius:9px;padding:12px;margin-top:5px;color:#668073;font-size:9px}

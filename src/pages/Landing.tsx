@@ -7,7 +7,7 @@ import "../platform.css";
 export default function Landing() {
  const [menu,setMenu]=useState(false);
  return <div className="marketing"><a className="skip-link" href="#inicio">Pular para o conteúdo</a>
-  <header className="marketing-nav"><Link to="/" className="product-logo marketing-brand" aria-label="ConsorTech — início"><BrandLogo compact/><strong>ConsorTech<span className="logo-dot">.</span></strong></Link>
+  <header className="marketing-nav"><Link to="/" className="product-logo marketing-brand" aria-label="ConsorTech — início"><BrandLogo compact/><strong>ConsorTech</strong></Link>
    <button className="marketing-menu" aria-expanded={menu} aria-controls="marketing-navigation" aria-label={menu?"Fechar menu":"Abrir menu"} onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
    <nav id="marketing-navigation" className={menu?"is-open":""} aria-label="Navegação do produto"><a href="#recursos" onClick={()=>setMenu(false)}>O que você pode fazer</a><a href="#como-funciona" onClick={()=>setMenu(false)}>Como funciona</a><Link to={isAuthenticated()?"/app":"/login"}>Entrar <ArrowUpRight size={15}/></Link><Link className="saas-button dark" to="/register">Começar grátis <ArrowRight size={16}/></Link></nav>
   </header>
@@ -32,6 +32,6 @@ export default function Landing() {
     </div>
     <aside className="cta-trial" aria-labelledby="trial-title"><span className="cta-trial-label"><Sparkles size={16} aria-hidden="true"/> CONHEÇA NA PRÁTICA</span><h3 id="trial-title">3 dias para experimentar<br/>uma rotina mais simples.</h3><p>Crie sua conta e explore a plataforma no ritmo da sua empresa.</p><ul><li><Check size={16} aria-hidden="true"/>1 conexão WhatsApp</li><li><Check size={16} aria-hidden="true"/>1 remetente Gmail</li><li><Check size={16} aria-hidden="true"/>Personalização da sua marca</li><li><Check size={16} aria-hidden="true"/>Cadastro sem cartão de crédito</li></ul><Link className="saas-button lime large" to="/register">Quero meus 3 dias grátis <ArrowUpRight size={20} aria-hidden="true"/></Link><p className="cta-trial-note">Após os 3 dias gratuitos, escolha uma assinatura para continuar usando a plataforma.</p></aside>
    </section>
-  </main><footer className="marketing-footer"><Link className="product-logo marketing-brand" to="/" aria-label="ConsorTech — início"><BrandLogo compact/><strong>ConsorTech<span className="logo-dot">.</span></strong></Link><p>Conexões organizadas. Uma experiência com a sua marca.</p><span>© {new Date().getFullYear()} ConsorTech</span></footer>
+  </main><footer className="marketing-footer"><Link className="product-logo marketing-brand" to="/" aria-label="ConsorTech — início"><BrandLogo compact/><strong>ConsorTech</strong></Link><p>Conexões organizadas. Uma experiência com a sua marca.</p><span>© {new Date().getFullYear()} ConsorTech</span></footer>
  </div>;
 }
