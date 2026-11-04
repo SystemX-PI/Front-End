@@ -1,4 +1,4 @@
-em comoimport {
+import {
   ArrowRight,
   CheckCircle2,
   Clock3,

@@ -152,7 +152,7 @@ export default function Dashboard() {
           <p>Prepare os canais e mantenha sua carteira atualizada.</p>
           {[
             {
-as              to: "/admin/disparo-manual",
+              to: "/admin/disparo-manual",
               label: "Disparo manual de mensagens",
               description: "Envie mensagens personalizadas por processo",
             },
