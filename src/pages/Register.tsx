@@ -61,7 +61,7 @@ export default function Register() {
             <span className="registration-icon"><UserRound size={19} /></span>
             <div>
               <strong>Fazer Cadastro com o Google</strong>
-              <p>Três dias grátis para conhecer a plataforma</p>
+              <p>Acesso inicial com 1 WhatsApp e 1 Gmail liberados</p>
             </div>
             <span className="registration-badge">3 dias grátis</span>
           </div>
@@ -130,7 +130,7 @@ export default function Register() {
       registration
       eyebrow="CADASTRO"
       title="Criar conta"
-      description="Organize sua rotina, conecte sua equipe e acompanhe cada próximo passo."
+      description="Configure o espaço da sua empresa e comece seu período de avaliação."
     >
       <form
         onSubmit={handleSubmit}
@@ -138,7 +138,6 @@ export default function Register() {
         aria-busy={loading}
       >
         <div className="google-register-entry">
-          <strong>Fazer Cadastro com o Google</strong>
           <GoogleSignInButton
             purpose="register"
             busy={loading}
@@ -153,7 +152,7 @@ export default function Register() {
           </span>
           <div>
             <strong>Sua conta, sua marca</strong>
-            <p>Três dias grátis para conhecer a plataforma</p>
+            <p>Inclui 1 WhatsApp e 1 Gmail para validar sua operação</p>
           </div>
           <span className="registration-badge">3 dias grátis</span>
         </div>
@@ -241,9 +240,6 @@ export default function Register() {
             </small>
           ) : null}
         </label>
-        <p className="form-note">
-          Sua empresa ganha três dias gratuitos. Depois desse período, uma assinatura é necessária para continuar.
-        </p>
         <div className="password-strength" aria-label="Orientação de senha">
           <span className={password.length >= 6 ? "active" : ""} />
           <span className={password.length >= 8 ? "active" : ""} />
@@ -265,6 +261,10 @@ export default function Register() {
             <Check size={14} />
             Convide sua equipe
           </span>
+          <span>
+            <ShieldCheck size={14} />
+            Ambiente isolado por empresa
+          </span>
         </div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button
@@ -282,10 +282,6 @@ export default function Register() {
             </>
           )}
         </button>
-        <p className="registration-security">
-          <ShieldCheck size={15} />
-          Seu cadastro cria um espaço exclusivo para sua empresa e sua equipe.
-        </p>
       </form>
       <div className="auth-footer">
         Já tem acesso? <Link to="/login">Entrar</Link>
