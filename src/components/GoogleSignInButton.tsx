@@ -99,9 +99,8 @@ export function requestGoogleDataSharing(loginHint?: string): Promise<void> {
           : "Não foi possível abrir a autorização do Google. Tente novamente.");
       },
     });
-    // Google shows consent the first time these scopes are requested for this user/client.
-    // After consent has been granted, the same request proceeds without showing it again.
-    client.requestAccessToken({ prompt: "", ...(loginHint ? { login_hint: loginHint } : {}) });
+    // Use Google's official consent dialog after the user explicitly chose to create an account.
+    client.requestAccessToken({ prompt: "consent", ...(loginHint ? { login_hint: loginHint } : {}) });
   });
 }
 
@@ -188,3 +187,4 @@ export default function GoogleSignInButton({
     </div>
   );
 }
+

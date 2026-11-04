@@ -36,7 +36,8 @@ export default function Register() {
     setError("");
     try {
       await registerWithGoogle(googleCredential, name);
-      navigate("/app", { replace: true });
+      // Reload the app entry after storing tokens so the authenticated route initializes cleanly.
+      window.location.replace("/app");
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -293,3 +294,4 @@ export default function Register() {
     </AuthShell>
   );
 }
+
