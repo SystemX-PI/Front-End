@@ -74,7 +74,6 @@ export default function Login() {
     <AuthShell
       eyebrow="ACESSO"
       title="Entrar"
-      description="Entre com sua conta Google ou use suas credenciais."
     >
       <GoogleSignInButton
         busy={loading}
