@@ -61,9 +61,14 @@ export default function Dashboard() {
         title="Cada contemplação, um próximo passo"
         description="Acompanhe os processos presentes na fila de comunicação e mantenha o atendimento em movimento."
         action={
-          <Link className="button primary" to="/integracoes/notificacoes">
-            Abrir central <ArrowRight size={17} />
-          </Link>
+          <div className="split-actions">
+            <Link className="button secondary" to="/admin/disparo-manual">
+              Disparo manual
+            </Link>
+            <Link className="button primary" to="/integracoes/notificacoes">
+              Abrir central <ArrowRight size={17} />
+            </Link>
+          </div>
         }
       />
       {error ? <ErrorState message={error} retry={refresh} /> : null}
@@ -146,6 +151,11 @@ export default function Dashboard() {
           <h3>Uma operação bem conectada</h3>
           <p>Prepare os canais e mantenha sua carteira atualizada.</p>
           {[
+            {
+as              to: "/admin/disparo-manual",
+              label: "Disparo manual de mensagens",
+              description: "Envie mensagens personalizadas por processo",
+            },
             {
               to: "/integracoes/gmail",
               label: "Configurar e-mail",
