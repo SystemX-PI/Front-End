@@ -49,7 +49,8 @@ export default function AppRoutes() {
   <Route path="/admin/contemplados" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Contemplated/></RoleRoute>}/>
   <Route path="/admin/baixas" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Closures/></RoleRoute>}/>
   <Route path="/admin/comunicacao" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Communication/></RoleRoute>}/>
-  <Route path="/admin/disparo-manual" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><ManualDispatch/></RoleRoute>}/>
+  <Route path="/disparo-manual" element={<Navigate to="/admin/disparo-manual" replace/>}/>
+   <Route path="/admin/disparo-manual" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><ManualDispatch/></RoleRoute>}/>
   <Route path="/admin/auditoria" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Audit/></RoleRoute>}/>
   <Route path="/admin/usuarios" element={<RoleRoute roles={["ADMINISTRADOR"]}><Registries initial="usuarios" locked/></RoleRoute>}/>
   <Route path="/portal" element={<RoleRoute roles={["CLIENTE"]}><BeneficiaryPortal/></RoleRoute>}/>
@@ -58,3 +59,4 @@ export default function AppRoutes() {
   <Route path="*" element={<DefaultRedirect/>}/>
  </Routes></BrowserRouter>;
 }
+

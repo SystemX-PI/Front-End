@@ -388,6 +388,7 @@ export default function ManualDispatch() {
         setManualCommOverride(response);
         setHistoryRevision((value) => value + 1);
         queueResource.refresh();
+        targetResource.refresh();
 
         const whatsappError = response.whatsapp?.erro;
         const whatsappStatus = response.whatsapp?.status;
@@ -412,6 +413,7 @@ export default function ManualDispatch() {
         setManualCommOverride(response);
         setHistoryRevision((value) => value + 1);
         queueResource.refresh();
+        targetResource.refresh();
 
         const errors = [response.email?.erro, response.whatsapp?.erro]
           .filter(Boolean)
