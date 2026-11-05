@@ -66,3 +66,30 @@ Pendências que exigem evolução coordenada do backend: leitura de auditoria co
 Para desenvolvimento do Front-End, use `npm run dev`; para gerar produção, use `npm run build`. O Back-End é servido em `8080`. Quando usar a composição completa, mantenha os repositórios `Front-End` e `Back-end` lado a lado e execute o Compose a partir do Back-End conforme o `README`.
 
 Atualize o navegador com `Ctrl+F5` depois de trocar arquivos estáticos. Credenciais locais, sessões de bancos, senhas de aplicativo, chaves de Evolution e demais segredos não pertencem ao Git e não são incluídos neste relatório.
+
+## 9. Checklist de qualidade e melhorias recomendadas
+
+O checklist histórico identificou como base já existente: cliente HTTP centralizado, autenticação, tratamento de erros, componentes de carregamento/vazio/erro/paginação, temas persistidos, regras responsivas, busca/paginação no servidor, confirmação de exclusão e testes de interface em desktop e celular.
+
+As prioridades registradas para evolução são: tornar os estados da conexão WhatsApp mais claros; manter confirmação automática de conexão com polling limitado; garantir que a instância conectada seja a mesma usada para envio; oferecer regeneração de QR; separar erros de login por causa; manter auditoria honesta quando o serviço estiver indisponível; e preservar uma política previsível para expiração/renovação da sessão.
+
+Também foram apontadas melhorias de manutenção e acessibilidade: consolidar tokens visuais, compartilhar estruturas de cabeçalho/navegação, padronizar rótulos em português, tipografia, botões, formulários, moedas, datas e estados; validar larguras de 360 a 1440 px e zoom de 200%; garantir teclado, foco em diálogos, contraste, áreas de toque e anúncios de erros/carregamentos. Essas recomendações não equivalem a uma declaração de conformidade WCAG.
+
+## 10. Contrato das telas operacionais
+
+As telas de baixas, histórico e auditoria foram preparadas para contratos autenticados por JWT e autorizados pelo backend. O navegador não deve ser fonte de verdade para perfil, ator ou elegibilidade.
+
+- **Fila de baixas:** `GET /api/processos-contemplacao/pagina?page=0&size=20&q=&status=EM_PROCESSO_DE_BAIXA`, com paginação, total filtrado e ordenação estável. A consulta individual usa `GET /api/processos-contemplacao/{id}`.
+- **Conclusão de baixa:** `POST /api/integracoes/processos/{id}/baixa`, com observação limitada e ator derivado do contexto autenticado no servidor. A API precisa garantir elegibilidade, idempotência e segurança em concorrência.
+- **Histórico de comunicações:** `GET /api/integracoes/processos/{id}/comunicacoes/historico?page=0&size=100`, retornando os eventos mais recentes com data, canal, status, responsável e observação, sem segredos ou dados de pagamento.
+- **Auditoria:** `GET /api/auditoria/pagina?page=0&size=20&q=`, com busca, ordenação mais recente primeiro e escopo controlado por autorização.
+
+As responsabilidades registradas para o backend incluem regras de transição, ator autenticado, histórico persistido de tentativas, filas, respostas de erro e testes MySQL/Flyway. O Front-End centraliza esses contratos em `services/backend.ts` e não deve apresentar dados simulados como produção.
+
+## 11. Entrega operacional de 29/10/2026
+
+A entrega registrou rotas protegidas por perfil para dashboard, contemplados, clientes, cadastros, usuários, comunicação, baixas e auditoria, além do portal exclusivo do cliente. Foram entregues tela de baixas preparada para API, atualização de andamento com confirmação, histórico e auditoria com estados explícitos, fila de comunicação com confirmação, cadastros revisados, integração de autenticação Google e landing page com FAQ, foco visível e menu móvel acessível.
+
+Naquele momento, a integração completa de baixas, histórico e auditoria ainda dependia de APIs e regras de backend. O registro original associou essas pendências às issues de backend #65, #66 e #67, e recomendou não marcar cards como concluídos enquanto o aceite integrado permanecesse pendente.
+
+As evidências registradas nessa entrega foram: build aprovado; lint sem erros novos; 26 testes de UI aprovados e um ignorado por falta de token de ambiente; verificação de diff aprovada; e revisão visual da landing page em celular e desktop. Serviços externos reais continuaram dependentes de credenciais e autorizações do ambiente.
