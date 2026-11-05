@@ -276,6 +276,14 @@ export const backend = {
 };
 
 export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export interface AssistantAction {
+  token: string; tipo: "NOTIFICAR_WHATSAPP"; processoId: number; telefone: string; mensagem: string; aviso: string;
+}
+export interface AssistantResponse { mensagem: string; acao: AssistantAction | null }
+export const assistant = {
+  message: (mensagem: string) => apiRequest<AssistantResponse>("/api/assistente/mensagens", { method: "POST", body: JSON.stringify({ mensagem }) }),
+  confirm: (token: string) => apiRequest<CommunicationResponse>(`/api/assistente/acoes/${encodeURIComponent(token)}/confirmar`, { method: "POST" }),
+};
 export function sessionUserId(): number | null {
  try { const part=getToken()?.split('.')[1]; if(!part)return null;const data=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));return Number.isSafeInteger(data.uid)&&data.uid>0?data.uid:null; } catch {return null;}
 }
