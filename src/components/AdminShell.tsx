@@ -5,6 +5,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  Send,
   Users,
   UserRound,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const links = [
   { to: "/admin/clientes", label: "Clientes", icon: UserRound },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/comunicacao", label: "Comunicação", icon: BellRing },
+  { to: "/admin/disparo-manual", label: "Disparo manual", icon: Send },
   { to: "/admin/baixas", label: "Baixas pendentes", icon: ClipboardList },
   { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
 ];

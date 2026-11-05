@@ -13,7 +13,7 @@ export default function AuthShell({
   children: ReactNode;
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   registration?: boolean;
 }) {
   return (
@@ -27,7 +27,6 @@ export default function AuthShell({
             <BrandLogo compact />
             <div className="auth-brand-meta">
               <strong>ConsorTech</strong>
-              <small>Sua operação, com a sua marca.</small>
             </div>
           </div>
 
@@ -35,41 +34,26 @@ export default function AuthShell({
             Seu espaço. Sua equipe. Suas conexões.
           </h1>
 
-          <p className="auth-visual-copy">
-            Organize seus números de WhatsApp, conecte suas contas Gmail e reúna sua equipe em um espaço com a identidade da sua empresa.
-          </p>
-
           <ul className="auth-feature-list">
             <li>
               <span className="feature-icon"><MessageCircle size={18} aria-hidden="true" /></span>
               <div>
                 <strong>Canais organizados</strong>
-                <small>Cada número e cada remetente no seu lugar.</small>
               </div>
             </li>
             <li>
               <span className="feature-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
               <div>
                 <strong>Segurança e acesso</strong>
-                <small>
-                  Controle de permissões e dados protegidos no sistema.
-                </small>
               </div>
             </li>
             <li>
               <span className="feature-icon"><PlugZap size={18} aria-hidden="true" /></span>
               <div>
                 <strong>Integrações</strong>
-                <small>
-                  Conecte Gmail, WhatsApp e fluxos operacionais em um só lugar.
-                </small>
               </div>
             </li>
           </ul>
-
-          <div className="auth-tagline">
-            Três dias grátis para experimentar seu novo espaço.
-          </div>
         </aside>
 
         <main className="auth-panel">
@@ -83,7 +67,7 @@ export default function AuthShell({
             <div className="auth-heading">
               <span className="eyebrow">{eyebrow}</span>
               <h2>{title}</h2>
-              <p>{description}</p>
+              {description ? <p>{description}</p> : null}
             </div>
 
             {children}
