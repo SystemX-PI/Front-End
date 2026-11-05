@@ -134,15 +134,24 @@ export default function CommunicationQueue() {
             <h3>Fila de comunicação</h3>
             <p>Busque em toda a fila. Os indicadores resumem a pagina atual.</p>
           </div>
-          <button
-            type="button"
-            className="button secondary compact"
-            onClick={refresh}
-            disabled={loading}
-          >
-            <RefreshCw size={16} />
-            Atualizar
-          </button>
+          <div className="split-actions">
+            <Link
+              className="button secondary compact"
+              to="/admin/disparo-manual"
+            >
+              <MessageCircle size={15} />
+              Disparo manual
+            </Link>
+            <button
+              type="button"
+              className="button secondary compact"
+              onClick={refresh}
+              disabled={loading}
+            >
+              <RefreshCw size={16} />
+              Atualizar
+            </button>
+          </div>
         </div>
         <div className="list-toolbar">
           <label className="search-control">
@@ -208,23 +217,32 @@ export default function CommunicationQueue() {
                         {formatDate(item.recebidaEm)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="button primary compact"
-                      disabled={busy !== null}
-                      onClick={() => setConfirmId(item.processoId)}
-                    >
-                      {busy === item.processoId ? (
-                        <span className="spinner" />
-                      ) : (
-                        <Send size={15} />
-                      )}
-                      {busy === item.processoId
-                        ? "Enviando…"
-                        : item.comunicacao.statusGeral === "PENDENTE"
-                          ? "Notificar"
-                          : "Reenviar"}
-                    </button>
+                    <div className="split-actions">
+                      <Link
+                        className="button secondary compact"
+                        to={`/admin/disparo-manual?processo=${item.processoId}`}
+                      >
+                        <MessageCircle size={14} />
+                        Mensagem manual
+                      </Link>
+                      <button
+                        type="button"
+                        className="button primary compact"
+                        disabled={busy !== null}
+                        onClick={() => setConfirmId(item.processoId)}
+                      >
+                        {busy === item.processoId ? (
+                          <span className="spinner" />
+                        ) : (
+                          <Send size={15} />
+                        )}
+                        {busy === item.processoId
+                          ? "Enviando…"
+                          : item.comunicacao.statusGeral === "PENDENTE"
+                            ? "Notificar"
+                            : "Reenviar"}
+                      </button>
+                    </div>
                   </div>
                   <div className="channel-grid">
                     <ChannelStatus
