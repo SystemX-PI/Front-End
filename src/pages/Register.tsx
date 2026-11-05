@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ArrowLeft,
   Check,
   Eye,
   EyeOff,
@@ -9,13 +10,16 @@ import {
   UserRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { register } from "../services/auth";
+import { register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const preauthorizedCredential = (location.state as { googleRegistrationCredential?: string } | null)?.googleRegistrationCredential;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +27,80 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [googleCredential, setGoogleCredential] = useState<string | null>(preauthorizedCredential || null);
+
+  async function handleGoogleRegistration(event: FormEvent) {
+    event.preventDefault();
+    if (loading || !googleCredential) return;
+    setLoading(true);
+    setError("");
+    try {
+      await registerWithGoogle(googleCredential, name);
+      navigate("/app", { replace: true });
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível concluir o cadastro com Google.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (googleCredential) {
+    return (
+      <AuthShell
+        registration
+        eyebrow="CADASTRO COM GOOGLE"
+        title="Quase lá"
+        description="Informe somente o nome da sua empresa para criar seu espaço."
+      >
+        <form onSubmit={handleGoogleRegistration} className="auth-form register-form" aria-busy={loading}>
+          <div className="registration-welcome">
+            <span className="registration-icon"><UserRound size={19} /></span>
+            <div>
+              <strong>Fazer Cadastro com o Google</strong>
+              <p>Acesso inicial com 1 WhatsApp e 1 Gmail liberados</p>
+            </div>
+            <span className="registration-badge">3 dias grátis</span>
+          </div>
+          <label className="field auth-field">
+            <span>Nome da sua empresa</span>
+            <div className="input-with-icon">
+              <UserRound size={18} />
+              <input
+                type="text"
+                required
+                minLength={2}
+                maxLength={255}
+                autoFocus
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Como sua empresa se chama?"
+                autoComplete="organization"
+              />
+            </div>
+          </label>
+          {error ? <InlineFeedback message={error} kind="error" /> : null}
+          <button type="submit" disabled={loading} className="button primary auth-submit">
+            {loading ? <><span className="spinner" /> Cadastrando...</> : <>Concluir cadastro <ArrowRight size={17} /></>}
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            disabled={loading}
+            onClick={() => { setGoogleCredential(null); setName(""); setError(""); }}
+          >
+            <ArrowLeft size={16} /> Voltar e escolher outra conta
+          </button>
+        </form>
+        <div className="auth-footer">
+          Já tem acesso? <Link to="/login">Entrar</Link>
+        </div>
+      </AuthShell>
+    );
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -52,20 +130,29 @@ export default function Register() {
       registration
       eyebrow="CADASTRO"
       title="Criar conta"
-      description="Organize sua rotina, conecte sua equipe e acompanhe cada próximo passo."
+      description="Configure o espaço da sua empresa e comece seu período de avaliação."
     >
       <form
         onSubmit={handleSubmit}
         className="auth-form register-form"
         aria-busy={loading}
       >
+        <div className="google-register-entry">
+          <GoogleSignInButton
+            purpose="register"
+            busy={loading}
+            onCredential={(credential) => { setError(""); setName(""); setGoogleCredential(credential); }}
+            onError={setError}
+          />
+        </div>
+        <div className="auth-divider"><span>ou cadastre com e-mail</span></div>
         <div className="registration-welcome">
           <span className="registration-icon">
             <UserRound size={19} />
           </span>
           <div>
             <strong>Sua conta, sua marca</strong>
-            <p>Três dias grátis para conhecer a plataforma</p>
+            <p>Inclui 1 WhatsApp e 1 Gmail para validar sua operação</p>
           </div>
           <span className="registration-badge">3 dias grátis</span>
         </div>
@@ -153,9 +240,6 @@ export default function Register() {
             </small>
           ) : null}
         </label>
-        <p className="form-note">
-          Sua empresa ganha três dias gratuitos. Depois desse período, uma assinatura é necessária para continuar.
-        </p>
         <div className="password-strength" aria-label="Orientação de senha">
           <span className={password.length >= 6 ? "active" : ""} />
           <span className={password.length >= 8 ? "active" : ""} />
@@ -177,6 +261,10 @@ export default function Register() {
             <Check size={14} />
             Convide sua equipe
           </span>
+          <span>
+            <ShieldCheck size={14} />
+            Ambiente isolado por empresa
+          </span>
         </div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button
@@ -194,10 +282,6 @@ export default function Register() {
             </>
           )}
         </button>
-        <p className="registration-security">
-          <ShieldCheck size={15} />
-          Seu cadastro cria um espaço exclusivo para sua empresa e sua equipe.
-        </p>
       </form>
       <div className="auth-footer">
         Já tem acesso? <Link to="/login">Entrar</Link>

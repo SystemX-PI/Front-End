@@ -445,3 +445,66 @@
 .team-modal .saas-form { margin-top:22px; }
 .team-modal-actions { display:flex;justify-content:flex-end;gap:12px;margin-top:10px; }
 @media(max-width:480px) { .team-search { max-width:none;flex-basis:100%;min-width:0; }.team-list>article { gap:10px; }.team-list .account-avatar { width:34px;height:34px; }.team-pagination { justify-content:center; }.team-modal { padding:22px; }.workspace-breadcrumb { flex-wrap:wrap;row-gap:4px; } }
+
+/* Marketing refinements and operation entry points. */
+.skip-link{position:fixed;top:8px;left:8px;transform:translateY(-160%);z-index:1000;background:#10213d;color:white;padding:14px;border-radius:8px}.skip-link:focus{transform:none}.marketing section[id]{scroll-margin-top:100px}.marketing a:focus-visible,.marketing summary:focus-visible{outline:3px solid #315fe8;outline-offset:5px}.marketing-hero{position:relative;isolation:isolate}.hero-copy h1{letter-spacing:-.055em}.product-preview{box-shadow:0 28px 90px #13284d20}.marketing-faq{padding:80px max(24px,calc((100% - 1200px)/2));background:#f6f8fc;color:#10213d;display:grid;grid-template-columns:1fr 1fr;gap:64px}.marketing-faq .marketing-section-head{text-align:left}.marketing-faq details{border-bottom:1px solid #d6deea;padding:20px 0}.marketing-faq summary{cursor:pointer;list-style:none;font-weight:600;display:flex;justify-content:space-between;gap:18px}.marketing-faq details p{line-height:1.75;color:#526078;padding-top:12px}.marketing-faq details[open] summary svg{transform:rotate(180deg)}.operation-history{padding-left:24px}.operation-history li{padding:12px 0;border-bottom:1px solid #b6c1d440}.admin-main textarea{width:100%;min-height:100px;padding:12px;border:1px solid #9ba9bc;border-radius:8px;background:transparent;color:inherit}.admin-main .panel{margin-bottom:20px}.admin-main .button{min-height:40px}.workspace-sidebar nav>.text-button{display:block;padding:14px 12px;margin:8px 0;border:1px solid currentColor;border-radius:10px}.marketing-menu{min-width:44px;min-height:44px}
+@media(max-width:760px){.marketing-faq{grid-template-columns:1fr;padding:48px 22px;gap:16px}.marketing-faq h2{font-size:32px}.hero-copy h1{font-size:clamp(42px,11vw,62px)}.marketing-nav nav.is-open{max-height:calc(100dvh - 100px);overflow:auto}.admin-main{min-width:0}.admin-main .admin-form{display:grid;gap:16px}.admin-main .form-actions{flex-wrap:wrap}.admin-table th,.admin-table td{overflow-wrap:anywhere}}
+
+/* ConsorTech identity and focused landing hero. */
+.marketing{background:#f8faf9}
+.marketing-brand{gap:10px;letter-spacing:-1px;flex-shrink:0}
+.marketing-brand strong{font-size:23px;font-weight:700;letter-spacing:-.06em;line-height:1;white-space:nowrap}
+.marketing-nav{padding-top:26px;padding-bottom:26px}
+.marketing-nav nav>a:not(.saas-button):hover{color:#12694f}
+.marketing-hero{grid-template-columns:1.08fr 1fr;gap:64px;padding-top:68px;padding-bottom:112px;min-height:700px}
+.marketing-hero:before{content:"";position:absolute;z-index:-1;inset:18px 0 -20px 40%;background:radial-gradient(ellipse at 65% 45%,#cceee45c,transparent 65%);pointer-events:none}
+.hero-eyebrow{background:#e9f3ed;color:#256352;padding:8px 12px;border:1px solid #d6e9df;border-radius:30px;font-size:9px;letter-spacing:1.5px}
+.hero-eyebrow>span{background:#1bb99e;box-shadow:0 0 0 3px #1bb99e16}
+.hero-copy h1{font-size:clamp(44px,5.2vw,72px);line-height:1.075;letter-spacing:-.065em;font-weight:700;margin:25px 0 24px}
+.hero-copy h1>span,.hero-copy h1>em{display:block}
+.hero-copy h1 em{width:fit-content;background:linear-gradient(100deg,#126650,#19ad92);background-clip:text;-webkit-background-clip:text;color:transparent;padding-bottom:7px}
+.hero-copy>p{font-size:16px;line-height:1.85;max-width:430px;margin:0}
+.hero-copy>p strong{font-weight:600;color:#344b48}
+.hero-actions{margin-top:30px;gap:22px;flex-wrap:wrap}
+.hero-actions>.dark{background:#122c29;border-color:#122c29;box-shadow:0 8px 22px #122c2914}
+.hero-actions>.dark:hover{background:#1b423b;transform:translateY(-1px)}
+.hero-assurances{margin-top:20px;gap:16px;color:#60766d;flex-wrap:wrap}
+.product-preview{transform:none;border-radius:21px;border-color:#dae7e1;box-shadow:0 24px 65px -20px #143e3929,0 2px 8px #143e3906}
+.preview-browser{background:#fafcfb;border-radius:21px 21px 0 0;padding:17px 22px}
+.preview-browser small{letter-spacing:1.1px;color:#738b81;font-size:8px}
+.preview-browser>span{width:7px;height:7px;background:#d5dfda}
+.preview-browser>span:first-child{background:#e9c9be}.preview-browser>span:nth-child(2){background:#e4dba8}.preview-browser>span:nth-child(3){background:#aed9c4}
+.preview-content{padding:26px}
+.preview-monogram{background:#eef6f2;border-radius:12px;width:45px;height:45px;flex-shrink:0}
+.preview-content>h2{font-size:27px;line-height:1.25;max-width:330px;font-weight:600;letter-spacing:-1.1px;margin:25px 0 22px}
+.preview-stats article{background:#f7faf8;border-color:#e0ebe5;gap:10px;padding:18px 15px}.preview-stats svg{color:#168e72}
+.preview-workflow{display:flex;align-items:center;gap:8px;background:#f5f8f6;border:1px solid #e5ece7;border-radius:9px;padding:12px;margin-top:5px;color:#668073;font-size:9px}
+.preview-workflow>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.preview-workflow>span:first-child{color:#23735c;font-weight:600}.preview-workflow i{height:1px;flex:1;background:#d1dfd6}.workflow-dot{width:5px;height:5px;background:#1ab28a;border-radius:50%}
+.floating-label{right:18px;bottom:-29px;background:#d9f5bc;border-color:#f8faf9;border-radius:14px;padding:13px 18px;box-shadow:0 9px 25px #1d553815}
+.marketing-footer .marketing-brand strong{font-size:19px}
+@media(max-width:1050px){.marketing-hero{gap:35px;padding-top:48px}.hero-copy h1{font-size:clamp(44px,5.8vw,65px)}.hero-assurances{font-size:10px}.preview-content{padding:22px}}
+@media(max-width:760px){.marketing-hero{grid-template-columns:1fr;gap:46px;padding:35px 24px 72px;min-height:0}.marketing-nav{padding:22px 24px}.marketing-brand strong{font-size:21px}.marketing-hero:before{inset:35% 0 0 0}.hero-copy h1{font-size:clamp(39px,10.2vw,64px);letter-spacing:-.065em;margin-top:22px;margin-bottom:19px}.hero-copy>p{font-size:15px;max-width:100%}.hero-eyebrow{font-size:8px;letter-spacing:1.15px}.hero-actions{gap:18px;margin-top:25px}.hero-actions .large{min-height:54px;padding:15px 20px}.hero-assurances{gap:10px;font-size:9px}.product-preview{width:100%;max-width:520px;margin:0 auto}.preview-content>h2{font-size:25px}.preview-content{padding:23px}.floating-label{right:8px;bottom:-25px;padding:10px 13px;font-size:10px}.preview-stats small{font-size:9px;line-height:1.5}.preview-browser small{font-size:7px}.marketing-footer .marketing-brand strong{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.hero-actions>.dark:hover{transform:none}}
+
+/* Detailed invitation and trial scope. */
+.marketing-cta{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.85fr);gap:64px;padding:56px;background:radial-gradient(ellipse at top left,#24534b55,transparent 65%),#13233b;align-items:center}
+.cta-story,.cta-trial{min-width:0}
+.marketing-cta h2{font-size:clamp(30px,3.2vw,43px);letter-spacing:-1.6px;line-height:1.16;margin:20px 0}
+.marketing-cta h2 em{font-style:normal;color:#c9f38f}
+.marketing-cta .cta-story>p{max-width:500px;font-size:14px;color:#c0ccda}
+.cta-benefits{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:22px}
+.cta-benefits li{display:flex;gap:14px;align-items:flex-start}
+.cta-benefit-icon{display:grid;place-items:center;flex:0 0 38px;height:38px;background:#ffffff09;border:1px solid #ffffff12;border-radius:11px;color:#a2dbc5}
+.cta-benefits h3{font-size:14px;line-height:1.5;font-weight:600;margin:0 0 4px;color:#f5f9fc}
+.marketing-cta .cta-benefits p{margin:0;font-size:12px;line-height:1.7;color:#b2c0d1;max-width:390px}
+.cta-trial{padding:30px;border:1px solid #ffffff22;border-radius:18px;background:#ffffff08}
+.cta-trial-label{display:flex;gap:8px;align-items:center;font-size:9px;font-weight:600;letter-spacing:1.4px;color:#c9f38f}
+.cta-trial h3{font-size:25px;font-weight:600;line-height:1.3;letter-spacing:-.8px;margin:20px 0 12px}
+.marketing-cta .cta-trial>p{font-size:13px;line-height:1.7;margin:0;color:#becada}
+.cta-trial ul{list-style:none;padding:22px 0;margin:22px 0;border-top:1px solid #ffffff16;border-bottom:1px solid #ffffff16;display:grid;gap:13px;font-size:12px;color:#e3ebf3}
+.cta-trial li{display:flex;gap:10px;align-items:center}.cta-trial li svg{flex-shrink:0;color:#bfe88a}
+.cta-trial .saas-button{width:100%;justify-content:center;white-space:normal;text-align:center;gap:10px}
+.marketing-cta .cta-trial .cta-trial-note{font-size:10px;line-height:1.7;margin-top:15px;color:#a7b6c9;text-align:center}
+@media(max-width:1050px){.marketing-cta{padding:36px;gap:30px}.cta-trial{padding:24px}.cta-trial h3{font-size:22px}}
+@media(max-width:760px){.marketing-cta{grid-template-columns:1fr;margin:0 24px 35px;padding:32px 24px;gap:32px}.marketing-cta h2{font-size:32px;letter-spacing:-1.2px}.marketing-cta .cta-story>p{font-size:13px}.cta-benefits{gap:20px;margin-top:26px}.cta-trial{padding:24px 20px}.cta-trial h3{font-size:24px}.cta-trial .saas-button{font-size:12px;padding:16px 12px}.marketing-cta .marketing-eyebrow{line-height:1.8;display:block}}
+@media(max-width:360px){.marketing-cta{margin-inline:16px;padding:28px 20px}.marketing-cta h2{font-size:29px}.cta-trial{padding:22px 16px}.cta-trial h3{font-size:22px}}

@@ -35,6 +35,14 @@ npm run dev
 
 Acesse o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Sem mudanças nas dependências, reutilize `node_modules`; não é necessário executar `npm ci` novamente. O proxy encaminha `/api` ao backend em 8080. Para outro servidor, configure `VITE_API_URL` sem incluir credenciais.
 
+### Login com Google
+
+Copie `.env.example` para `.env` e defina `VITE_GOOGLE_CLIENT_ID` com o Client ID público de um cliente OAuth **Web application** criado no Google Cloud. Para o Vite local, autorize as origens `http://localhost` e `http://localhost:5173` no Google Cloud. O back-end também precisa receber o mesmo Client ID em `GOOGLE_CLIENT_ID` para validar o token. O botão real do Google aparece na tela `/login`; sem Client ID, o front exibe uma orientação e mantém o login por e-mail/senha disponível.
+
+Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](../Back-end/README.md#login-com-google).
+
+Na tela `/register`, o botão **Fazer Cadastro com o Google** inicia um cadastro separado: depois de selecionar a conta Google, a pessoa informa somente o nome da empresa. Ao concluir, a aplicação cria a conta e abre uma sessão. O cadastro por e-mail e senha permanece disponível.
+
 ## Áreas do produto
 
 | Rota | Finalidade |
@@ -62,7 +70,7 @@ npm run test:ui
 
 O build gera `dist`. Os testes de interface usam respostas controladas e um navegador local; o teste real em `tests/live.spec.ts` é opcional e exige `SYSTEMX_TEST_TOKEN` de administrador e backend ativo. O servidor de testes usa 5174 para isolar a execução do desenvolvimento.
 
-Os módulos antigos de consórcios permanecem no código e não integram a navegação principal atual.
+A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. Os endpoints futuros e os estados de indisponibilidade estão descritos em [CONTRATO_OPERACAO.md](CONTRATO_OPERACAO.md). Veja [a entrega do frontend](ENTREGA_FRONTEND.md) para validações e pendências de integração.
 
 - [Relatório da plataforma e das validações](RELATORIO_PLATAFORMA.md)
 - [Checklist de evolução da interface](CHECKLIST_FRONTEND.md)

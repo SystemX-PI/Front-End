@@ -231,6 +231,11 @@ export const backend = {
     list: (page = 0, signal?: AbortSignal) => apiRequest<PageResponse<ProcessResponse>>(`/api/portal/processos?page=${page}&size=20`, { signal }),
     get: (id: number, signal?: AbortSignal) => apiRequest<PortalProcessResponse>(`/api/portal/processos/${id}`, { signal }),
   },
+  operation: {
+    pending: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status:'EM_PROCESSO_DE_BAIXA'}),{signal}),
+    history: (id:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page=0&size=100',{signal}),
+    audit: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q}),{signal}),
+  },
   processes: {
     get: (id: number) =>
       apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`),
@@ -269,3 +274,8 @@ export const backend = {
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`),
   },
 };
+
+export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export function sessionUserId(): number | null {
+ try { const part=getToken()?.split('.')[1]; if(!part)return null;const data=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));return Number.isSafeInteger(data.uid)&&data.uid>0?data.uid:null; } catch {return null;}
+}

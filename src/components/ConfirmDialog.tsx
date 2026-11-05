@@ -7,12 +7,14 @@ export default function ConfirmDialog({
   description,
   onCancel,
   onConfirm,
+  confirmLabel = "Confirmar envio",
 }: {
   open: boolean;
   title: string;
   description: string;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmLabel?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
@@ -51,7 +53,7 @@ export default function ConfirmDialog({
           Cancelar
         </button>
         <button className="button primary" onClick={onConfirm} type="button">
-          Confirmar envio
+          {confirmLabel}
         </button>
       </div>
     </dialog>

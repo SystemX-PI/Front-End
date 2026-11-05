@@ -2,8 +2,10 @@ import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { login } from "../services/auth";
+import { ApiError } from "../services/http";
+import { login, loginWithGoogle } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -42,12 +44,43 @@ export default function Login() {
     }
   }
 
+  async function handleGoogleCredential(credential: string) {
+    if (loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      await loginWithGoogle(credential);
+      navigate("/app", { replace: true });
+    } catch (requestError) {
+      if (requestError instanceof ApiError && requestError.status === 403) {
+        navigate("/register", {
+          replace: true,
+          state: { googleRegistrationCredential: credential },
+        });
+      } else {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Não foi possível entrar com Google.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
+    <>
     <AuthShell
       eyebrow="ACESSO"
       title="Entrar"
-      description="Use suas credenciais para continuar."
     >
+      <GoogleSignInButton
+        busy={loading}
+        onCredential={handleGoogleCredential}
+        onError={setError}
+      />
+      <div className="auth-divider"><span>ou entre com e-mail</span></div>
       <form onSubmit={handleSubmit} className="auth-form">
         {navigationState?.passwordReset ? <InlineFeedback message="Senha redefinida. Entre com sua nova senha." kind="success" /> : null}
         {navigationState?.registered ? (
@@ -123,5 +156,6 @@ export default function Login() {
         Não tem acesso? <Link to="/register">Solicitar cadastro</Link>
       </div>
     </AuthShell>
+    </>
   );
 }
