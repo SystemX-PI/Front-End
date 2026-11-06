@@ -166,3 +166,69 @@
   .auth-page .theme-switcher button span { display: none; }
   .auth-page .auth-field .input-with-icon input { font-size: 16px; }
 }
+
+/* Keep the login controls together in shorter browser windows. */
+.auth-page.login-page {
+  padding: clamp(8px, 2dvh, 22px) clamp(10px, 2vw, 24px);
+}
+
+.login-page .auth-shell {
+  width: min(100%, 980px);
+  min-height: 0;
+  border-radius: 20px;
+}
+
+.login-page .auth-visual-panel {
+  justify-content: center;
+  padding: clamp(24px, 5dvh, 42px) clamp(24px, 4vw, 46px);
+}
+
+.login-page .auth-brand-row { margin-bottom: 0; }
+.login-page .auth-story { margin: 24px 0 18px; }
+.login-page .auth-visual-title { font-size: clamp(29px, 3vw, 40px); }
+.login-page .auth-network { padding: 0; border: 0; background: none; }
+.login-page .auth-network-hub,
+.login-page .auth-network-channels::before { display: none; }
+.login-page .auth-home-link { margin-top: 18px; padding-top: 0; }
+
+.login-page .auth-panel {
+  padding: clamp(14px, 3dvh, 32px) clamp(16px, 4vw, 46px);
+}
+
+.login-page .auth-brand-mini { margin-bottom: 10px; }
+.login-page .theme-switcher { box-shadow: none; }
+.login-page .auth-heading { margin-bottom: 12px; }
+.login-page .auth-heading h1 { font-size: clamp(28px, 4.8dvh, 38px); }
+.login-page .auth-divider { margin: 8px 0; }
+.login-page .auth-form { gap: 10px; }
+
+.login-password-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.login-password-label .forgot-password-link { margin: 0; }
+.login-page .auth-field .input-with-icon { min-height: 44px; }
+.login-page .auth-field .input-with-icon input { padding-block: 8px; }
+.login-page .auth-submit { min-height: 44px; margin-top: 0; }
+
+.login-page .auth-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+@media (max-height: 540px) {
+  .auth-page.login-page { padding-block: 6px; }
+  .login-page .auth-panel { padding-block: 10px; }
+  .login-page .auth-brand-mini,
+  .login-page .auth-heading { margin-bottom: 8px; }
+  .login-page .auth-heading p { display: none; }
+  .login-page .auth-divider { margin-block: 6px; }
+  .login-page .auth-form { gap: 8px; }
+  .login-page .auth-footer { margin-top: 8px; padding-top: 6px; }
+}

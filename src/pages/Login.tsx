@@ -72,6 +72,7 @@ export default function Login() {
   return (
     <>
     <AuthShell
+      compactLogin
       eyebrow="ACESSO"
       title="Entrar"
       description="Acesse os canais e a equipe da sua empresa."
@@ -116,11 +117,17 @@ export default function Login() {
             />
           </div>
         </label>
-        <label className="field auth-field">
-          <span>Senha</span>
+        <div className="field auth-field">
+          <div className="login-password-label">
+            <label htmlFor="login-password">Senha</label>
+            <Link className="forgot-password-link" to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>
+              Esqueci minha senha
+            </Link>
+          </div>
           <div className="input-with-icon">
             <LockKeyhole size={18} />
             <input
+              id="login-password"
               type={showPassword ? "text" : "password"}
               required
               value={password}
@@ -136,8 +143,7 @@ export default function Login() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-        </label>
-        <Link className="forgot-password-link" to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>Esqueci minha senha</Link>
+        </div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button
           type="submit"
