@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { MessageCircle, Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
@@ -244,6 +244,13 @@ export default function Contemplated() {
                       >
                         Consultar comunicação
                       </button>
+                      <Link
+                        className="button secondary compact"
+                        to={`/admin/disparo-manual?processo=${filteredProcess.id}`}
+                      >
+                        <MessageCircle size={14} />
+                        Disparo manual
+                      </Link>
                       <button
                         className="button primary compact"
                         type="button"

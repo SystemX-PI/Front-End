@@ -12,8 +12,10 @@ import Registries from "../pages/Registries";
 import Contemplated from "../pages/Contemplated";
 import Closures from "../pages/Closures";
 import Communication from "../pages/Communication";
+import ManualDispatch from "../pages/ManualDispatch";
 import Audit from "../pages/Audit";
 import BeneficiaryPortal from "../pages/BeneficiaryPortal";
+import AssistantWidget from "../components/AssistantWidget";
 import { getUserType } from "../services/auth";
 import type { ReactNode } from "react";
 import { isAuthenticated } from "../services/auth";
@@ -48,11 +50,14 @@ export default function AppRoutes() {
   <Route path="/admin/contemplados" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Contemplated/></RoleRoute>}/>
   <Route path="/admin/baixas" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Closures/></RoleRoute>}/>
   <Route path="/admin/comunicacao" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Communication/></RoleRoute>}/>
+  <Route path="/disparo-manual" element={<Navigate to="/admin/disparo-manual" replace/>}/>
+   <Route path="/admin/disparo-manual" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><ManualDispatch/></RoleRoute>}/>
   <Route path="/admin/auditoria" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Audit/></RoleRoute>}/>
   <Route path="/admin/usuarios" element={<RoleRoute roles={["ADMINISTRADOR"]}><Registries initial="usuarios" locked/></RoleRoute>}/>
   <Route path="/portal" element={<RoleRoute roles={["CLIENTE"]}><BeneficiaryPortal/></RoleRoute>}/>
   <Route path="/integracoes/notificacoes" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Communication/></RoleRoute>}/>
   <Route path="/integracoes/*" element={<Navigate to="/app/integracoes" replace/>}/>
   <Route path="*" element={<DefaultRedirect/>}/>
- </Routes></BrowserRouter>;
+ </Routes><AssistantWidget /></BrowserRouter>;
 }
+
