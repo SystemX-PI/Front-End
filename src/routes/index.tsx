@@ -15,6 +15,7 @@ import Communication from "../pages/Communication";
 import ManualDispatch from "../pages/ManualDispatch";
 import Audit from "../pages/Audit";
 import BeneficiaryPortal from "../pages/BeneficiaryPortal";
+import AssistantWidget from "../components/AssistantWidget";
 import { getUserType } from "../services/auth";
 import type { ReactNode } from "react";
 import { isAuthenticated } from "../services/auth";
@@ -57,6 +58,6 @@ export default function AppRoutes() {
   <Route path="/integracoes/notificacoes" element={<RoleRoute roles={["ADMINISTRADOR","FUNCIONARIO"]}><Communication/></RoleRoute>}/>
   <Route path="/integracoes/*" element={<Navigate to="/app/integracoes" replace/>}/>
   <Route path="*" element={<DefaultRedirect/>}/>
- </Routes></BrowserRouter>;
+ </Routes><AssistantWidget /></BrowserRouter>;
 }
 
