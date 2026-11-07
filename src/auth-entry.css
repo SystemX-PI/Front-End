@@ -235,6 +235,37 @@
   padding-top: 10px;
 }
 
+.auth-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #60766d;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  margin: 4px auto 0;
+  border-radius: 8px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.auth-back-btn:hover {
+  color: #122c29;
+  background-color: #edf5f1;
+}
+
+[data-theme="dark"] .auth-back-btn {
+  color: #8da49b;
+}
+
+[data-theme="dark"] .auth-back-btn:hover {
+  color: #e2f0ea;
+  background-color: #172c27;
+}
+
 @media (max-height: 540px) {
   .auth-page:is(.login-page, .registration-page) { padding-block: 6px; }
   :is(.login-page, .registration-page) .auth-panel { padding-block: 10px; }

@@ -8,7 +8,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
@@ -17,6 +17,7 @@ import { register, registerWithGoogle } from "../services/auth";
 export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const preauthorizedCredential = (location.state as { googleRegistrationCredential?: string } | null)?.googleRegistrationCredential;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,6 +27,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleCredential, setGoogleCredential] = useState<string | null>(preauthorizedCredential || null);
+
+  const isCompanyStep = Boolean(googleCredential || searchParams.get("step") === "empresa");
 
   async function handleGoogleRegistration(event: FormEvent) {
     event.preventDefault();
@@ -46,15 +49,29 @@ export default function Register() {
     }
   }
 
-  if (googleCredential) {
+  if (isCompanyStep) {
     return (
       <AuthShell
         registration
-        eyebrow="CADASTRO COM GOOGLE"
+        eyebrow="CADASTRO"
         title="Quase lá"
-        description="Informe somente o nome da sua empresa para criar seu espaço."
       >
-        <form onSubmit={handleGoogleRegistration} className="auth-form register-form" aria-busy={loading}>
+        <form
+          onSubmit={googleCredential ? handleGoogleRegistration : (e) => {
+            e.preventDefault();
+            if (email && password) {
+              setLoading(true);
+              register({ name: name.trim() || "Meu Espaço", email, password })
+                .then(() => navigate("/login", { replace: true, state: { registered: true } }))
+                .catch((err) => setError(err instanceof Error ? err.message : "Não foi possível concluir o cadastro."))
+                .finally(() => setLoading(false));
+            } else {
+              navigate("/login", { replace: true });
+            }
+          }}
+          className="auth-form register-form"
+          aria-busy={loading}
+        >
           <label className="field auth-field">
             <span>Nome da sua empresa</span>
             <div className="input-with-icon">
@@ -78,11 +95,18 @@ export default function Register() {
           </button>
           <button
             type="button"
-            className="text-button"
+            className="auth-back-btn"
             disabled={loading}
-            onClick={() => { setGoogleCredential(null); setName(""); setError(""); }}
+            onClick={() => {
+              setGoogleCredential(null);
+              setName("");
+              setError("");
+              if (searchParams.get("step") === "empresa") {
+                setSearchParams({});
+              }
+            }}
           >
-            <ArrowLeft size={16} /> Voltar e escolher outra conta
+            <ArrowLeft size={15} /> Voltar
           </button>
         </form>
         <div className="auth-footer">
