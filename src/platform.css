@@ -454,9 +454,10 @@
 .marketing{background:#f8faf9}
 .marketing-brand{gap:10px;letter-spacing:-1px;flex-shrink:0}
 .marketing-brand strong{font-size:23px;font-weight:700;letter-spacing:-.06em;line-height:1;white-space:nowrap}
-.marketing-nav{padding-top:26px;padding-bottom:26px}
+.marketing-nav{padding-top:20px;padding-bottom:12px}
 .marketing-nav nav>a:not(.saas-button):hover{color:#12694f}
-.marketing-hero{grid-template-columns:1.08fr 1fr;gap:64px;padding-top:68px;padding-bottom:112px;min-height:700px}
+.marketing-hero{grid-template-columns:1.08fr 1fr;gap:64px;padding-top:28px;padding-bottom:80px;min-height:0;align-items:start}
+.hero-copy{padding-top:14px}
 .marketing-hero:before{content:"";position:absolute;z-index:-1;inset:18px 0 -20px 40%;background:radial-gradient(ellipse at 65% 45%,#cceee45c,transparent 65%);pointer-events:none}
 .hero-eyebrow{background:#e9f3ed;color:#256352;padding:8px 12px;border:1px solid #d6e9df;border-radius:30px;font-size:9px;letter-spacing:1.5px}
 .hero-eyebrow>span{background:#1bb99e;box-shadow:0 0 0 3px #1bb99e16}
@@ -469,13 +470,14 @@
 .hero-actions>.dark{background:#122c29;border-color:#122c29;box-shadow:0 8px 22px #122c2914}
 .hero-actions>.dark:hover{background:#1b423b;transform:translateY(-1px)}
 .hero-assurances{margin-top:20px;gap:16px;color:#60766d;flex-wrap:wrap}
-.product-preview{transform:none;border-radius:21px;border-color:#dae7e1;box-shadow:0 24px 65px -20px #143e3929,0 2px 8px #143e3906}
+.product-preview{margin-top:16px;transform:none;border-radius:21px;border-color:#dae7e1;box-shadow:0 24px 65px -20px #143e3929,0 2px 8px #143e3906}
 .preview-browser{background:#fafcfb;border-radius:21px 21px 0 0;padding:17px 22px}
 .preview-browser small{letter-spacing:1.1px;color:#738b81;font-size:8px}
 .preview-browser>span{width:7px;height:7px;background:#d5dfda}
 .preview-browser>span:first-child{background:#e9c9be}.preview-browser>span:nth-child(2){background:#e4dba8}.preview-browser>span:nth-child(3){background:#aed9c4}
 .preview-content{padding:26px}
-.preview-monogram{background:#eef6f2;border-radius:12px;width:45px;height:45px;flex-shrink:0}
+.preview-monogram{background:#eef6f2;border-radius:10px;width:36px;height:36px;flex-shrink:0;display:grid;place-items:center}
+.preview-monogram .brand-mark-group{transform:scale(0.8);transform-origin:center}
 .preview-content>h2{font-size:27px;line-height:1.25;max-width:330px;font-weight:600;letter-spacing:-1.1px;margin:25px 0 22px}
 .preview-stats article{background:#f7faf8;border-color:#e0ebe5;gap:10px;padding:18px 15px}.preview-stats svg{color:#168e72}
 .preview-workflow{display:flex;align-items:center;gap:8px;background:#f5f8f6;border:1px solid #e5ece7;border-radius:9px;padding:12px;margin-top:5px;color:#668073;font-size:9px}

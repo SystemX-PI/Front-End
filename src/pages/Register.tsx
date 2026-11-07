@@ -1,12 +1,10 @@
 import {
   ArrowRight,
   ArrowLeft,
-  Check,
   Eye,
   EyeOff,
   LockKeyhole,
   Mail,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -57,14 +55,6 @@ export default function Register() {
         description="Informe somente o nome da sua empresa para criar seu espaço."
       >
         <form onSubmit={handleGoogleRegistration} className="auth-form register-form" aria-busy={loading}>
-          <div className="registration-welcome">
-            <span className="registration-icon"><UserRound size={19} /></span>
-            <div>
-              <strong>Fazer Cadastro com o Google</strong>
-              <p>Acesso inicial com 1 WhatsApp e 1 Gmail liberados</p>
-            </div>
-            <span className="registration-badge">3 dias grátis</span>
-          </div>
           <label className="field auth-field">
             <span>Nome da sua empresa</span>
             <div className="input-with-icon">
@@ -112,7 +102,8 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      await register({ name, email, password });
+      const companyOrUserName = email.split("@")[0]?.trim() || "Meu Espaço";
+      await register({ name: companyOrUserName, email, password });
       navigate("/login", { replace: true, state: { registered: true } });
     } catch (requestError) {
       setError(
@@ -130,7 +121,6 @@ export default function Register() {
       registration
       eyebrow="CADASTRO"
       title="Criar conta"
-      description="Configure o espaço da sua empresa e comece seu período de avaliação."
     >
       <form
         onSubmit={handleSubmit}
@@ -146,31 +136,6 @@ export default function Register() {
           />
         </div>
         <div className="auth-divider"><span>ou cadastre com e-mail</span></div>
-        <div className="registration-welcome">
-          <span className="registration-icon">
-            <UserRound size={19} />
-          </span>
-          <div>
-            <strong>Sua conta, sua marca</strong>
-            <p>Inclui 1 WhatsApp e 1 Gmail para validar sua operação</p>
-          </div>
-          <span className="registration-badge">3 dias grátis</span>
-        </div>
-        <label className="field auth-field">
-          <span>Nome da sua empresa</span>
-          <div className="input-with-icon">
-            <UserRound size={18} />
-            <input
-              type="text"
-              required
-              maxLength={255}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Como sua empresa se chama?"
-              autoComplete="name"
-            />
-          </div>
-        </label>
         <label className="field auth-field">
           <span>E-mail</span>
           <div className="input-with-icon">
@@ -240,32 +205,6 @@ export default function Register() {
             </small>
           ) : null}
         </label>
-        <div className="password-strength" aria-label="Orientação de senha">
-          <span className={password.length >= 6 ? "active" : ""} />
-          <span className={password.length >= 8 ? "active" : ""} />
-          <span className={password.length >= 10 ? "active" : ""} />
-          <small>
-            {password.length >= 10
-              ? "Boa extensão de senha"
-              : password.length >= 6
-                ? "Mínimo atendido; prefira 10 ou mais caracteres"
-                : "Use pelo menos 6 caracteres"}
-          </small>
-        </div>
-        <div className="registration-checklist">
-          <span>
-            <Check size={14} />
-            Conecte seus canais
-          </span>
-          <span>
-            <Check size={14} />
-            Convide sua equipe
-          </span>
-          <span>
-            <ShieldCheck size={14} />
-            Ambiente isolado por empresa
-          </span>
-        </div>
         {error ? <InlineFeedback message={error} kind="error" /> : null}
         <button
           type="submit"

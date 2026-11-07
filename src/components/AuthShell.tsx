@@ -34,9 +34,6 @@ export default function AuthShell({
               Conecte seus canais.<br />
               <em>Organize sua rotina.</em>
             </p>
-            <p className="auth-visual-copy">
-              WhatsApp, Gmail e equipe no mesmo espaço, com a identidade da sua empresa.
-            </p>
           </div>
 
           <div className="auth-network" aria-hidden="true">
@@ -60,13 +57,15 @@ export default function AuthShell({
                 <BrandLogo compact />
                 <strong>ConsorTech</strong>
               </Link>
-              <ThemeSwitcher />
             </div>
 
-            <div className="auth-heading">
-              <span className="eyebrow">{eyebrow}</span>
-              <h1 id="auth-title">{title}</h1>
-              {description ? <p>{description}</p> : null}
+            <div className="auth-header-row">
+              <div className="auth-heading">
+                <span className="eyebrow">{eyebrow}</span>
+                <h1 id="auth-title">{title}</h1>
+                {description ? <p>{description}</p> : null}
+              </div>
+              <ThemeSwitcher />
             </div>
 
             {children}

@@ -75,7 +75,6 @@ export default function Login() {
       compactLogin
       eyebrow="ACESSO"
       title="Entrar"
-      description="Acesse os canais e a equipe da sua empresa."
     >
       <GoogleSignInButton
         busy={loading}

@@ -167,40 +167,53 @@
   .auth-page .auth-field .input-with-icon input { font-size: 16px; }
 }
 
-/* Keep the login controls together in shorter browser windows. */
-.auth-page.login-page {
+/* Keep the login and registration controls matching, compact and balanced without excessive scrolling. */
+.auth-page:is(.login-page, .registration-page) {
   padding: clamp(8px, 2dvh, 22px) clamp(10px, 2vw, 24px);
 }
 
-.login-page .auth-shell {
+:is(.login-page, .registration-page) .auth-shell {
   width: min(100%, 980px);
   min-height: 0;
   border-radius: 20px;
 }
 
-.login-page .auth-visual-panel {
+:is(.login-page, .registration-page) .auth-visual-panel {
   justify-content: center;
   padding: clamp(24px, 5dvh, 42px) clamp(24px, 4vw, 46px);
 }
 
-.login-page .auth-brand-row { margin-bottom: 0; }
-.login-page .auth-story { margin: 24px 0 18px; }
-.login-page .auth-visual-title { font-size: clamp(29px, 3vw, 40px); }
-.login-page .auth-network { padding: 0; border: 0; background: none; }
-.login-page .auth-network-hub,
-.login-page .auth-network-channels::before { display: none; }
-.login-page .auth-home-link { margin-top: 18px; padding-top: 0; }
+:is(.login-page, .registration-page) .auth-brand-row { margin-bottom: 0; }
+:is(.login-page, .registration-page) .auth-story { margin: 24px 0 18px; }
+:is(.login-page, .registration-page) .auth-visual-title { font-size: clamp(29px, 3vw, 40px); }
+:is(.login-page, .registration-page) .auth-network { padding: 0; border: 0; background: none; }
+:is(.login-page, .registration-page) .auth-network-hub,
+:is(.login-page, .registration-page) .auth-network-channels::before { display: none; }
+:is(.login-page, .registration-page) .auth-home-link { margin-top: 18px; padding-top: 0; }
 
-.login-page .auth-panel {
-  padding: clamp(14px, 3dvh, 32px) clamp(16px, 4vw, 46px);
+:is(.login-page, .registration-page) .auth-panel {
+  padding: clamp(18px, 3.2dvh, 32px) clamp(16px, 4vw, 46px);
 }
 
-.login-page .auth-brand-mini { margin-bottom: 10px; }
-.login-page .theme-switcher { box-shadow: none; }
-.login-page .auth-heading { margin-bottom: 12px; }
-.login-page .auth-heading h1 { font-size: clamp(28px, 4.8dvh, 38px); }
-.login-page .auth-divider { margin: 8px 0; }
-.login-page .auth-form { gap: 10px; }
+:is(.login-page, .registration-page) .auth-brand-mini { display: none; }
+@media (max-width: 900px) {
+  :is(.login-page, .registration-page) .auth-brand-mini { display: flex; margin-bottom: 8px; }
+}
+
+.auth-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+}
+
+.auth-header-row .auth-heading { margin-bottom: 0; }
+.auth-header-row .theme-switcher { box-shadow: none; margin-top: 4px; flex-shrink: 0; }
+:is(.login-page, .registration-page) .auth-heading h1 { font-size: clamp(28px, 4.8dvh, 38px); }
+:is(.login-page, .registration-page) .auth-divider { margin: 8px 0; }
+:is(.login-page, .registration-page) .auth-form { gap: 10px; }
 
 .login-password-label {
   display: flex;
@@ -213,22 +226,22 @@
 }
 
 .login-password-label .forgot-password-link { margin: 0; }
-.login-page .auth-field .input-with-icon { min-height: 44px; }
-.login-page .auth-field .input-with-icon input { padding-block: 8px; }
-.login-page .auth-submit { min-height: 44px; margin-top: 0; }
+:is(.login-page, .registration-page) .auth-field .input-with-icon { min-height: 44px; }
+:is(.login-page, .registration-page) .auth-field .input-with-icon input { padding-block: 8px; }
+:is(.login-page, .registration-page) .auth-submit { min-height: 44px; margin-top: 0; }
 
-.login-page .auth-footer {
+:is(.login-page, .registration-page) .auth-footer {
   margin-top: 12px;
   padding-top: 10px;
 }
 
 @media (max-height: 540px) {
-  .auth-page.login-page { padding-block: 6px; }
-  .login-page .auth-panel { padding-block: 10px; }
-  .login-page .auth-brand-mini,
-  .login-page .auth-heading { margin-bottom: 8px; }
-  .login-page .auth-heading p { display: none; }
-  .login-page .auth-divider { margin-block: 6px; }
-  .login-page .auth-form { gap: 8px; }
-  .login-page .auth-footer { margin-top: 8px; padding-top: 6px; }
+  .auth-page:is(.login-page, .registration-page) { padding-block: 6px; }
+  :is(.login-page, .registration-page) .auth-panel { padding-block: 10px; }
+  :is(.login-page, .registration-page) .auth-brand-mini,
+  :is(.login-page, .registration-page) .auth-heading { margin-bottom: 8px; }
+  :is(.login-page, .registration-page) .auth-heading p { display: none; }
+  :is(.login-page, .registration-page) .auth-divider { margin-block: 6px; }
+  :is(.login-page, .registration-page) .auth-form { gap: 8px; }
+  :is(.login-page, .registration-page) .auth-footer { margin-top: 8px; padding-top: 6px; }
 }
