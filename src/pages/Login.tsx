@@ -161,42 +161,6 @@ export default function Login() {
       <div className="auth-footer">
         Não tem acesso? <Link to="/register">Solicitar cadastro</Link>
       </div>
-      {import.meta.env.DEV && (
-        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed var(--border, #cbd5e1)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <small style={{ color: "var(--text-muted, #64748b)", textAlign: "center", fontWeight: 600, fontSize: "0.75rem" }}>DEMO LOCAL (DESENVOLVIMENTO)</small>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-            <button
-              type="button"
-              className="button secondary"
-              style={{ fontSize: "0.75rem", padding: "0.45rem 0.5rem" }}
-              onClick={() => {
-                localStorage.setItem("token", "mock-jwt.eyJ1aWQiOjEsInN1YiI6ImF1cm9yYSIsImV4cCI6OTk5OTk5OTk5OX0.sig");
-                localStorage.setItem("refreshToken", "mock-refresh-token");
-                localStorage.setItem("userType", "CLIENTE");
-                localStorage.setItem("userEmail", "aurora@consortech.com");
-                sessionStorage.setItem("show-trial-notice", "true");
-                navigate("/app", { replace: true });
-              }}
-            >
-              Entrar como Cliente
-            </button>
-            <button
-              type="button"
-              className="button secondary"
-              style={{ fontSize: "0.75rem", padding: "0.45rem 0.5rem" }}
-              onClick={() => {
-                localStorage.setItem("token", "mock-jwt.eyJ1aWQiOjEsInN1YiI6ImFkbWluIiwiZXhwIjo5OTk5OTk5OTk5fQ.sig");
-                localStorage.setItem("refreshToken", "mock-refresh-token");
-                localStorage.setItem("userType", "ADMINISTRADOR");
-                localStorage.setItem("userEmail", "admin@consortech.com");
-                navigate("/admin/dashboard", { replace: true });
-              }}
-            >
-              Entrar como Admin
-            </button>
-          </div>
-        </div>
-      )}
     </AuthShell>
     </>
   );

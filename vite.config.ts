@@ -159,6 +159,14 @@ function devMockPlugin(): Plugin {
             return sendJson({ id: 10, tipo: "CLIENTE" }, 201);
           }
 
+          if (url.startsWith("/api/auth/forgot-password")) {
+            return sendJson({ message: "Código enviado para o seu e-mail.", expiresIn: 300 });
+          }
+
+          if (url.startsWith("/api/auth/reset-password")) {
+            return sendJson({ success: true });
+          }
+
           if (url.startsWith("/api/auth/logout") || url.startsWith("/api/auth/refresh")) {
             return sendJson({ token: "mock-jwt", refreshToken: "mock-refresh", expiresIn: 86400, tipo: "CLIENTE" });
           }

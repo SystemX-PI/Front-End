@@ -276,3 +276,104 @@
   :is(.login-page, .registration-page) .auth-form { gap: 8px; }
   :is(.login-page, .registration-page) .auth-footer { margin-top: 8px; padding-top: 6px; }
 }
+
+/* Password Recovery styles */
+.reset-instructions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-alt, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  margin-bottom: 8px;
+  color: var(--text-soft, #475569);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .reset-instructions {
+  background: rgba(16, 44, 43, 0.45);
+  border-color: rgba(151, 232, 214, 0.18);
+  color: #c4dcd5;
+}
+
+.reset-instructions svg {
+  flex-shrink: 0;
+  color: #35cda0;
+  margin-top: 1px;
+}
+
+.reset-instructions p {
+  margin: 0;
+}
+
+.reset-instructions strong {
+  color: var(--text, #0f172a);
+}
+
+[data-theme="dark"] .reset-instructions strong {
+  color: #f1f5f9;
+}
+
+.reset-countdown {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reset-countdown strong {
+  color: #315fe8;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .reset-countdown strong {
+  color: #9fe1cc;
+}
+
+.reset-countdown.expired {
+  color: var(--danger, #ef4444);
+  font-weight: 500;
+}
+
+.reset-resend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.reset-resend button {
+  background: none;
+  border: none;
+  color: #315fe8;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.reset-resend button:hover:not(:disabled) {
+  text-decoration: underline;
+  background-color: rgba(49, 95, 232, 0.08);
+}
+
+.reset-resend button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .reset-resend button {
+  color: #9fe1cc;
+}
+
+[data-theme="dark"] .reset-resend button:hover:not(:disabled) {
+  background-color: rgba(159, 225, 204, 0.1);
+}

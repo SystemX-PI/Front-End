@@ -11,6 +11,7 @@ export default function AuthShell({
   description,
   registration = false,
   compactLogin = false,
+  recovery = false,
 }: {
   children: ReactNode;
   eyebrow: string;
@@ -18,9 +19,10 @@ export default function AuthShell({
   description?: string;
   registration?: boolean;
   compactLogin?: boolean;
+  recovery?: boolean;
 }) {
   return (
-    <div className={`auth-page${registration ? " registration-page" : ""}${compactLogin ? " login-page" : ""}`}>
+    <div className={`auth-page${registration ? " registration-page" : ""}${compactLogin || recovery ? " login-page" : ""}${recovery ? " recovery-page" : ""}`}>
       <div className="auth-shell">
         <aside className="auth-visual-panel" aria-label="Sobre a ConsorTech">
           <div className="auth-brand-row">
