@@ -5,22 +5,24 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  PlugZap,
   Send,
   Users,
   UserRound,
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { getUserType, logout } from "../services/auth";
 
 const links = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/dashboard", label: "Visão geral", icon: LayoutDashboard },
   { to: "/admin/contemplados", label: "Contemplados", icon: BellRing },
   { to: "/admin/cadastros", label: "Cadastros", icon: ClipboardList },
   { to: "/admin/clientes", label: "Clientes", icon: UserRound },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/comunicacao", label: "Comunicação", icon: BellRing },
+  { to: "/admin/canais", label: "Canais internos", icon: PlugZap },
   { to: "/admin/disparo-manual", label: "Disparo manual", icon: Send },
   { to: "/admin/baixas", label: "Baixas pendentes", icon: ClipboardList },
   { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
@@ -36,6 +38,8 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const admin = getUserType() === "ADMINISTRADOR";
   const [menuOpen, setMenuOpen] = useState(false);
   const email = localStorage.getItem("userEmail") || "";
 
@@ -68,29 +72,32 @@ export default function AdminShell({
         </div>
         <p className="nav-section-label admin-section-label">Administração</p>
         <nav id="main-navigation" className="sidebar-nav" onClick={() => setMenuOpen(false)} aria-label="Navegação administrativa">
-          {links.filter(link => link.to !== "/admin/usuarios" || getUserType() === "ADMINISTRADOR").map(({ to, label, icon: Icon }) => (
+          {links.filter(link => admin || !["/admin/usuarios", "/admin/canais"].includes(link.to)).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
-              to={to}
-              end={to === "/admin/dashboard"}
+              to={to === "/admin/clientes" && admin ? "/app/clientes" : to}
+              end
               className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
+                (isActive || (admin && to === "/admin/clientes" && location.pathname === "/app")) ? "nav-item active" : "nav-item"
               }
             >
               <Icon size={18} aria-hidden="true" />
               <span>{label}</span>
             </NavLink>
           ))}
-          <NavLink to="/app" className="nav-item">
+          <NavLink to={admin ? "/app/perfil" : "/app"} className="nav-item">
             <BellRing size={18} aria-hidden="true" />
-            <span>Meu espaço</span>
+            <span>{admin ? "Meu perfil" : "Meu espaço"}</span>
           </NavLink>
         </nav>
-        <div className="sidebar-trust">
-          <div>
-            <strong>Sessão autenticada</strong>
-            <span>{email || "Usuário conectado"}</span>
+        <div className="sidebar-trust admin-session">
+          <div className="admin-session-copy">
+            <strong>{admin ? "Administrador" : "Equipe"}</strong>
+            <span title={email}>{email || "Usuário conectado"}</span>
           </div>
+          <button type="button" className="admin-session-logout" onClick={() => void handleLogout()}>
+            <LogOut size={16} aria-hidden="true" /> Sair
+          </button>
         </div>
       </aside>
 
@@ -109,18 +116,6 @@ export default function AdminShell({
           </div>
           <div className="user-chip">
             <ThemeSwitcher />
-            <span className="user-copy">
-              <strong>{email || "Usuário conectado"}</strong>
-              <small>Área administrativa</small>
-            </span>
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              aria-label="Sair do sistema"
-              title="Sair"
-            >
-              <LogOut size={17} aria-hidden="true" />
-            </button>
           </div>
         </header>
         <main id="main-content" className="integration-main admin-main">

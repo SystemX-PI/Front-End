@@ -3,9 +3,9 @@ export interface Account { professional?: boolean; id: number; nome: string; bra
 export interface Instance { id: number; name: string }
 export interface Mailbox { id: number; name: string; email: string; verified: boolean }
 export interface Member { id: number; name: string; email: string; active: boolean }
-export interface SubscriptionInfo { tier: "TRIAL" | "PRO"; whatsappLimit: number; gmailLimit: number; upgradePriceCents: number; currency: string; billingProvider?: "STRIPE" | null; billingStatus?: string | null }
+export interface SubscriptionInfo { tier: "TRIAL" | "PRO"; whatsappLimit: number; gmailLimit: number; upgradePriceCents: number; currency: string; billingProvider?: "STRIPE" | "STRIPE_PIX" | null; billingStatus?: string | null }
 export interface CheckoutOrder { id: string; paymentMethod: "PIX" | "CARD"; status: "PENDING" | "PAID"; amountCents: number; currency: string; expiresAt: string; paidAt: string | null; simulation: boolean; pixCode: string | null }
-export interface Context { photo?: string | null; googleLinked?: boolean; subscription?: SubscriptionInfo; role: string; name: string; email: string; account: Account | null; active: boolean; simulationEnabled: boolean; stripeEnabled: boolean; stripeMonthlyPriceCents: number; instances: Instance[]; mailboxes: Mailbox[]; users: Member[] }
+export interface Context { operationChannels?: boolean; photo?: string | null; googleLinked?: boolean; subscription?: SubscriptionInfo; role: string; name: string; email: string; account: Account | null; active: boolean; simulationEnabled: boolean; stripeEnabled: boolean; stripeMonthlyPriceCents: number; instances: Instance[]; mailboxes: Mailbox[]; users: Member[] }
 export interface Client { professional?: boolean; id: number; nome: string; email: string | null; trialEndsAt: string; paidUntil: string | null; suspended: boolean; instances: number; gmails: number; users: number }
 export interface Connection { instanceName: string; state: string; qrCode: string | null; pairingCode: string | null }
 export function platformRequest<T>(path: string, accountId: string | null, method = "GET", body?: object) {

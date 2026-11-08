@@ -109,13 +109,13 @@ export default function Dashboard() {
                   key={item.processoId}
                   to={`/admin/contemplados?processo=${item.processoId}`}
                 >
-                  <span className="record-avatar">#{item.processoId}</span>
+                  <span className="record-avatar"><BellRing size={18}/></span>
                   <div>
                     <strong>
-                      {item.idExterno || `Processo ${item.processoId}`}
+                      {item.comunicacao.email?.destinatario || item.comunicacao.whatsapp?.destinatario || item.idExterno || "Contemplação"}
                     </strong>
                     <small>
-                      {item.origem || "Integração"} ·{" "}
+                      {[item.origem, item.idExterno].filter(Boolean).join(" · ") || "Sem referência externa"} ·{" "}
                       {formatDate(item.recebidaEm)}
                     </small>
                   </div>

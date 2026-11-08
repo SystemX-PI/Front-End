@@ -1,25 +1,58 @@
-import {useCallback,useState,type FormEvent} from "react";
-import {Link,useSearchParams} from "react-router-dom";
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import ConfirmDialog from "../components/ConfirmDialog";
-import {EmptyState,ErrorState,Pagination,Skeleton} from "../components/DataUi";
-import {InlineFeedback} from "../components/IntegrationUi";
-import {backend,sessionUserId,type ProcessResponse,type ClosureResponse} from "../services/backend";
-import {useResource} from "../hooks/useResource";
-import {useDebouncedValue} from "../hooks/useDebouncedValue";
-import {operationError} from "../services/operationErrors";
-import {formatDate,readable} from "../services/format";
-export default function Closures(){
- const [params,setParams]=useSearchParams();const page=Math.max(1,Number(params.get('page'))||1);const [search,setSearch]=useState(params.get('q')||'');const q=useDebouncedValue(search);
- const load=useCallback((signal:AbortSignal)=>backend.operation.pending(page-1,q,signal).catch(operationError),[page,q]);const list=useResource(load);
- const [id,setId]=useState(params.get('processo')||'');const [process,setProcess]=useState<ProcessResponse|null>(null);const [closure,setClosure]=useState<ClosureResponse|null>(null);const [note,setNote]=useState('');const [busy,setBusy]=useState(false);const [confirm,setConfirm]=useState(false);const [error,setError]=useState('');
- async function inspect(event:FormEvent){event.preventDefault();if(busy)return;setBusy(true);setError('');setProcess(null);setClosure(null);setNote('');try{const value=Number(id);if(!Number.isSafeInteger(value)||value<1)throw new Error('Informe um processo válido.');const p=await backend.processes.get(value);setProcess(p);if(p.status==='FINALIZADO')setClosure(await backend.processes.getClosure(value));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function close(){if(!process||busy)return;setConfirm(false);setBusy(true);setError('');try{const uid=sessionUserId();if(!uid)throw new Error('Entre novamente para identificar o responsável pela baixa.');const result=await backend.processes.createClosure(process.id,uid,note.trim());setClosure(result);setProcess({...process,status:'FINALIZADO'});list.refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- return <AdminShell title="Baixas pendentes" subtitle="Confira o processo antes de concluir a baixa">
- <section className="panel data-panel"><h2>Processos em baixa</h2><label className="field">Buscar processos<input value={search} onChange={e=>{setSearch(e.target.value);setParams({q:e.target.value,page:'1'});}}/></label>{list.loading?<Skeleton/>:list.error?<ErrorState message={list.error} retry={list.refresh}/>:list.data?.items.length?<><div className="table-scroll"><table className="admin-table"><thead><tr><th>Processo</th><th>Status</th><th>Atualizado em</th><th>Ação</th></tr></thead><tbody>{list.data.items.map(p=><tr key={p.id}><td>#{p.id}</td><td>{readable(p.status)}</td><td>{formatDate(p.atualizadoEm)}</td><td><button className="button secondary" onClick={()=>{setId(String(p.id));setProcess(p);setClosure(null);setError('');setNote('');}}>Conferir processo #{p.id}</button></td></tr>)}</tbody></table></div><Pagination page={page} total={list.data.total} size={20} onChange={n=>setParams({q:search,page:String(n)})}/></>:<EmptyState title="Nenhuma baixa pendente" description="Os processos em fase de baixa aparecerão nesta lista."/>}</section>
- <form className="panel admin-form" onSubmit={inspect}><h2>Conferência individual</h2><label className="field">ID do processo<input type="number" required min="1" step="1" value={id} onChange={e=>{setId(e.target.value);setProcess(null);setClosure(null);setError('');}}/></label><button className="button secondary" disabled={busy}>{busy?'Consultando…':'Consultar processo'}</button></form>
- {error&&<InlineFeedback message={error} kind="error"/>}
- {process&&<section className="panel admin-form"><h2>Processo #{process.id}</h2><p>Status: {readable(process.status)}</p><p>Contemplação #{process.contemplacaoId} · Atualizado em {formatDate(process.atualizadoEm)}</p><Link to={'/admin/contemplados?processo='+process.id}>Ver comunicação e histórico</Link>{closure?<div role="status"><h3>Baixa registrada #{closure.id}</h3><p>{formatDate(closure.data)} · Responsável #{closure.usuarioId}</p><p>{closure.observacao}</p></div>:process.status==='EM_PROCESSO_DE_BAIXA'?<><p>Confirme que a comunicação e a documentação foram conferidas. A conclusão será validada pelo serviço.</p><label className="field">Observação da baixa<textarea value={note} maxLength={255} onChange={e=>setNote(e.target.value)}/></label><button className="button primary" disabled={busy} onClick={()=>setConfirm(true)}>Concluir baixa</button></>:<p role="status">Este processo não está na etapa de baixa. Nenhuma alteração será realizada por esta tela.</p>}</section>}
- <ConfirmDialog open={confirm} title={'Concluir baixa do processo #'+process?.id+'?'} description="A conclusão encerra este processo. Confira os dados antes de confirmar." confirmLabel="Confirmar baixa" onCancel={()=>setConfirm(false)} onConfirm={()=>void close()}/>
- </AdminShell>;
+import ProcessPicker, { initialProcessId, processName, processReference, useProcessDirectory, type ProcessOption } from "../components/ProcessPicker";
+import { InlineFeedback } from "../components/IntegrationUi";
+import { backend, sessionUserId, type ClosureResponse } from "../services/backend";
+import { formatDate, readable } from "../services/format";
+
+export default function Closures() {
+  const [params, setParams] = useSearchParams();
+  const directory = useProcessDirectory();
+  const id = initialProcessId(params.get("processo"));
+  const item = directory.data?.items.find(row => row.processoId === id);
+  const [allOpen, setAllOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [closure, setClosure] = useState<ClosureResponse | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  function select(row: ProcessOption) {
+    setNote(""); setClosure(null); setError(""); setConfirm(false);
+    setParams({ processo: String(row.processoId) }, { replace: true });
+  }
+
+  async function close() {
+    if (!item || busy || item.statusProcesso !== "EM_PROCESSO_DE_BAIXA") return;
+    setConfirm(false); setBusy(true); setError("");
+    try {
+      const uid = sessionUserId();
+      if (!uid) throw new Error("Entre novamente para identificar o responsável pela baixa.");
+      setClosure(await backend.processes.createClosure(item.processoId, uid, note.trim()));
+      directory.refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir a baixa."); }
+    finally { setBusy(false); }
+  }
+
+  return <AdminShell title="Baixas pendentes" subtitle="Selecione um processo em baixa e confira os dados antes de concluir.">
+    <div className="process-layout">
+      <ProcessPicker directory={directory} selectedId={id} mode={allOpen ? "open" : "closure"} disabled={busy} onSelect={select}
+        filter={<label className="field">Exibir<select value={allOpen ? "open" : "closure"} onChange={event => setAllOpen(event.target.value === "open")}>
+          <option value="closure">Em baixa</option><option value="open">Todos os abertos</option>
+        </select></label>}/>
+      {item && <section className="panel admin-form process-detail">
+        <div><h2>{processName(item)}</h2><p>{processReference(item)}</p></div>
+        <p>{readable(closure?.processoId === id ? "FINALIZADO" : item.statusProcesso)}</p>
+        <Link to={`/admin/contemplados?processo=${item.processoId}`}>Ver detalhes e comunicação</Link>
+        {closure?.processoId === id && closure ? <InlineFeedback kind="success" message={`Baixa registrada em ${formatDate(closure.data)}.`}/> : item.statusProcesso === "EM_PROCESSO_DE_BAIXA" ? <>
+          <label className="field">Observação da baixa<textarea value={note} maxLength={255} onChange={event => setNote(event.target.value)}/></label>
+          <button type="button" className="button primary" disabled={busy} onClick={() => setConfirm(true)}>{busy ? "Concluindo…" : "Concluir baixa"}</button>
+        </> : <p>Este processo não está na etapa de baixa.</p>}
+        {error && <InlineFeedback kind="error" message={error}/>}
+      </section>}
+    </div>
+    <ConfirmDialog open={confirm && !!item} title="Concluir baixa?" description={item ? `A baixa encerra a contemplação de ${processName(item)}.` : ""} confirmLabel="Confirmar baixa" onCancel={() => setConfirm(false)} onConfirm={() => void close()}/>
+  </AdminShell>;
 }
