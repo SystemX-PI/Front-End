@@ -587,6 +587,26 @@ textarea:focus-visible {
 .sidebar-trust strong {
   color: #d5e3f5;
 }
+.admin-session-copy {
+  min-width: 0;
+}
+.admin-session-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-session-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  color: #d5e3f5;
+  font-size: 13px;
+}
+.admin-session-logout:hover {
+  color: #fff;
+}
 .sidebar-trust span,
 .sidebar-version {
   color: #9aacc4;
@@ -1548,7 +1568,12 @@ textarea:focus-visible {
   border-left-color: #137b57;
 }
 .confirm-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: min(460px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
   padding: 30px;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -1911,6 +1936,7 @@ textarea:focus-visible {
   .sidebar .sidebar-nav { display: none; }
   .sidebar.menu-open .sidebar-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
   .sidebar .nav-section-label, .sidebar .sidebar-trust, .sidebar .sidebar-version { display: none; }
+  .admin-sidebar.menu-open .admin-session { display: flex; }
   .configuration-grid, .whatsapp-grid { grid-template-columns: minmax(0, 1fr); }
   .topbar { gap: 12px; }
   .user-chip { flex-shrink: 0; }

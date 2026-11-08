@@ -7,7 +7,7 @@ import { Empty, Feedback, PageTitle } from "./PlatformApp";
 const states:Record<string,string>={open:"Conectado",connecting:"Aguardando leitura",close:"Desconectado",closed:"Desconectado",not_created:"Pronto para conectar"};
 export default function PlatformWhatsApp({context:c,accountId,reload}:{context:Context;accountId:string|null;reload:()=>Promise<void>}) {
  const [selected,setSelected]=useState<number|null>(c.instances[0]?.id??null);const [connection,setConnection]=useState<Connection|null>(null);const [revision,setRevision]=useState(0);const [watching,setWatching]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [name,setName]=useState("");
- const navigate=useNavigate(); const plan=planFor(c);const full=c.instances.length>=plan.whatsappLimit;
+ const navigate=useNavigate(); const plan=planFor(c);const full=!c.operationChannels&&c.instances.length>=plan.whatsappLimit;
  const manager=c.role==="CLIENTE"||c.role==="ADMINISTRADOR";
  const current=c.instances.find(i=>i.id===selected);
  useEffect(()=>{

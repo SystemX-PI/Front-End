@@ -260,10 +260,10 @@ export const backend = {
         `/api/integracoes/processos/${id}/comunicacao/reenvio`,
         { method: "POST" },
       ),
-    sendWhatsApp: (id: number, telefone: string, mensagem: string) =>
+    sendWhatsApp: (id: number, telefone: string, mensagem: string, remetenteId?: number) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/whatsapp`,
-        { method: "POST", body: JSON.stringify({ telefone, mensagem }) },
+        { method: "POST", body: JSON.stringify({ telefone, mensagem, remetenteId }) },
       ),
     createClosure: (id: number, usuarioId: number, observacao?: string) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, {

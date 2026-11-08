@@ -7,6 +7,7 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   name: string;
+  companyName: string;
   email: string;
   password: string;
 }
@@ -114,6 +115,7 @@ export async function register(payload: RegisterRequest): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       nome: payload.name.trim(),
+      empresa: payload.companyName.trim(),
       email: payload.email.trim(),
       senha: payload.password,
     }),
