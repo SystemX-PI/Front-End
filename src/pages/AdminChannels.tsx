@@ -11,7 +11,11 @@ export default function AdminChannels() {
   const [channel, setChannel] = useState<"whatsapp" | "gmail">("whatsapp");
   const [context, setContext] = useState<Context | null>(null);
   const reload = useCallback(async () => {
-    setContext(await platformRequest<Context>("/operation-channels", null));
+    const data = await platformRequest<Context>("/operation-channels", null);
+    if (!data || !Array.isArray(data.instances) || !Array.isArray(data.mailboxes)) {
+      throw new Error("Não foi possível carregar os canais internos da administração.");
+    }
+    setContext(data);
   }, []);
   const result = useResource(reload);
   return <AdminShell title="Canais internos" subtitle="Remetentes da administração para envios de teste.">
