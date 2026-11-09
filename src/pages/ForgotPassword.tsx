@@ -170,7 +170,7 @@ export default function ForgotPassword() {
 
           <div className="reset-resend">
             <button type="button" disabled={busy || cooldown > 0} onClick={() => void handleSend()}>
-              {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Enviar um novo código"}
+              {cooldown > 0 ? `Reenviar código em ${cooldown}s` : "Reenviar código"}
             </button>
             <button
               type="button"
@@ -190,7 +190,7 @@ export default function ForgotPassword() {
       ) : (
         <form className="auth-form" onSubmit={handleSend} aria-busy={busy}>
           <label className="field auth-field">
-            <span>E-mail de acesso</span>
+            <span>E-mail</span>
             <div className="input-with-icon">
               <Mail size={18} />
               <input

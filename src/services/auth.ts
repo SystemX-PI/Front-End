@@ -7,7 +7,7 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   name: string;
-  companyName: string;
+  companyName?: string;
   email: string;
   password: string;
 }
@@ -116,7 +116,7 @@ export async function register(payload: RegisterRequest): Promise<void> {
     email: payload.email.trim(),
     senha: payload.password,
   };
-  if (payload.companyName.trim()) {
+  if (payload.companyName?.trim()) {
     body.empresa = payload.companyName.trim();
   }
   await request("/api/auth/register", {
