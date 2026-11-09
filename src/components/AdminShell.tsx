@@ -88,10 +88,12 @@ export default function AdminShell({
               <span>{label}</span>
             </NavLink>
           ))}
-          <NavLink to="/app" className="nav-item">
-            <BellRing size={18} aria-hidden="true" />
-            <span>Meu espaço</span>
-          </NavLink>
+          {getUserType() === "ADMINISTRADOR" ? (
+            <NavLink to="/app" className="nav-item">
+              <BellRing size={18} aria-hidden="true" />
+              <span>Meu espaço</span>
+            </NavLink>
+          ) : null}
         </nav>
         <div className="sidebar-trust">
           <div>

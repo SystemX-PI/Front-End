@@ -15,14 +15,19 @@ import {
 } from "../components/DataUi";
 import { StatusPill } from "../components/IntegrationUi";
 import { useResource } from "../hooks/useResource";
+import { getUserType } from "../services/auth";
 import { backend } from "../services/backend";
 import { formatDate, readable } from "../services/format";
 
 export default function Dashboard() {
+  const isAdmin = getUserType() === "ADMINISTRADOR";
   const { data, loading, error, refresh } = useResource(
     backend.integrations.queue,
   );
-  const queue = Array.isArray(data) ? data : [];
+  const rawQueue = Array.isArray(data) ? data : [];
+  const queue = rawQueue.filter(
+    (item) => Number.isSafeInteger(item?.processoId) && item.processoId > 0,
+  );
   const metrics = [
     {
       label: "Processos na comunicação",
@@ -52,7 +57,10 @@ export default function Dashboard() {
       label: "Precisam de atenção",
       value: queue.filter(
         (item) =>
-          item?.comunicacao?.email?.erro || item?.comunicacao?.whatsapp?.erro,
+          Boolean(item?.comunicacao?.email?.erro) ||
+          Boolean(item?.comunicacao?.whatsapp?.erro) ||
+          item?.comunicacao?.email?.status === "FALHA" ||
+          item?.comunicacao?.whatsapp?.status === "FALHA",
       ).length,
       icon: TriangleAlert,
       tone: "red",
@@ -178,15 +186,24 @@ export default function Dashboard() {
               label: "Disparo manual de mensagens",
               description: "Envie mensagens personalizadas por processo",
             },
+            ...(isAdmin
+              ? [
+                  {
+                    to: "/admin/canais",
+                    label: "Canais internos da operação",
+                    description: "Configure WhatsApp e Gmail da administração",
+                  },
+                ]
+              : []),
             {
-              to: "/integracoes/gmail",
-              label: "Configurar e-mail",
-              description: "Defina sua conta remetente",
+              to: "/admin/contemplados",
+              label: "Consultar processos contemplados",
+              description: "Verifique status, comunicação e andamento",
             },
             {
-              to: "/integracoes/whatsapp",
-              label: "Conectar WhatsApp",
-              description: "Vincule o aparelho da operação",
+              to: "/admin/baixas",
+              label: "Conferir baixas pendentes",
+              description: "Valide processos em etapa final de baixa",
             },
             {
               to: "/admin/clientes",
