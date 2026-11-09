@@ -1,6 +1,7 @@
-export const digits = (value: string) => value.replace(/\D/g, "");
+export const digits = (value?: string | null) =>
+  typeof value === "string" ? value.replace(/\D/g, "") : "";
 
-export function formatPhone(value: string) {
+export function formatPhone(value?: string | null) {
   const number = digits(value).slice(0, 15);
   if (number.startsWith("55") && number.length > 11) {
     const local = number.slice(2);
@@ -12,7 +13,7 @@ export function formatPhone(value: string) {
 }
 
 export function formatDate(value?: string | null) {
-  if (!value) return "Não informado";
+  if (!value || typeof value !== "string") return "Não informado";
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Data indisponível"
@@ -22,11 +23,14 @@ export function formatDate(value?: string | null) {
       }).format(date);
 }
 
-export const readable = (value: string) =>
-  value
+export const readable = (value?: unknown) => {
+  if (typeof value !== "string" || !value.trim()) return "Não informado";
+  return value
+    .trim()
     .toLowerCase()
     .replaceAll("_", " ")
     .replace(/^./, (letter) => letter.toUpperCase());
+};
 
 export function positiveId(value: number, field: string) {
   if (!Number.isSafeInteger(value) || value <= 0)
