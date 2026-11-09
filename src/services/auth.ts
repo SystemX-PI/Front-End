@@ -109,16 +109,20 @@ export function storeAuthResponse(data: AuthResponse): void {
 }
 
 export async function register(payload: RegisterRequest): Promise<void> {
-  if (!payload.name.trim()) throw new Error("Informe seu nome.");
+  const fallbackName = payload.email.trim().split("@")[0]?.trim() || "Meu Espaço";
+  const resolvedName = payload.name.trim() || fallbackName;
+  const body: Record<string, string> = {
+    nome: resolvedName,
+    email: payload.email.trim(),
+    senha: payload.password,
+  };
+  if (payload.companyName.trim()) {
+    body.empresa = payload.companyName.trim();
+  }
   await request("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      nome: payload.name.trim(),
-      empresa: payload.companyName.trim(),
-      email: payload.email.trim(),
-      senha: payload.password,
-    }),
+    body: JSON.stringify(body),
   });
 }
 

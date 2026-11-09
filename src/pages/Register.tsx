@@ -13,8 +13,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { login, loginWithGoogle, register, registerWithGoogle } from "../services/auth";
-import { ApiError } from "../services/http";
+import { login, register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -32,22 +31,10 @@ export default function Register() {
 
   const isCompanyStep = Boolean(googleCredential);
 
-  async function handleGoogleCredential(credential: string) {
+  function handleGoogleCredential(credential: string) {
     if (loading) return;
-    setLoading(true);
     setError("");
-    try {
-      await loginWithGoogle(credential);
-      navigate("/app", { replace: true });
-    } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.status === 403) {
-        setGoogleCredential(credential);
-      } else {
-        setError(requestError instanceof Error ? requestError.message : "Não foi possível entrar com Google.");
-      }
-    } finally {
-      setLoading(false);
-    }
+    setGoogleCredential(credential);
   }
 
   async function handleGoogleRegistration(event: FormEvent) {
@@ -166,7 +153,7 @@ export default function Register() {
           <GoogleSignInButton
             purpose="register"
             busy={loading}
-            onCredential={(credential) => void handleGoogleCredential(credential)}
+            onCredential={(credential) => handleGoogleCredential(credential)}
             onError={setError}
           />
         </div>
@@ -174,13 +161,13 @@ export default function Register() {
         <label className="field auth-field">
           <span>Seu nome</span>
           <div className="input-with-icon"><UserRound size={18} />
-            <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" />
+            <input maxLength={120} value={name} onChange={(event) => setName(event.target.value)} placeholder="Como podemos chamar você?" autoComplete="name" />
           </div>
         </label>
         <label className="field auth-field">
           <span>Nome da sua empresa</span>
           <div className="input-with-icon"><Building2 size={18} />
-            <input required minLength={2} maxLength={255} value={companyName} onChange={(event) => setCompanyName(event.target.value)} autoComplete="organization" />
+            <input maxLength={255} value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Nome da administradora ou parceiro" autoComplete="organization" />
           </div>
         </label>
         <label className="field auth-field">
