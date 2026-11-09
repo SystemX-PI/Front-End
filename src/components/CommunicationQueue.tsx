@@ -49,10 +49,10 @@ export default function CommunicationQueue() {
   const { data, loading, error, refresh } = useResource(load);
   const [busy, setBusy] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
-  const queue = data?.items || [];
+  const queue = Array.isArray(data?.items) ? data.items : [];
   const size = 20;
   async function send(id: number) {
-    if (busy !== null) return;
+    if (busy !== null || !Number.isSafeInteger(id) || id <= 0) return;
     setConfirmId(null);
     setBusy(id);
     setFeedback("");
@@ -104,21 +104,24 @@ export default function CommunicationQueue() {
           {
             label: "Pendentes",
             value: queue.filter(
-              (item) => item.comunicacao.statusGeral === "PENDENTE",
+              (item) =>
+                (item?.comunicacao?.statusGeral || "PENDENTE") === "PENDENTE",
             ).length,
           },
           {
             label: "Envio em algum canal",
             value: queue.filter(
-              (item) => item.comunicacao.statusGeral !== "PENDENTE",
+              (item) =>
+                Boolean(item?.comunicacao?.statusGeral) &&
+                item.comunicacao.statusGeral !== "PENDENTE",
             ).length,
           },
           {
             label: "Com falha",
             value: queue.filter(
               (item) =>
-                item.comunicacao.email?.status === "FALHA" ||
-                item.comunicacao.whatsapp?.status === "FALHA",
+                item?.comunicacao?.email?.status === "FALHA" ||
+                item?.comunicacao?.whatsapp?.status === "FALHA",
             ).length,
           },
         ].map((metric) => (
@@ -202,60 +205,79 @@ export default function CommunicationQueue() {
         ) : (
           <>
             <div className="communication-list">
-              {queue.map((item) => (
-                <article className="communication-card" key={item.processoId}>
-                  <div className="communication-card-heading">
-                    <div>
-                      <Link
-                        className="text-link"
-                        to={`/admin/contemplados?processo=${item.processoId}`}
-                      >
-                        {item.idExterno || `Processo #${item.processoId}`}
-                      </Link>
-                      <p>
-                        {item.origem || "Integração"} · #{item.processoId} ·{" "}
-                        {formatDate(item.recebidaEm)}
-                      </p>
-                    </div>
-                    <div className="split-actions">
-                      <Link
-                        className="button secondary compact"
-                        to={`/admin/disparo-manual?processo=${item.processoId}`}
-                      >
-                        <MessageCircle size={14} />
-                        Mensagem manual
-                      </Link>
-                      <button
-                        type="button"
-                        className="button primary compact"
-                        disabled={busy !== null}
-                        onClick={() => setConfirmId(item.processoId)}
-                      >
-                        {busy === item.processoId ? (
-                          <span className="spinner" />
+              {queue.map((item, index) => {
+                const hasValidId =
+                  Number.isSafeInteger(item?.processoId) && item.processoId > 0;
+                const statusGeral = item?.comunicacao?.statusGeral || "PENDENTE";
+                const cardKey = hasValidId
+                  ? `comm-card-${item.processoId}`
+                  : `comm-card-fallback-${index}`;
+                return (
+                  <article className="communication-card" key={cardKey}>
+                    <div className="communication-card-heading">
+                      <div>
+                        {hasValidId ? (
+                          <Link
+                            className="text-link"
+                            to={`/admin/contemplados?processo=${item.processoId}`}
+                          >
+                            {item.idExterno || `Processo #${item.processoId}`}
+                          </Link>
                         ) : (
-                          <Send size={15} />
+                          <strong>
+                            {item?.idExterno || "Processo sem identificador"}
+                          </strong>
                         )}
-                        {busy === item.processoId
-                          ? "Enviando…"
-                          : item.comunicacao.statusGeral === "PENDENTE"
-                            ? "Notificar"
-                            : "Reenviar"}
-                      </button>
+                        <p>
+                          {item?.origem || "Integração"} ·{" "}
+                          {hasValidId ? `#${item.processoId}` : "ID indisponível"}{" "}
+                          · {formatDate(item?.recebidaEm)}
+                        </p>
+                      </div>
+                      <div className="split-actions">
+                        {hasValidId ? (
+                          <Link
+                            className="button secondary compact"
+                            to={`/admin/disparo-manual?processo=${item.processoId}`}
+                          >
+                            <MessageCircle size={14} />
+                            Mensagem manual
+                          </Link>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="button primary compact"
+                          disabled={busy !== null || !hasValidId}
+                          onClick={() => {
+                            if (hasValidId) setConfirmId(item.processoId);
+                          }}
+                        >
+                          {hasValidId && busy === item.processoId ? (
+                            <span className="spinner" />
+                          ) : (
+                            <Send size={15} />
+                          )}
+                          {hasValidId && busy === item.processoId
+                            ? "Enviando…"
+                            : statusGeral === "PENDENTE"
+                              ? "Notificar"
+                              : "Reenviar"}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="channel-grid">
-                    <ChannelStatus
-                      channel={item.comunicacao.email}
-                      name="E-mail"
-                    />
-                    <ChannelStatus
-                      channel={item.comunicacao.whatsapp}
-                      name="WhatsApp"
-                    />
-                  </div>
-                </article>
-              ))}
+                    <div className="channel-grid">
+                      <ChannelStatus
+                        channel={item?.comunicacao?.email ?? null}
+                        name="E-mail"
+                      />
+                      <ChannelStatus
+                        channel={item?.comunicacao?.whatsapp ?? null}
+                        name="WhatsApp"
+                      />
+                    </div>
+                  </article>
+                );
+              })}
             </div>
             <Pagination
               total={data?.total || 0}

@@ -22,7 +22,7 @@ export default function Dashboard() {
   const { data, loading, error, refresh } = useResource(
     backend.integrations.queue,
   );
-  const queue = data || [];
+  const queue = Array.isArray(data) ? data : [];
   const metrics = [
     {
       label: "Processos na comunicação",
@@ -32,15 +32,19 @@ export default function Dashboard() {
     },
     {
       label: "Aguardando comunicação",
-      value: queue.filter((item) => item.comunicacao.statusGeral === "PENDENTE")
-        .length,
+      value: queue.filter(
+        (item) => (item?.comunicacao?.statusGeral || "PENDENTE") === "PENDENTE",
+      ).length,
       icon: Clock3,
       tone: "amber",
     },
     {
       label: "Com algum canal enviado",
-      value: queue.filter((item) => item.comunicacao.statusGeral !== "PENDENTE")
-        .length,
+      value: queue.filter(
+        (item) =>
+          Boolean(item?.comunicacao?.statusGeral) &&
+          item.comunicacao.statusGeral !== "PENDENTE",
+      ).length,
       icon: CheckCircle2,
       tone: "green",
     },
@@ -48,7 +52,7 @@ export default function Dashboard() {
       label: "Precisam de atenção",
       value: queue.filter(
         (item) =>
-          item.comunicacao.email?.erro || item.comunicacao.whatsapp?.erro,
+          item?.comunicacao?.email?.erro || item?.comunicacao?.whatsapp?.erro,
       ).length,
       icon: TriangleAlert,
       tone: "red",
@@ -103,33 +107,51 @@ export default function Dashboard() {
             />
           ) : queue.length ? (
             <div className="recent-list">
-              {queue.slice(0, 5).map((item) => (
-                <Link
-                  className="recent-item"
-                  key={item.processoId}
-                  to={`/admin/contemplados?processo=${item.processoId}`}
-                >
-                  <span className="record-avatar"><BellRing size={18}/></span>
-                  <div>
-                    <strong>
-                      {item.comunicacao.email?.destinatario || item.comunicacao.whatsapp?.destinatario || item.idExterno || "Contemplação"}
-                    </strong>
-                    <small>
-                      {[item.origem, item.idExterno].filter(Boolean).join(" · ") || "Sem referência externa"} ·{" "}
-                      {formatDate(item.recebidaEm)}
-                    </small>
-                  </div>
-                  <StatusPill
-                    tone={
-                      item.comunicacao.statusGeral === "PENDENTE"
-                        ? "amber"
-                        : "green"
-                    }
+              {queue.slice(0, 5).map((item, index) => {
+                const hasValidId =
+                  Number.isSafeInteger(item?.processoId) && item.processoId > 0;
+                const statusGeral = item?.comunicacao?.statusGeral || "PENDENTE";
+                const itemKey = hasValidId
+                  ? `recent-process-${item.processoId}`
+                  : `recent-fallback-${index}`;
+                const content = (
+                  <>
+                    <span className="record-avatar">
+                      {hasValidId ? `#${item.processoId}` : "#—"}
+                    </span>
+                    <div>
+                      <strong>
+                        {item?.idExterno ||
+                          (hasValidId
+                            ? `Processo ${item.processoId}`
+                            : "Processo sem identificação")}
+                      </strong>
+                      <small>
+                        {item?.origem || "Integração"} ·{" "}
+                        {formatDate(item?.recebidaEm)}
+                      </small>
+                    </div>
+                    <StatusPill
+                      tone={statusGeral === "PENDENTE" ? "amber" : "green"}
+                    >
+                      {readable(statusGeral)}
+                    </StatusPill>
+                  </>
+                );
+                return hasValidId ? (
+                  <Link
+                    className="recent-item"
+                    key={itemKey}
+                    to={`/admin/contemplados?processo=${item.processoId}`}
                   >
-                    {readable(item.comunicacao.statusGeral)}
-                  </StatusPill>
-                </Link>
-              ))}
+                    {content}
+                  </Link>
+                ) : (
+                  <div className="recent-item" key={itemKey}>
+                    {content}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <EmptyState
