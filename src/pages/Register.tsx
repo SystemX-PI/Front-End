@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   ArrowLeft,
-  Building2,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -9,19 +8,18 @@ import {
   UserRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { login, loginWithGoogle, register, registerWithGoogle } from "../services/auth";
-import { ApiError } from "../services/http";
+import { register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const preauthorizedCredential = (location.state as { googleRegistrationCredential?: string } | null)?.googleRegistrationCredential;
   const [name, setName] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -30,25 +28,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [googleCredential, setGoogleCredential] = useState<string | null>(preauthorizedCredential || null);
 
-  const isCompanyStep = Boolean(googleCredential);
-
-  async function handleGoogleCredential(credential: string) {
-    if (loading) return;
-    setLoading(true);
-    setError("");
-    try {
-      await loginWithGoogle(credential);
-      navigate("/app", { replace: true });
-    } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.status === 403) {
-        setGoogleCredential(credential);
-      } else {
-        setError(requestError instanceof Error ? requestError.message : "Não foi possível entrar com Google.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isCompanyStep = Boolean(googleCredential || searchParams.get("step") === "empresa");
 
   async function handleGoogleRegistration(event: FormEvent) {
     event.preventDefault();
@@ -56,7 +36,7 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      await registerWithGoogle(googleCredential, companyName);
+      await registerWithGoogle(googleCredential, name);
       navigate("/app", { replace: true });
     } catch (requestError) {
       setError(
@@ -77,22 +57,33 @@ export default function Register() {
         title="Quase lá"
       >
         <form
-          onSubmit={handleGoogleRegistration}
+          onSubmit={googleCredential ? handleGoogleRegistration : (e) => {
+            e.preventDefault();
+            if (email && password) {
+              setLoading(true);
+              register({ name: name.trim() || "Meu Espaço", email, password })
+                .then(() => navigate("/login", { replace: true, state: { registered: true } }))
+                .catch((err) => setError(err instanceof Error ? err.message : "Não foi possível concluir o cadastro."))
+                .finally(() => setLoading(false));
+            } else {
+              navigate("/login", { replace: true });
+            }
+          }}
           className="auth-form register-form"
           aria-busy={loading}
         >
           <label className="field auth-field">
             <span>Nome da sua empresa</span>
             <div className="input-with-icon">
-              <Building2 size={18} />
+              <UserRound size={18} />
               <input
                 type="text"
                 required
                 minLength={2}
                 maxLength={255}
                 autoFocus
-                value={companyName}
-                onChange={(event) => setCompanyName(event.target.value)}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="Como sua empresa se chama?"
                 autoComplete="organization"
               />
@@ -108,7 +99,11 @@ export default function Register() {
             disabled={loading}
             onClick={() => {
               setGoogleCredential(null);
+              setName("");
               setError("");
+              if (searchParams.get("step") === "empresa") {
+                setSearchParams({});
+              }
             }}
           >
             <ArrowLeft size={15} /> Voltar
@@ -130,17 +125,11 @@ export default function Register() {
     }
     setLoading(true);
     setError("");
-    let created = false;
     try {
-      await register({ name, companyName, email, password });
-      created = true;
-      await login({ email, password });
-      navigate("/app", { replace: true });
+      const companyOrUserName = email.split("@")[0]?.trim() || "Meu Espaço";
+      await register({ name: companyOrUserName, email, password });
+      navigate("/login", { replace: true, state: { registered: true } });
     } catch (requestError) {
-      if (created) {
-        navigate("/login", { replace: true, state: { registered: true } });
-        return;
-      }
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -166,23 +155,11 @@ export default function Register() {
           <GoogleSignInButton
             purpose="register"
             busy={loading}
-            onCredential={(credential) => void handleGoogleCredential(credential)}
+            onCredential={(credential) => { setError(""); setName(""); setGoogleCredential(credential); }}
             onError={setError}
           />
         </div>
         <div className="auth-divider"><span>ou cadastre com e-mail</span></div>
-        <label className="field auth-field">
-          <span>Seu nome</span>
-          <div className="input-with-icon"><UserRound size={18} />
-            <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" />
-          </div>
-        </label>
-        <label className="field auth-field">
-          <span>Nome da sua empresa</span>
-          <div className="input-with-icon"><Building2 size={18} />
-            <input required minLength={2} maxLength={255} value={companyName} onChange={(event) => setCompanyName(event.target.value)} autoComplete="organization" />
-          </div>
-        </label>
         <label className="field auth-field">
           <span>E-mail</span>
           <div className="input-with-icon">
