@@ -4,7 +4,7 @@ import { normalizeContemplation } from "./format";
 
 export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
-export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS";
+export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";
 export type ProcessStatus =
   | "CONTEMPLADO"
   | "AGUARDANDO_COMUNICACAO"

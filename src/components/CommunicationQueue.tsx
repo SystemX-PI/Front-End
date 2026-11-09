@@ -50,6 +50,10 @@ export default function CommunicationQueue() {
   const [busy, setBusy] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const queue = Array.isArray(data?.items) ? data.items : [];
+  const confirmItem =
+    confirmId !== null
+      ? queue.find((item) => item?.processoId === confirmId) || null
+      : null;
   const size = 20;
   async function send(id: number) {
     if (busy !== null || !Number.isSafeInteger(id) || id <= 0) return;
@@ -94,7 +98,19 @@ export default function CommunicationQueue() {
   }
   return (
     <>
-      <ConfirmDialog open={confirmId!==null} title={`Enviar comunicação do processo #${confirmId}?`} description="O contato pode receber uma nova mensagem. Confira o processo antes de confirmar." onCancel={()=>setConfirmId(null)} onConfirm={()=>{if(confirmId!==null)void send(confirmId);}}/>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title={`Enviar comunicação do processo #${confirmId}?`}
+        description={
+          confirmItem?.idExterno
+            ? `O contato vinculado a ${confirmItem.idExterno} (${confirmItem.origem || "Integração"}) pode receber uma nova mensagem. Confira o processo antes de confirmar.`
+            : "O contato pode receber uma nova mensagem. Confira o processo antes de confirmar."
+        }
+        onCancel={() => setConfirmId(null)}
+        onConfirm={() => {
+          if (confirmId !== null) void send(confirmId);
+        }}
+      />
       <section
         className="notification-metrics"
         aria-label="Resumo da comunicação"
@@ -120,6 +136,7 @@ export default function CommunicationQueue() {
             label: "Com falha",
             value: queue.filter(
               (item) =>
+                item?.comunicacao?.statusGeral === "FALHA" ||
                 item?.comunicacao?.email?.status === "FALHA" ||
                 item?.comunicacao?.whatsapp?.status === "FALHA",
             ).length,
