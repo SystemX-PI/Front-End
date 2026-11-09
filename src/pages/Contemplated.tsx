@@ -1,5 +1,5 @@
 import { MessageCircle, Search } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
@@ -34,8 +34,9 @@ const statuses: ProcessStatus[] = [
 ];
 
 export default function Contemplated() {
-  const [params] = useSearchParams();
-  const [processId, setProcessId] = useState(params.get("processo") || "");
+  const [params, setParams] = useSearchParams();
+  const urlProcessParam = params.get("processo");
+  const [processId, setProcessId] = useState(urlProcessParam || "");
   const [process, setProcess] = useState<ProcessResponse | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,15 +46,15 @@ export default function Contemplated() {
   const [resending, setResending] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const id = Number(processId);
+  const executeLookup = useCallback(async (rawValue: string) => {
+    const id = Number(rawValue.trim());
     if (!Number.isSafeInteger(id) || id <= 0) {
       setFeedback({
         kind: "error",
         message: "Informe um identificador de processo válido.",
       });
       setProcess(null);
+      setCommunication(null);
       return;
     }
     setLoading(true);
@@ -83,6 +84,22 @@ export default function Contemplated() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!urlProcessParam) return;
+    setProcessId(urlProcessParam);
+    void executeLookup(urlProcessParam);
+  }, [urlProcessParam, executeLookup]);
+
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = processId.trim();
+    const id = Number(trimmed);
+    if (Number.isSafeInteger(id) && id > 0) {
+      setParams({ processo: String(id) }, { replace: true });
+    }
+    await executeLookup(trimmed);
   }
 
   async function handleCommunication() {
