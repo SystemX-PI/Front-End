@@ -29,8 +29,8 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      await login({ email, password });
-      navigate("/app", {
+      const auth = await login({ email, password });
+      navigate(auth.tipo === "FUNCIONARIO" ? "/admin/dashboard" : "/app", {
         replace: true,
       });
     } catch (requestError) {

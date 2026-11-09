@@ -7,7 +7,6 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   name: string;
-  companyName: string;
   email: string;
   password: string;
 }
@@ -115,7 +114,6 @@ export async function register(payload: RegisterRequest): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       nome: payload.name.trim(),
-      empresa: payload.companyName.trim(),
       email: payload.email.trim(),
       senha: payload.password,
     }),
@@ -186,17 +184,42 @@ export function renewSession(): Promise<string> {
   return refreshInFlight;
 }
 
+function parseTokenUserType(token: string | null): AuthResponse["tipo"] | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { tipo?: unknown };
+    return payload?.tipo === "ADMINISTRADOR" ||
+      payload?.tipo === "FUNCIONARIO" ||
+      payload?.tipo === "CLIENTE" ||
+      payload?.tipo === "USUARIO"
+      ? payload.tipo
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
 export function getUserType(): AuthResponse["tipo"] | null {
+  const tokenType = parseTokenUserType(getToken());
+  if (tokenType) {
+    return tokenType === "USUARIO" ? "CLIENTE" : tokenType;
+  }
   const userType = localStorage.getItem("userType");
   return userType === "ADMINISTRADOR" ||
     userType === "FUNCIONARIO" ||
     userType === "CLIENTE"
     ? userType
-    : null;
+    : userType === "USUARIO"
+      ? "CLIENTE"
+      : null;
 }
 
 export function isAuthenticated(): boolean {
