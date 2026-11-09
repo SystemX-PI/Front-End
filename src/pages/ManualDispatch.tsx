@@ -13,7 +13,7 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { ChannelStatus } from "../components/CommunicationQueue";
@@ -29,6 +29,7 @@ import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
 import OperationHistory from "../components/OperationHistory";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useResource } from "../hooks/useResource";
+import { getUserType } from "../services/auth";
 import {
   apiRequest,
   backend,
@@ -40,6 +41,7 @@ import {
 } from "../services/backend";
 import { digits, formatDate, formatPhone, readable } from "../services/format";
 import { notify } from "../services/notifications";
+import { platformRequest, type Context } from "../services/platform";
 
 type Feedback = { message: string; kind: "info" | "success" | "error" } | null;
 type ChannelMode = "WHATSAPP" | "RESEND";
@@ -113,7 +115,14 @@ function parseInitialProcessId(raw: string | null): number | null {
 
 export default function ManualDispatch() {
   const [params, setParams] = useSearchParams();
-  const initialId = parseInitialProcessId(params.get("processo"));
+  const rawProcessParam = params.get("processo");
+  const initialId = parseInitialProcessId(rawProcessParam);
+  const invalidUrlProcess =
+    rawProcessParam !== null &&
+    rawProcessParam.trim() !== "" &&
+    initialId === null;
+  const isTestMode = params.get("modo") === "teste";
+  const isAdmin = getUserType() === "ADMINISTRADOR";
 
   const [sourceTab, setSourceTab] = useState<SourceTab>("QUEUE");
   const [queueSearch, setQueueSearch] = useState("");
@@ -141,6 +150,7 @@ export default function ManualDispatch() {
   const [channelMode, setChannelMode] = useState<ChannelMode>("WHATSAPP");
   const [templateKey, setTemplateKey] = useState<TemplateKey>("contemplacao");
   const [phone, setPhone] = useState("");
+  const [selectedSenderId, setSelectedSenderId] = useState<number | null>(null);
   const [message, setMessage] = useState(() =>
     initialId
       ? MESSAGE_TEMPLATES[0].build({ processoId: initialId })
@@ -153,6 +163,66 @@ export default function ManualDispatch() {
   const [manualCommOverride, setManualCommOverride] =
     useState<CommunicationResponse | null>(null);
   const [historyRevision, setHistoryRevision] = useState(0);
+
+  const [testChannel, setTestChannel] = useState<"WHATSAPP" | "GMAIL">(
+    "WHATSAPP",
+  );
+  const [testWhatsAppSenderId, setTestWhatsAppSenderId] = useState<
+    number | null
+  >(null);
+  const [testGmailSenderId, setTestGmailSenderId] = useState<number | null>(
+    null,
+  );
+  const [testRecipientPhone, setTestRecipientPhone] = useState("");
+  const [testRecipientEmail, setTestRecipientEmail] = useState("");
+  const [testSubject, setTestSubject] = useState(
+    "Teste de canal interno — ConsorTech",
+  );
+  const [testMessage, setTestMessage] = useState(
+    "Mensagem de teste operacional enviada pelos canais internos do painel ConsorTech.",
+  );
+  const [testBusy, setTestBusy] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<Feedback>(null);
+
+  const loadInternalChannels = useCallback(async () => {
+    if (!isAdmin) return null;
+    try {
+      const data = await platformRequest<Context>("/operation-channels", null);
+      if (
+        !data ||
+        !Array.isArray(data.instances) ||
+        !Array.isArray(data.mailboxes)
+      ) {
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
+  }, [isAdmin]);
+  const internalChannelsResource = useResource(loadInternalChannels);
+  const internalInstances = Array.isArray(
+    internalChannelsResource.data?.instances,
+  )
+    ? internalChannelsResource.data.instances
+    : [];
+  const internalMailboxes = Array.isArray(
+    internalChannelsResource.data?.mailboxes,
+  )
+    ? internalChannelsResource.data.mailboxes
+    : [];
+  const effectiveWhatsAppSenderId =
+    testWhatsAppSenderId ?? internalInstances[0]?.id ?? null;
+  const effectiveGmailSenderId =
+    testGmailSenderId ?? internalMailboxes[0]?.id ?? null;
+
+  useEffect(() => {
+    const nextId = parseInitialProcessId(rawProcessParam);
+    if (nextId !== null && nextId !== selectedProcessId) {
+      setSelectedProcessId(nextId);
+      setProcessInput(String(nextId));
+    }
+  }, [rawProcessParam, selectedProcessId]);
 
   const loadQueue = useCallback(
     (signal: AbortSignal) =>
@@ -405,6 +475,7 @@ export default function ManualDispatch() {
           selectedProcessId,
           cleanPhone,
           cleanMessage,
+          selectedSenderId ?? undefined,
         );
         setManualCommOverride(response);
         setHistoryRevision((value) => value + 1);
@@ -494,6 +565,7 @@ export default function ManualDispatch() {
       label: "Canais com falha",
       value: queueItems.filter(
         (item) =>
+          item?.comunicacao?.statusGeral === "FALHA" ||
           item?.comunicacao?.email?.status === "FALHA" ||
           item?.comunicacao?.whatsapp?.status === "FALHA",
       ).length,
@@ -501,6 +573,128 @@ export default function ManualDispatch() {
       tone: "red",
     },
   ];
+
+  async function handleInternalChannelTest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (testBusy || !isAdmin) return;
+    setTestFeedback(null);
+
+    if (testChannel === "WHATSAPP") {
+      if (!effectiveWhatsAppSenderId) {
+        setTestFeedback({
+          kind: "error",
+          message:
+            "Selecione uma instância de WhatsApp interna ou cadastre uma em Canais internos.",
+        });
+        return;
+      }
+      const cleanPhone = digits(testRecipientPhone);
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        setTestFeedback({
+          kind: "error",
+          message:
+            "Informe um telefone válido com DDD (entre 10 e 15 dígitos) para o envio de teste.",
+        });
+        return;
+      }
+      if (!testMessage.trim()) {
+        setTestFeedback({
+          kind: "error",
+          message: "Informe o texto da mensagem de teste.",
+        });
+        return;
+      }
+
+      setTestBusy(true);
+      try {
+        const result = await platformRequest<{
+          accepted: boolean;
+          message: string;
+        }>("/operation-channels/test/whatsapp", null, "POST", {
+          senderId: effectiveWhatsAppSenderId,
+          recipient: cleanPhone,
+          message: testMessage.trim(),
+        });
+        const msg =
+          result?.message ||
+          (result?.accepted
+            ? "Mensagem de teste enviada pelo WhatsApp."
+            : "O envio de teste não foi aceito pelo canal.");
+        const kind = result?.accepted ? "success" : "error";
+        setTestFeedback({ kind, message: msg });
+        notify(msg, kind);
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Não foi possível enviar o teste de WhatsApp.";
+        setTestFeedback({ kind: "error", message: msg });
+        notify(msg, "error");
+      } finally {
+        setTestBusy(false);
+      }
+    } else {
+      if (!effectiveGmailSenderId) {
+        setTestFeedback({
+          kind: "error",
+          message:
+            "Selecione um remetente Gmail interno ou cadastre um em Canais internos.",
+        });
+        return;
+      }
+      if (!testRecipientEmail.trim() || !testRecipientEmail.includes("@")) {
+        setTestFeedback({
+          kind: "error",
+          message: "Informe um endereço de e-mail válido para o teste.",
+        });
+        return;
+      }
+      if (!testSubject.trim()) {
+        setTestFeedback({
+          kind: "error",
+          message: "Informe o assunto do e-mail de teste.",
+        });
+        return;
+      }
+      if (!testMessage.trim()) {
+        setTestFeedback({
+          kind: "error",
+          message: "Informe o conteúdo da mensagem de teste.",
+        });
+        return;
+      }
+
+      setTestBusy(true);
+      try {
+        const result = await platformRequest<{
+          accepted: boolean;
+          message: string;
+        }>("/operation-channels/test/gmail", null, "POST", {
+          senderId: effectiveGmailSenderId,
+          recipient: testRecipientEmail.trim(),
+          subject: testSubject.trim(),
+          message: testMessage.trim(),
+        });
+        const msg =
+          result?.message ||
+          (result?.accepted
+            ? "E-mail de teste enviado com sucesso."
+            : "O envio de teste por Gmail não foi aceito.");
+        const kind = result?.accepted ? "success" : "error";
+        setTestFeedback({ kind, message: msg });
+        notify(msg, kind);
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Não foi possível enviar o teste de Gmail.";
+        setTestFeedback({ kind: "error", message: msg });
+        notify(msg, "error");
+      } finally {
+        setTestBusy(false);
+      }
+    }
+  }
 
   return (
     <AdminShell
@@ -530,10 +724,40 @@ export default function ManualDispatch() {
 
       <PageHeading
         eyebrow="OPERAÇÃO DE COMUNICAÇÃO"
-        title="Disparo manual de mensagens"
-        description="Selecione um processo contemplado na fila ou consulte pelo identificador, personalize a mensagem de WhatsApp ou acione o reenvio nos canais oficiais."
+        title={
+          isTestMode
+            ? "Envio de teste dos canais internos"
+            : "Disparo manual de mensagens"
+        }
+        description={
+          isTestMode
+            ? "Valide os remetentes internos de WhatsApp e Gmail da administração sem vincular a um processo contemplado."
+            : "Selecione um processo contemplado na fila ou consulte pelo identificador, personalize a mensagem de WhatsApp ou acione o reenvio nos canais oficiais."
+        }
         action={
           <div className="split-actions">
+            {isAdmin ? (
+              isTestMode ? (
+                <>
+                  <Link className="button secondary compact" to="/admin/canais">
+                    Canais internos
+                  </Link>
+                  <Link
+                    className="button primary compact"
+                    to="/admin/disparo-manual"
+                  >
+                    Disparo por processo
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  className="button secondary compact"
+                  to="/admin/disparo-manual?modo=teste"
+                >
+                  Envio de teste de canais
+                </Link>
+              )
+            ) : null}
             <Link className="button secondary compact" to="/admin/comunicacao">
               Fila de comunicação
             </Link>
@@ -543,6 +767,276 @@ export default function ManualDispatch() {
           </div>
         }
       />
+
+      {invalidUrlProcess ? (
+        <InlineFeedback
+          kind="error"
+          message="O identificador de processo informado na URL é inválido. Selecione um processo válido na fila ou consulte pelo número."
+        />
+      ) : null}
+
+      {isTestMode ? (
+        !isAdmin ? (
+          <section className="panel data-panel">
+            <InlineFeedback
+              kind="error"
+              message="O envio de teste dos canais internos (/api/platform/operation-channels/test/*) é exclusivo para o perfil Administrador."
+            />
+            <div className="split-actions">
+              <Link className="button primary compact" to="/admin/disparo-manual">
+                Ir para disparo por processo
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <form
+            className="panel data-panel dispatch-composer-panel"
+            onSubmit={handleInternalChannelTest}
+          >
+            <div className="data-panel-heading">
+              <div>
+                <h3>Teste operacional de remetentes internos</h3>
+                <p>
+                  Dispare uma mensagem de verificação usando as instâncias de
+                  WhatsApp ou contas Gmail cadastradas em Canais internos.
+                </p>
+              </div>
+              <div className="split-actions">
+                <button
+                  type="button"
+                  className="button secondary compact"
+                  onClick={internalChannelsResource.refresh}
+                  disabled={internalChannelsResource.loading}
+                >
+                  <RefreshCw size={15} />
+                  Recarregar canais
+                </button>
+                <Link className="button secondary compact" to="/admin/canais">
+                  Gerenciar remetentes
+                </Link>
+              </div>
+            </div>
+
+            <div
+              className="dispatch-channel-cards"
+              role="radiogroup"
+              aria-label="Canal interno de teste"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={testChannel === "WHATSAPP"}
+                className={
+                  testChannel === "WHATSAPP"
+                    ? "dispatch-channel-card active"
+                    : "dispatch-channel-card"
+                }
+                onClick={() => {
+                  setTestChannel("WHATSAPP");
+                  setTestFeedback(null);
+                }}
+              >
+                <div className="dispatch-channel-card-head">
+                  <span className="service-icon icon-green">
+                    <MessageCircle size={19} />
+                  </span>
+                  <div>
+                    <strong>Teste de WhatsApp interno</strong>
+                    <small>
+                      Endpoint:{" "}
+                      <code>
+                        POST /api/platform/operation-channels/test/whatsapp
+                      </code>
+                    </small>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={testChannel === "GMAIL"}
+                className={
+                  testChannel === "GMAIL"
+                    ? "dispatch-channel-card active"
+                    : "dispatch-channel-card"
+                }
+                onClick={() => {
+                  setTestChannel("GMAIL");
+                  setTestFeedback(null);
+                }}
+              >
+                <div className="dispatch-channel-card-head">
+                  <span className="service-icon icon-red">
+                    <Mail size={19} />
+                  </span>
+                  <div>
+                    <strong>Teste de Gmail interno</strong>
+                    <small>
+                      Endpoint:{" "}
+                      <code>
+                        POST /api/platform/operation-channels/test/gmail
+                      </code>
+                    </small>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {testChannel === "WHATSAPP" ? (
+              <div className="dispatch-form-column">
+                <label className="field">
+                  <span>Remetente interno de WhatsApp</span>
+                  {internalInstances.length ? (
+                    <select
+                      value={effectiveWhatsAppSenderId ?? ""}
+                      onChange={(event) =>
+                        setTestWhatsAppSenderId(Number(event.target.value) || null)
+                      }
+                    >
+                      {internalInstances.map((inst) => (
+                        <option key={inst.id} value={inst.id}>
+                          #{inst.id} · {inst.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <InlineFeedback
+                      kind="info"
+                      message="Nenhuma instância interna de WhatsApp cadastrada. Acesse Canais internos (/admin/canais) para adicionar e conectar um aparelho."
+                    />
+                  )}
+                </label>
+
+                <label className="field">
+                  <span>Telefone de destino (WhatsApp)</span>
+                  <div className="input-with-icon">
+                    <Phone size={17} aria-hidden="true" />
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+55 (11) 99999-9999"
+                      value={testRecipientPhone}
+                      onChange={(event) =>
+                        setTestRecipientPhone(formatPhone(event.target.value))
+                      }
+                    />
+                  </div>
+                </label>
+
+                <label className="field">
+                  <span>Mensagem de teste</span>
+                  <textarea
+                    rows={4}
+                    required
+                    maxLength={1000}
+                    value={testMessage}
+                    onChange={(event) => setTestMessage(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="dispatch-form-column">
+                <label className="field">
+                  <span>Remetente Gmail interno</span>
+                  {internalMailboxes.length ? (
+                    <select
+                      value={effectiveGmailSenderId ?? ""}
+                      onChange={(event) =>
+                        setTestGmailSenderId(Number(event.target.value) || null)
+                      }
+                    >
+                      {internalMailboxes.map((mb) => (
+                        <option key={mb.id} value={mb.id}>
+                          #{mb.id} · {mb.name} ({mb.email})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <InlineFeedback
+                      kind="info"
+                      message="Nenhum remetente Gmail interno cadastrado. Acesse Canais internos (/admin/canais) para verificar e adicionar uma conta Gmail."
+                    />
+                  )}
+                </label>
+
+                <label className="field">
+                  <span>E-mail de destino</span>
+                  <input
+                    type="email"
+                    required
+                    placeholder="destinatario@empresa.com.br"
+                    value={testRecipientEmail}
+                    onChange={(event) =>
+                      setTestRecipientEmail(event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Assunto do e-mail</span>
+                  <input
+                    type="text"
+                    required
+                    maxLength={160}
+                    value={testSubject}
+                    onChange={(event) => setTestSubject(event.target.value)}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Mensagem de teste</span>
+                  <textarea
+                    rows={4}
+                    required
+                    maxLength={2000}
+                    value={testMessage}
+                    onChange={(event) => setTestMessage(event.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            {testFeedback ? (
+              <InlineFeedback
+                kind={testFeedback.kind}
+                message={testFeedback.message}
+              />
+            ) : null}
+
+            <div className="partner-form-actions">
+              <p>
+                O resultado reflete o retorno real do provedor (Evolution API ou
+                SMTP Gmail) configurado nos canais internos.
+              </p>
+              <button
+                type="submit"
+                className="button primary"
+                disabled={
+                  testBusy ||
+                  (testChannel === "WHATSAPP"
+                    ? !internalInstances.length
+                    : !internalMailboxes.length)
+                }
+              >
+                {testBusy ? (
+                  <>
+                    <span className="spinner" />
+                    Enviando teste…
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    {testChannel === "WHATSAPP"
+                      ? "Enviar WhatsApp de teste"
+                      : "Enviar e-mail de teste"}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )
+      ) : null}
 
       <section className="admin-metrics" aria-label="Indicadores de disparo">
         {metrics.map(({ label, value, icon: Icon, tone }) => (
@@ -1064,6 +1558,31 @@ export default function ManualDispatch() {
             {channelMode === "WHATSAPP" ? (
               <div className="dispatch-whatsapp-workspace">
                 <div className="dispatch-form-column">
+                  {isAdmin && internalInstances.length > 0 ? (
+                    <label className="field">
+                      <span>Instância remetente de WhatsApp (opcional)</span>
+                      <select
+                        value={selectedSenderId ?? ""}
+                        onChange={(event) =>
+                          setSelectedSenderId(
+                            event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          )
+                        }
+                      >
+                        <option value="">
+                          Instância padrão configurada no servidor
+                        </option>
+                        {internalInstances.map((inst) => (
+                          <option key={inst.id} value={inst.id}>
+                            #{inst.id} · {inst.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+
                   <label className="field">
                     <span>Telefone / WhatsApp do destinatário</span>
                     <div className="input-with-icon">

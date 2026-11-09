@@ -14,6 +14,15 @@ export function platformRequest<T>(path: string, accountId: string | null, metho
 }
 
 export function planFor(context: Context): SubscriptionInfo {
+  if (context.operationChannels) {
+    return {
+      tier: "PRO",
+      whatsappLimit: 99,
+      gmailLimit: 99,
+      upgradePriceCents: 9990,
+      currency: "BRL",
+    };
+  }
   if(context.subscription) return context.subscription;
   const paid=!!context.account?.professional && !!context.account?.paidUntil && new Date(context.account.paidUntil)>new Date();
   return {tier:paid?"PRO":"TRIAL",whatsappLimit:paid?3:1,gmailLimit:paid?2:1,upgradePriceCents:9990,currency:"BRL"};

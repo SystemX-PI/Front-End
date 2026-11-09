@@ -154,6 +154,7 @@ function devMockPlugin(): Plugin {
   };
 
   const operationChannelsContext = {
+    operationChannels: true,
     role: "ADMINISTRADOR" as MockRole,
     name: "Administração ConsorTech",
     email: "admin@consortech.com",
@@ -780,6 +781,64 @@ function devMockPlugin(): Plugin {
               );
             }
             return sendJson(operationChannelsContext);
+          }
+
+          if (
+            pathname === "/api/platform/operation-channels/test/whatsapp" &&
+            method === "POST"
+          ) {
+            if (authUser.tipo !== "ADMINISTRADOR") {
+              return sendJson(
+                {
+                  message:
+                    "Seu perfil não possui permissão para acessar esta área.",
+                },
+                403,
+              );
+            }
+            const senderId = Number(parsed.senderId);
+            const sender = operationChannelsContext.instances.find(
+              (item) => item.id === senderId,
+            );
+            if (!sender) {
+              return sendJson(
+                { message: "Remetente de WhatsApp não encontrado." },
+                404,
+              );
+            }
+            return sendJson({
+              accepted: true,
+              message: `Mensagem de teste enviada pelo WhatsApp (${sender.name}).`,
+            });
+          }
+
+          if (
+            pathname === "/api/platform/operation-channels/test/gmail" &&
+            method === "POST"
+          ) {
+            if (authUser.tipo !== "ADMINISTRADOR") {
+              return sendJson(
+                {
+                  message:
+                    "Seu perfil não possui permissão para acessar esta área.",
+                },
+                403,
+              );
+            }
+            const senderId = Number(parsed.senderId);
+            const sender = operationChannelsContext.mailboxes.find(
+              (item) => item.id === senderId,
+            );
+            if (!sender) {
+              return sendJson(
+                { message: "Remetente Gmail não encontrado." },
+                404,
+              );
+            }
+            return sendJson({
+              accepted: true,
+              message: `E-mail de teste enviado para ${String(parsed.recipient || "destinatário")} por ${sender.email}.`,
+            });
           }
 
           if (pathname === "/api/platform/clients") {
