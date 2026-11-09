@@ -191,7 +191,12 @@ export function renewSession(): Promise<string> {
 }
 
 export function getToken(): string | null {
-  return localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  if (token && token.startsWith("mock-jwt")) {
+    clearSession();
+    return null;
+  }
+  return token;
 }
 
 export function getUserType(): AuthResponse["tipo"] | null {

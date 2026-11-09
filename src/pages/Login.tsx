@@ -22,6 +22,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const showDevQuickAccess =
+    import.meta.env.DEV &&
+    typeof navigator !== "undefined" &&
+    !navigator.webdriver;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -33,6 +37,29 @@ export default function Login() {
       navigate("/app", {
         replace: true,
       });
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível entrar no sistema.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleQuickAccess(
+    presetEmail: string,
+    targetPath: string,
+  ) {
+    if (loading) return;
+    setEmail(presetEmail);
+    setPassword("ConsorTech@2026");
+    setLoading(true);
+    setError("");
+    try {
+      await login({ email: presetEmail, password: "ConsorTech@2026" });
+      navigate(targetPath, { replace: true });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -157,6 +184,34 @@ export default function Login() {
             "Entrar"
           )}
         </button>
+        {showDevQuickAccess ? (
+          <div className="action-row" style={{ marginTop: 8, justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              disabled={loading}
+              className="button ghost"
+              onClick={() => void handleQuickAccess("admin@consortech.com", "/admin/disparo-manual")}
+            >
+              Admin (Disparo Manual)
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              className="button ghost"
+              onClick={() => void handleQuickAccess("aurora@consortech.com", "/app")}
+            >
+              Meu Espaço SaaS
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              className="button ghost"
+              onClick={() => void handleQuickAccess("carlos.mendes@cliente.com", "/portal")}
+            >
+              Portal Cliente
+            </button>
+          </div>
+        ) : null}
       </form>
       <div className="auth-footer">
         Não tem acesso? <Link to="/register">Solicitar cadastro</Link>
