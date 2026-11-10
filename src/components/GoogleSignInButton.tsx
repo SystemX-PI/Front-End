@@ -46,6 +46,30 @@ declare global {
 }
 
 let googleScriptPromise: Promise<GoogleIdentitySdk> | null = null;
+let initializedGoogle: GoogleIdentitySdk | null = null;
+let activeGoogleHandlers: {
+  credential: (credential: string) => void;
+  error: (message: string) => void;
+} | null = null;
+
+function initializeGoogle(google: GoogleIdentitySdk, clientId: string) {
+  if (initializedGoogle === google) return;
+  google.accounts.id.initialize({
+    client_id: clientId,
+    ux_mode: "popup",
+    auto_select: false,
+    callback: ({ credential }) => {
+      const token = credential?.trim();
+      if (token) activeGoogleHandlers?.credential(token);
+      else activeGoogleHandlers?.error("O Google não retornou uma credencial válida. Tente novamente.");
+    },
+    error_callback: () => {
+      activeGoogleHandlers?.error("Não foi possível abrir a autenticação do Google. Tente novamente.");
+    },
+  });
+  initializedGoogle = google;
+}
+
 
 function loadGoogleIdentity(): Promise<GoogleIdentitySdk> {
   if (window.google?.accounts?.id) return Promise.resolve(window.google);
@@ -132,24 +156,14 @@ export default function GoogleSignInButton({
     let mounted = true;
     const target = element.current;
     if (!target) return;
+    const handlers = {
+      credential: (credential: string) => credentialHandler.current(credential),
+      error: (message: string) => errorHandler.current(message),
+    };
     void loadGoogleIdentity().then((google) => {
       if (!mounted) return;
-      google.accounts.id.initialize({
-        client_id: clientId,
-        ux_mode: "popup",
-        auto_select: false,
-        callback: (response) => {
-          const credential = response.credential?.trim();
-          if (!credential) {
-            errorHandler.current("O Google não retornou uma credencial válida. Tente novamente.");
-            return;
-          }
-          credentialHandler.current(credential);
-        },
-        error_callback: () => {
-          errorHandler.current("Não foi possível abrir a autenticação do Google. Tente novamente.");
-        },
-      });
+      initializeGoogle(google, clientId);
+      activeGoogleHandlers = handlers;
       target.replaceChildren();
       google.accounts.id.renderButton(target, {
         theme: "outline",
@@ -166,6 +180,7 @@ export default function GoogleSignInButton({
 
     return () => {
       mounted = false;
+      if (activeGoogleHandlers === handlers) activeGoogleHandlers = null;
       target.replaceChildren();
     };
   }, [clientId, purpose]);
@@ -176,7 +191,7 @@ export default function GoogleSignInButton({
       {state === "loading" ? <span className="google-signin-status" role="status">Carregando login do Google…</span> : null}
       {state === "missing" ? (
         <span className="google-signin-status error" role="alert">
-          Configure VITE_GOOGLE_CLIENT_ID para habilitar o login com Google.
+          Acesso com Google indisponível. Você pode continuar por e-mail.
         </span>
       ) : null}
       {state === "error" ? (

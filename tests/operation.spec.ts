@@ -46,3 +46,30 @@ test('disparo manual seleciona processo, envia WhatsApp personalizado e exibe hi
   await expect(page.getByText(/Disparo manual de WhatsApp confirmado para o processo #7/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Histórico de comunicações'})).toBeVisible();
 });
+
+test('trocar de processo limpa o destinatário e a mensagem anteriores', async ({ page }) => {
+  await session(page, 'FUNCIONARIO');
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/pagina') || path.endsWith('/historico')) {
+      return route.fulfill({ json: { items: [], page: 0, total: 0, size: 20 } });
+    }
+    if (path.endsWith('/comunicacao')) {
+      const id = Number(path.split('/').at(-2));
+      return route.fulfill({ json: { processoId: id, statusGeral: 'PENDENTE', email: null, whatsapp: null } });
+    }
+    return route.fulfill({ json: { ...process, id: Number(path.split('/').at(-1)) } });
+  });
+
+  await page.goto('/admin/disparo-manual?processo=7');
+  const phone = page.getByLabel('Telefone / WhatsApp do destinatário');
+  const message = page.getByLabel('Mensagem para envio');
+  await phone.fill('11999998888');
+  await message.fill('Mensagem exclusiva do processo anterior.');
+  await page.getByLabel('ID do processo contemplado').fill('8');
+  await page.getByRole('button', { name: 'Carregar ID', exact: true }).click();
+
+  await expect(page).toHaveURL(/processo=8$/);
+  await expect(phone).toHaveValue('');
+  await expect(message).not.toHaveValue('Mensagem exclusiva do processo anterior.');
+});

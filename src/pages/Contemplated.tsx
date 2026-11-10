@@ -96,8 +96,9 @@ export default function Contemplated() {
     event.preventDefault();
     const trimmed = processId.trim();
     const id = Number(trimmed);
-    if (Number.isSafeInteger(id) && id > 0) {
+    if (Number.isSafeInteger(id) && id > 0 && String(id) !== urlProcessParam) {
       setParams({ processo: String(id) }, { replace: true });
+      return;
     }
     await executeLookup(trimmed);
   }

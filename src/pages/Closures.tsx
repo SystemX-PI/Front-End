@@ -85,7 +85,10 @@ export default function Closures() {
     if (search) nextParams.q = search;
     if (page > 1) nextParams.page = String(page);
     if (trimmed) nextParams.processo = trimmed;
-    setParams(nextParams, { replace: true });
+    if (trimmed && trimmed !== paramProcessId) {
+      setParams(nextParams, { replace: true });
+      return;
+    }
     await lookupById(trimmed);
   }
 

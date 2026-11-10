@@ -13,7 +13,7 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { ChannelStatus } from "../components/CommunicationQueue";
@@ -116,11 +116,11 @@ function parseInitialProcessId(raw: string | null): number | null {
 export default function ManualDispatch() {
   const [params, setParams] = useSearchParams();
   const rawProcessParam = params.get("processo");
-  const initialId = parseInitialProcessId(rawProcessParam);
+  const selectedProcessId = parseInitialProcessId(rawProcessParam);
   const invalidUrlProcess =
     rawProcessParam !== null &&
     rawProcessParam.trim() !== "" &&
-    initialId === null;
+    selectedProcessId === null;
   const isTestMode = params.get("modo") === "teste";
   const isAdmin = getUserType() === "ADMINISTRADOR";
 
@@ -135,11 +135,9 @@ export default function ManualDispatch() {
   const debouncedClientSearch = useDebouncedValue(clientSearch);
 
   const [processInput, setProcessInput] = useState(
-    initialId ? String(initialId) : "",
+    selectedProcessId ? String(selectedProcessId) : "",
   );
-  const [selectedProcessId, setSelectedProcessId] = useState<number | null>(
-    initialId,
-  );
+  const [draftProcessId, setDraftProcessId] = useState(selectedProcessId);
   const [selectedQueueItem, setSelectedQueueItem] = useState<QueueItem | null>(
     null,
   );
@@ -149,11 +147,11 @@ export default function ManualDispatch() {
 
   const [channelMode, setChannelMode] = useState<ChannelMode>("WHATSAPP");
   const [templateKey, setTemplateKey] = useState<TemplateKey>("contemplacao");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<string | null>(null);
   const [selectedSenderId, setSelectedSenderId] = useState<number | null>(null);
   const [message, setMessage] = useState(() =>
-    initialId
-      ? MESSAGE_TEMPLATES[0].build({ processoId: initialId })
+    selectedProcessId
+      ? MESSAGE_TEMPLATES[0].build({ processoId: selectedProcessId })
       : "",
   );
 
@@ -216,13 +214,18 @@ export default function ManualDispatch() {
   const effectiveGmailSenderId =
     testGmailSenderId ?? internalMailboxes[0]?.id ?? null;
 
-  useEffect(() => {
-    const nextId = parseInitialProcessId(rawProcessParam);
-    if (nextId !== null && nextId !== selectedProcessId) {
-      setSelectedProcessId(nextId);
-      setProcessInput(String(nextId));
-    }
-  }, [rawProcessParam, selectedProcessId]);
+  if (draftProcessId !== selectedProcessId) {
+    setDraftProcessId(selectedProcessId);
+    setProcessInput(selectedProcessId === null ? "" : String(selectedProcessId));
+    setSelectedQueueItem(null);
+    setSelectedClient(null);
+    setManualCommOverride(null);
+    setPhone(null);
+    setFeedback(null);
+    setConfirmOpen(false);
+    const template = MESSAGE_TEMPLATES.find(item => item.key === templateKey) ?? MESSAGE_TEMPLATES[0];
+    setMessage(selectedProcessId === null ? "" : template.build({ processoId: selectedProcessId }));
+  }
 
   const loadQueue = useCallback(
     (signal: AbortSignal) =>
@@ -307,20 +310,24 @@ export default function ManualDispatch() {
       : queueItems.find((item) => item?.processoId === selectedProcessId) ||
         null;
 
-  const activeProcess = targetResource.data?.process || null;
+  const activeProcess = targetResource.data?.process?.id === selectedProcessId
+    ? targetResource.data.process
+    : null;
+  const fetchedCommunication = targetResource.data?.communication;
+  const hasSelectedTarget = !!activeProcess || !!matchedQueueItem;
   const activeCommunication =
     manualCommOverride?.processoId === selectedProcessId
       ? manualCommOverride
-      : targetResource.data?.communication ||
-        matchedQueueItem?.comunicacao ||
-        null;
+      : fetchedCommunication?.processoId === selectedProcessId
+        ? fetchedCommunication
+        : matchedQueueItem?.comunicacao ?? null;
 
   const defaultWhatsappRecipient =
     activeCommunication?.whatsapp?.destinatario ||
     matchedQueueItem?.comunicacao?.whatsapp?.destinatario ||
     "";
   const effectivePhone =
-    phone || (defaultWhatsappRecipient ? formatPhone(defaultWhatsappRecipient) : "");
+    phone ?? formatPhone(defaultWhatsappRecipient);
 
   function selectProcessFromQueue(item: QueueItem) {
     if (!Number.isSafeInteger(item?.processoId) || item.processoId <= 0) {
@@ -331,60 +338,35 @@ export default function ManualDispatch() {
       });
       return;
     }
-    setSelectedProcessId(item.processoId);
+    selectProcess(item.processoId, item);
+  }
+
+  function selectProcess(id: number, item: QueueItem | null) {
+    if (sending) return;
+    setDraftProcessId(id);
     setSelectedQueueItem(item);
-    setProcessInput(String(item.processoId));
-    setManualCommOverride(item.comunicacao ?? null);
+    setSelectedClient(null);
+    setProcessInput(String(id));
+    setManualCommOverride(null);
     setFeedback(null);
-    setParams({ processo: String(item.processoId) }, { replace: true });
-
-    const candidatePhone = item.comunicacao?.whatsapp?.destinatario || "";
-    setPhone(candidatePhone ? formatPhone(candidatePhone) : "");
-
-    const activeTemplate =
-      MESSAGE_TEMPLATES.find((itemTemplate) => itemTemplate.key === templateKey) ||
-      MESSAGE_TEMPLATES[0];
-    setMessage(
-      activeTemplate.build({
-        processoId: item.processoId,
-        idExterno: item.idExterno,
-        recipientName: selectedClient?.nome,
-      }),
-    );
+    setPhone(null);
+    const template = MESSAGE_TEMPLATES.find(option => option.key === templateKey) ?? MESSAGE_TEMPLATES[0];
+    setMessage(template.build({ processoId: id, idExterno: item?.idExterno }));
+    setParams({ processo: String(id) }, { replace: true });
+    if (id === selectedProcessId) targetResource.refresh();
   }
 
   function handleDirectLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const id = Number(processInput.trim());
-    if (!Number.isSafeInteger(id) || id <= 0) {
+    const id = parseInitialProcessId(processInput.trim());
+    if (id === null) {
       setFeedback({
         kind: "error",
         message: "Informe um identificador numérico de processo maior que zero.",
       });
       return;
     }
-    setFeedback(null);
-    setSelectedProcessId(id);
-    const inQueue = queueItems.find((item) => item.processoId === id) || null;
-    setSelectedQueueItem(inQueue);
-    setManualCommOverride(inQueue?.comunicacao || null);
-    setParams({ processo: String(id) }, { replace: true });
-
-    if (inQueue?.comunicacao.whatsapp?.destinatario) {
-      setPhone(formatPhone(inQueue.comunicacao.whatsapp.destinatario));
-    }
-    if (!message.trim()) {
-      const activeTemplate =
-        MESSAGE_TEMPLATES.find((itemTemplate) => itemTemplate.key === templateKey) ||
-        MESSAGE_TEMPLATES[0];
-      setMessage(
-        activeTemplate.build({
-          processoId: id,
-          idExterno: inQueue?.idExterno,
-          recipientName: selectedClient?.nome,
-        }),
-      );
-    }
+    selectProcess(id, queueItems.find(item => item?.processoId === id) ?? null);
   }
 
   function applyTemplate(nextKey: TemplateKey, recipientOverride?: string) {
@@ -422,7 +404,7 @@ export default function ManualDispatch() {
   function requestDispatchConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (sending) return;
-    if (selectedProcessId === null) {
+    if (!hasSelectedTarget) {
       setFeedback({
         kind: "error",
         message:
@@ -462,7 +444,7 @@ export default function ManualDispatch() {
   }
 
   async function executeManualDispatch() {
-    if (selectedProcessId === null || sending) return;
+    if (selectedProcessId === null || !hasSelectedTarget || sending) return;
     setConfirmOpen(false);
     setSending(true);
     setFeedback(null);
@@ -710,8 +692,8 @@ export default function ManualDispatch() {
         }
         description={
           channelMode === "WHATSAPP"
-            ? `A mensagem personalizada será enviada ao número ${effectivePhone || "informado"} através do endpoint oficial de WhatsApp do processo #${selectedProcessId}.`
-            : `O backend disparará o comunicado padrão nos canais configurados (E-mail e WhatsApp) do processo #${selectedProcessId}.`
+            ? `A mensagem personalizada será enviada ao número ${effectivePhone || "informado"} pelo WhatsApp.`
+            : `O comunicado padrão será reenviado pelos canais cadastrados do processo #${selectedProcessId}.`
         }
         confirmLabel={
           channelMode === "WHATSAPP"
@@ -780,7 +762,7 @@ export default function ManualDispatch() {
           <section className="panel data-panel">
             <InlineFeedback
               kind="error"
-              message="O envio de teste dos canais internos (/api/platform/operation-channels/test/*) é exclusivo para o perfil Administrador."
+              message="Apenas administradores podem testar os canais internos."
             />
             <div className="split-actions">
               <Link className="button primary compact" to="/admin/disparo-manual">
@@ -842,12 +824,7 @@ export default function ManualDispatch() {
                   </span>
                   <div>
                     <strong>Teste de WhatsApp interno</strong>
-                    <small>
-                      Endpoint:{" "}
-                      <code>
-                        POST /api/platform/operation-channels/test/whatsapp
-                      </code>
-                    </small>
+                    <small>Use uma instância conectada</small>
                   </div>
                 </div>
               </button>
@@ -872,12 +849,7 @@ export default function ManualDispatch() {
                   </span>
                   <div>
                     <strong>Teste de Gmail interno</strong>
-                    <small>
-                      Endpoint:{" "}
-                      <code>
-                        POST /api/platform/operation-channels/test/gmail
-                      </code>
-                    </small>
+                    <small>Use uma conta Gmail cadastrada</small>
                   </div>
                 </div>
               </button>
@@ -1346,7 +1318,7 @@ export default function ManualDispatch() {
               <div>
                 <h3>2. Contexto do processo e destinatário</h3>
                 <p>
-                  Confira os dados retornados pelo backend antes de acionar o
+                  Confira os dados do processo antes de acionar o
                   disparo manual.
                 </p>
               </div>
@@ -1482,8 +1454,7 @@ export default function ManualDispatch() {
               <div>
                 <h3>3. Configurar canal e mensagem</h3>
                 <p>
-                  Escolha a modalidade de envio compatível com os endpoints
-                  disponíveis no backend.
+                  Escreva uma mensagem de WhatsApp ou reenvie o comunicado do processo.
                 </p>
               </div>
               <StatusPill tone="blue">
@@ -1637,13 +1608,6 @@ export default function ManualDispatch() {
                       onChange={(event) => setMessage(event.target.value)}
                     />
                     <div className="dispatch-char-counter">
-                      <small>
-                        Endpoint:{" "}
-                        <code>
-                          POST /api/integracoes/processos/
-                          {selectedProcessId ?? "{id}"}/comunicacao/whatsapp
-                        </code>
-                      </small>
                       <small>{message.trim().length}/1000 caracteres</small>
                     </div>
                   </label>
@@ -1673,9 +1637,7 @@ export default function ManualDispatch() {
                     </span>
                   </div>
                   <p className="subtle-note">
-                    O envio depende da instância Evolution API estar conectada
-                    no ambiente. Qualquer falha do provedor será exibida
-                    fielmente abaixo.
+                    O envio exige uma instância de WhatsApp conectada.
                   </p>
                 </aside>
               </div>
@@ -1683,25 +1645,8 @@ export default function ManualDispatch() {
               <div className="dispatch-resend-info">
                 <InlineFeedback
                   kind="info"
-                  message="Nota técnica de contrato: o backend expõe personalização de destinatário e texto livre exclusivamente para o canal WhatsApp (POST /api/integracoes/processos/{id}/comunicacao/whatsapp). Para E-mail, o envio utiliza o template e o endereço cadastrados no servidor por meio da rota de reenvio oficial (POST /api/integracoes/processos/{id}/comunicacao/reenvio)."
+                  message="O reenvio usa o texto padrão e os contatos cadastrados para a contemplação."
                 />
-                <div className="dispatch-resend-targets">
-                  <div>
-                    <strong>Destinatário de E-mail vinculado</strong>
-                    <p>
-                      {activeCommunication?.email?.destinatario ||
-                        "Nenhum destinatário de e-mail retornado para este processo."}
-                    </p>
-                  </div>
-                  <div>
-                    <strong>Destinatário de WhatsApp vinculado</strong>
-                    <p>
-                      {activeCommunication?.whatsapp?.destinatario
-                        ? formatPhone(activeCommunication.whatsapp.destinatario)
-                        : "Nenhum telefone retornado para este processo."}
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1710,14 +1655,10 @@ export default function ManualDispatch() {
             ) : null}
 
             <div className="partner-form-actions">
-              <p>
-                Nenhuma entrega é simulada na interface: o status exibido
-                reflete exclusivamente o retorno real do backend.
-              </p>
               <button
                 type="submit"
                 className="button primary"
-                disabled={sending || selectedProcessId === null}
+                disabled={sending || !hasSelectedTarget}
               >
                 {sending ? (
                   <>
