@@ -6,6 +6,7 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,id=systemx-npm,target=/root/.npm npm ci --no-audit --no-fund
 COPY index.html tsconfig*.json vite.config.ts ./
+COPY dev ./dev
 COPY src ./src
 COPY public ./public
 RUN npm run build
