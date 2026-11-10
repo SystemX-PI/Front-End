@@ -25,10 +25,10 @@ export default function AuthShell({
     <div className={`auth-page${registration ? " registration-page" : ""}${compactLogin || recovery ? " login-page" : ""}${recovery ? " recovery-page" : ""}`}>
       <div className="auth-shell">
         <aside className="auth-visual-panel" aria-label="Sobre a ConsorTech">
-          <div className="auth-brand-row">
+          <Link className="auth-brand-row" to="/" aria-label="ConsorTech — início">
             <BrandLogo compact />
             <div className="auth-brand-meta"><strong>ConsorTech</strong></div>
-          </div>
+          </Link>
 
           <div className="auth-story">
             <span className="auth-story-label">Sua operação, em um só lugar</span>

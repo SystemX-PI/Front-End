@@ -15,6 +15,7 @@ import "../platform.css";
 import "../workspace-polish.css";
 
 type BrandColors = { primary: string; accent: string };
+const originalColors: BrandColors = { primary: "#315fe8", accent: "#35cda0" };
 const consorTechColors: BrandColors = { primary: "#142d54", accent: "#8fc8ff" };
 
 function color(value: string | undefined, fallback: string) {
@@ -60,13 +61,15 @@ export default function PlatformApp() {
  const labels:Record<string,string>={overview:clientsOnly?"Clientes":"Visão geral",integracoes:"Integrações",whatsapp:"WhatsApp",gmail:"Gmail",widget:"Widget parceiro",equipe:"Equipe",marca:"Identidade da marca",assinatura:"Assinatura",upgrade:"Ampliar plano",perfil:"Meu perfil"};
  const title=labels[section] || labels.overview;
  const savedColors = {
-  primary: color(account?.primaryColor, consorTechColors.primary),
-  accent: color(account?.accentColor, consorTechColors.accent),
+  primary: color(account?.primaryColor, originalColors.primary),
+  accent: color(account?.accentColor, originalColors.accent),
  };
  const isPreviewing = section === "marca" && preview?.key === location.key;
- const style = brandStyle(isPreviewing ? preview.colors : savedColors);
+ const activeColors = isPreviewing ? preview.colors : savedColors;
+ const customBrand = activeColors.primary.toLowerCase() !== originalColors.primary || activeColors.accent.toLowerCase() !== originalColors.accent;
+ const style = brandStyle(activeColors);
  async function signOut() { try {await logout();}catch {notify("Sessão encerrada neste dispositivo.","info");} navigate("/login",{replace:true}); }
- return <div className="workspace" style={style}><a className="skip-link" href="#workspace-content">Pular para o conteúdo</a>
+ return <div className={customBrand ? "workspace has-custom-brand" : "workspace"} style={style}><a className="skip-link" href="#workspace-content">Pular para o conteúdo</a>
   <button className="workspace-drawer-backdrop" aria-label="Fechar navegação" hidden={!menu} onClick={()=>setMenu(false)}/>
   <aside className={`workspace-sidebar ${menu?"is-open":""}`}><Link className="workspace-brand" to={href()}>{account?.logo?<img src={account.logo} alt={account.brandName}/>:<BrandLogo compact/>}<strong>{account?.brandName || "ConsorTech"}</strong></Link><button className="workspace-menu" aria-label={menu?"Fechar menu":"Abrir menu"} aria-expanded={menu} aria-controls="workspace-navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
    <nav id="workspace-navigation" aria-label="Navegação principal" onClick={()=>setMenu(false)}>
@@ -146,7 +149,11 @@ function Brand({context:c,accountId,reload,colors,onPreview}:{context:Context;ac
   setPrimary(consorTechColors.primary);
   setAccent(consorTechColors.accent);
   onPreview(consorTechColors);
- }}>Usar azul-escuro e azul-claro</button><p className="saas-muted">Veja as cores nesta tela antes de salvar.</p><button disabled={busy||!c.active} className="saas-button primary"><Check size={17}/>Salvar identidade</button></form><section className="brand-preview" style={brandStyle({ primary, accent })}><span className="saas-eyebrow">PRÉVIA DA SUA MARCA</span><div className="brand-preview-card"><div className="workspace-brand">{logo?<img src={logo} alt="Prévia do logo"/>:<BrandLogo compact/>}<strong>{name||"Sua marca"}</strong></div><h2>Bem-vindo ao seu espaço.</h2><p>Uma experiência que sua equipe reconhece como sua.</p><span className="saas-badge green">Sua empresa, conectada</span><button type="button" className="saas-button primary">Sua próxima conexão <ArrowRight size={17}/></button></div><p>O nome, o logo e as cores são compartilhados com todos os usuários desta conta.</p></section></div></>;
+ }}>Usar azul-escuro e azul-claro</button><button className="saas-button" type="button" onClick={()=>{
+  setPrimary(originalColors.primary);
+  setAccent(originalColors.accent);
+  onPreview(originalColors);
+ }}>Voltar às cores originais</button><p className="saas-muted">Veja as cores nesta tela antes de salvar.</p><button disabled={busy||!c.active} className="saas-button primary"><Check size={17}/>Salvar identidade</button></form><section className="brand-preview" style={brandStyle({ primary, accent })}><span className="saas-eyebrow">PRÉVIA DA SUA MARCA</span><div className="brand-preview-card"><div className="workspace-brand">{logo?<img src={logo} alt="Prévia do logo"/>:<BrandLogo compact/>}<strong>{name||"Sua marca"}</strong></div><h2>Bem-vindo ao seu espaço.</h2><p>Uma experiência que sua equipe reconhece como sua.</p><span className="saas-badge green">Sua empresa, conectada</span><button type="button" className="saas-button primary">Sua próxima conexão <ArrowRight size={17}/></button></div><p>O nome, o logo e as cores são compartilhados com todos os usuários desta conta.</p></section></div></>;
 }
 function Subscription({context:c,accountId}:{context:Context;accountId:string|null;reload:()=>Promise<void>}) {
  const plan=planFor(c);const paid=plan.tier==="PRO";const [busy,setBusy]=useState(false);const [error,setError]=useState("");

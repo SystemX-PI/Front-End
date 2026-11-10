@@ -34,7 +34,7 @@ export default function Landing() {
     <div className="marketing">
       <a className="skip-link" href="#inicio">Pular para o conteúdo</a>
       <header className="marketing-nav">
-        <Link to="/" className="product-logo marketing-brand" aria-label="ConsorTech — início">
+        <Link to="/" reloadDocument className="product-logo marketing-brand" aria-label="ConsorTech — início">
           <BrandLogo compact />
           <strong>ConsorTech</strong>
         </Link>

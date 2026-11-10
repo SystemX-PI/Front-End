@@ -3,38 +3,19 @@
   --surface: var(--workspace-surface);
   --text: var(--workspace-text);
   --text-soft: var(--workspace-muted);
-  --workspace-bg: color-mix(in srgb, var(--tenant-accent) 19%, #f7f9fc);
-  --workspace-surface: color-mix(in srgb, var(--tenant-accent) 6%, #fff);
-  --workspace-text: #14223b;
-  --workspace-muted: #475873;
-  --line: color-mix(in srgb, var(--tenant-primary) 18%, #e5ebf4);
-  --line-strong: color-mix(in srgb, var(--tenant-primary) 28%, #e5ebf4);
-  --surface-alt: color-mix(in srgb, var(--tenant-accent) 23%, #fff);
-  --brand-ink: color-mix(in srgb, var(--tenant-primary) 43%, #102039);
-  --brand-nav: color-mix(in srgb, var(--tenant-primary) 24%, #101a2c);
-  --brand-highlight: color-mix(in srgb, var(--tenant-accent) 74%, #fff);
-  --brand-banner: color-mix(in srgb, var(--tenant-accent) 44%, var(--workspace-surface));
+  --workspace-bg: #f5f8f7;
+  --workspace-muted: #63746f;
+  --line: #dfe7e4;
+  --line-strong: #c8d5d0;
+  --surface-alt: #f3f7f5;
 }
-.workspace .workspace-sidebar {
-  background: linear-gradient(150deg, var(--brand-nav), color-mix(in srgb, var(--tenant-accent) 10%, var(--brand-nav)));
-}
-.workspace .workspace-topbar, .workspace .workspace-footer { background: var(--surface-alt); }
-.workspace .workspace-topbar { border-top: 3px solid var(--tenant-accent); }
-.workspace .workspace-brand .brand-pill-blue { background: var(--tenant-primary); border-color: var(--brand-highlight); }
-.workspace .workspace-brand .brand-pill-green { background: var(--tenant-accent); }
-.workspace .workspace-breadcrumb a, .workspace .workspace-heading .saas-eyebrow,
-.workspace .onboarding-panel > a:hover strong { color: var(--brand-ink); }
-.workspace .theme-switcher button[aria-pressed="true"] { background: var(--brand-banner); color: var(--brand-ink); }
-.workspace .brand-preview-card { border-top: 4px solid var(--tenant-primary); background: var(--brand-banner); }
-.workspace .trial-strip:not(.expired) { background: var(--surface-alt); border-color: var(--line); color: var(--brand-ink); }
-.workspace .trial-strip:not(.expired) a { color: inherit; }
+.workspace-sidebar { background: linear-gradient(165deg,#132b2b,#10212b 65%); }
 .workspace-brand { padding: 0 8px; }
 .workspace-brand strong { font-size: 20px; }
 .workspace-sidebar nav>a,.integration-nav>a { font-size: 13px; }
-.workspace-sidebar nav>small { font-size: 9px; letter-spacing: 1.5px; color: #d0dced; }
-.workspace-sidebar nav a, .workspace .sidebar-account-actions :is(a, button) { color: #e3edfa; }
+.workspace-sidebar nav>small { font-size: 9px; letter-spacing: 1.5px; color: #8ca7a4; }
 .workspace-sidebar nav>.text-button { border: 1px solid #ffffff20; background: #ffffff06; color: #dcebe6; padding: 13px 14px; margin-top: 0; }
-.workspace-sidebar nav>a.selected,.integration-nav>a.selected,.integration-subpages>a.selected { background: color-mix(in srgb,var(--tenant-primary) 14%,var(--brand-nav)); box-shadow: inset 3px 0 0 var(--tenant-accent); }
+.workspace-sidebar nav>a.selected,.integration-nav>a.selected,.integration-subpages>a.selected { background: color-mix(in srgb,var(--tenant-primary) 24%,#16332f); box-shadow: inset 3px 0 0 var(--tenant-accent); }
 .integration-subpages>a { font-size: 12px; }
 .workspace-account { border-top-color: #ffffff16; }
 .sidebar-avatar { border: 1px solid #ffffff15; background: #ffffff09; }
@@ -53,8 +34,7 @@
 .workspace .channel-icon.blue { color:#3562c7; background:#edf2ff; }
 .workspace .channel-icon.orange { color:#aa681e; background:#fcf1e2; }
 .workspace .saas-button.primary { box-shadow: 0 4px 12px color-mix(in srgb,var(--tenant-primary) 13%,transparent); }
-.workspace a:focus-visible,.workspace button:focus-visible { outline: 3px solid var(--brand-ink); outline-offset: 4px; }
-.workspace .workspace-sidebar :is(a, button):focus-visible { outline-color: var(--brand-highlight); }
+.workspace a:focus-visible,.workspace button:focus-visible { outline: 3px solid var(--tenant-primary); outline-offset: 4px; }
 .workspace .saas-panel,.workspace .application-card,.workspace .saas-metrics article { border-radius: 18px; box-shadow: 0 3px 12px #14332d04; }
 .workspace .saas-panel h2 { font-size: 18px; }
 .workspace .saas-panel-heading p,.workspace .saas-muted,.workspace .saas-form small { font-size: 12px; }
@@ -84,15 +64,15 @@
 .workspace .workspace-footer { font-size: 10px; padding-block: 24px; }
 
 /* Overview: useful context, real account figures and direct actions. */
-.workspace .overview-intro { display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 32px; padding: 36px; margin: 0; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(125deg,var(--brand-banner),var(--workspace-surface) 84%); }
+.workspace .overview-intro { display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 32px; padding: 36px; margin: 0; border: 1px solid var(--line); border-radius: 22px; background: radial-gradient(ellipse at 25% 30%,#e4f3e9,transparent 70%),var(--workspace-surface); }
 .overview-intro-copy { min-width: 0; }
-.overview-intro .saas-eyebrow { display: flex; align-items: center; gap: 8px; color: var(--brand-ink); }
+.overview-intro .saas-eyebrow { display: flex; align-items: center; gap: 8px; color: #33705c; }
 .workspace .overview-intro h1 { font-size: clamp(34px,3.5vw,46px); letter-spacing: -1.8px; line-height: 1.12; margin: 18px 0; }
-.overview-intro h1 em { font-style: normal; color: var(--brand-ink); }
+.overview-intro h1 em { font-style: normal; color: #1c8267; }
 .workspace .overview-intro p { font-size: 13px; max-width: 460px; line-height: 1.8; }
 .overview-intro-copy>.saas-button { margin-top: 22px; }
-.overview-plan-summary { border-left: 1px solid var(--line-strong); padding-left: 32px; display: grid; justify-items: start; gap: 10px; }
-.overview-plan-icon { display: grid; place-items: center; width: 46px; height: 46px; background: var(--brand-banner); color: var(--brand-ink); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; }
+.overview-plan-summary { border-left: 1px solid #cfded7; padding-left: 32px; display: grid; justify-items: start; gap: 10px; }
+.overview-plan-icon { display: grid; place-items: center; width: 46px; height: 46px; background: #e2f1e8; color: #27755c; border: 1px solid #d0e5d7; border-radius: 14px; margin-bottom: 10px; }
 .overview-plan-summary>small { font-size: 9px; letter-spacing: 1.3px; color: var(--workspace-muted); font-weight: 600; }
 .overview-plan-summary>strong { font-size: 21px; font-weight: 600; letter-spacing: -.6px; }
 .workspace .overview-plan-summary>p { margin: 0; font-size: 13px; }
@@ -122,8 +102,8 @@
 .step-complete { background: #e8f5ec; color: #218260; }
 .setup-progress { appearance: none; height: 5px; width: 100%; border: 0; border-radius: 10px; overflow: hidden; background: var(--surface-alt); display: block; margin: 0 0 5px; }
 .setup-progress::-webkit-progress-bar { background: var(--surface-alt); }
-.setup-progress::-webkit-progress-value { background: var(--tenant-primary); border-radius: 10px; }
-.setup-progress::-moz-progress-bar { background: var(--tenant-primary); }
+.setup-progress::-webkit-progress-value { background: #35ad83; border-radius: 10px; }
+.setup-progress::-moz-progress-bar { background: #35ad83; }
 .overview-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin: 8px 0 20px; }
 .overview-section-heading h2 { font-size: 20px; font-weight: 600; letter-spacing: -.6px; margin: 9px 0 0; }
 .overview-section-heading>span { color: var(--workspace-muted); font-size: 11px; line-height: 1.7; }
@@ -136,23 +116,16 @@
 .overview-shortcut-grid .channel-icon { width: 34px; height: 34px; flex-shrink: 0; }
 .overview-shortcut-grid>a:hover { border-color: var(--tenant-primary); box-shadow: 0 4px 14px #17392d09; }
 
-[data-theme="dark"] .workspace {
-  --workspace-bg: color-mix(in srgb, var(--tenant-primary) 15%, #0b1422);
-  --workspace-surface: color-mix(in srgb, var(--tenant-primary) 16%, #162137);
-  --workspace-text: #eef5ff;
-  --workspace-muted: #b7c7dd;
-  --line: color-mix(in srgb, var(--tenant-accent) 19%, #253550);
-  --line-strong: color-mix(in srgb, var(--tenant-accent) 33%, #253550);
-  --surface-alt: color-mix(in srgb, var(--tenant-accent) 10%, var(--workspace-surface));
-  --brand-ink: color-mix(in srgb, var(--tenant-accent) 37%, #fff);
-  --brand-banner: color-mix(in srgb, var(--tenant-accent) 15%, var(--workspace-surface));
-}
+[data-theme="dark"] .workspace { --workspace-bg:#0c171c; --workspace-surface:#15232b; --workspace-text:#e6f1ed; --workspace-muted:#a3b9b1; --line:#2a3d41; --line-strong:#42605d; --surface-alt:#1b2e33; }
+[data-theme="dark"] .workspace-sidebar { background: linear-gradient(165deg,#112624,#0d1b23 65%); }
+[data-theme="dark"] .workspace .overview-intro { background: radial-gradient(ellipse at 25% 30%,#214a3e,transparent 80%),var(--workspace-surface); }
+[data-theme="dark"] .overview-intro .saas-eyebrow,[data-theme="dark"] .overview-intro h1 em { color:#8dd7b5; }
 [data-theme="dark"] .workspace .channel-icon.green { background:#214438; color:#97e0bd; }
 [data-theme="dark"] .workspace .channel-icon.blue { background:#253754; color:#a5bfff; }
 [data-theme="dark"] .workspace .channel-icon.purple { background:#362b4b; color:#ccb1fb; }
 [data-theme="dark"] .workspace .channel-icon.orange { background:#413623; color:#edc083; }
-[data-theme="dark"] .overview-plan-summary { border-color:var(--line-strong); }
-[data-theme="dark"] .step-complete { background:#214438; color:#97e0bd; }
+[data-theme="dark"] .overview-plan-summary { border-color:#3b5750; }
+[data-theme="dark"] .overview-plan-icon,[data-theme="dark"] .step-complete { background:#214438; color:#97e0bd; border-color:#3b5f4b; }
 
 @media (max-width:1200px) { .overview-shortcut-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.workspace .overview-intro { padding:30px; grid-template-columns:minmax(0,1fr) 210px; gap:24px; }.overview-plan-summary { padding-left:24px; } }
 @media (max-width:760px) {
@@ -163,7 +136,7 @@
   .workspace .workspace-heading p { font-size:13px; }
   .workspace .overview-intro { grid-template-columns:1fr; padding:26px; gap:25px; border-radius:19px; }
   .workspace .overview-intro h1 { font-size:36px; letter-spacing:-1.5px; }
-  .overview-plan-summary { padding:22px 0 0; border-left:0; border-top:1px solid var(--line-strong); grid-template-columns:40px minmax(0,1fr); column-gap:14px; row-gap:7px; }
+  .overview-plan-summary { padding:22px 0 0; border-left:0; border-top:1px solid #cfded7; grid-template-columns:40px minmax(0,1fr); column-gap:14px; row-gap:7px; }
   .overview-plan-icon { grid-column:1; grid-row:1/4; margin:0; width:40px; height:40px; }
   .overview-plan-summary>small,.overview-plan-summary>strong,.overview-plan-summary>p { grid-column:2; }
   .overview-plan-summary>a,.overview-plan-note { grid-column:1/-1; margin-top:10px; }
@@ -205,6 +178,57 @@
 @media(max-width:980px) { .process-layout:has(.process-detail) { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:480px) { .process-option { flex-wrap:wrap; } .process-option-status { text-align:left; } }
 
+.workspace.has-custom-brand {
+  --workspace-bg: color-mix(in srgb, var(--tenant-accent) 19%, #f7f9fc);
+  --workspace-surface: color-mix(in srgb, var(--tenant-accent) 6%, #fff);
+  --workspace-text: #14223b;
+  --workspace-muted: #475873;
+  --line: color-mix(in srgb, var(--tenant-primary) 18%, #e5ebf4);
+  --line-strong: color-mix(in srgb, var(--tenant-primary) 28%, #e5ebf4);
+  --surface-alt: color-mix(in srgb, var(--tenant-accent) 23%, #fff);
+  --brand-ink: color-mix(in srgb, var(--tenant-primary) 43%, #102039);
+  --brand-nav: color-mix(in srgb, var(--tenant-primary) 24%, #101a2c);
+  --brand-highlight: color-mix(in srgb, var(--tenant-accent) 74%, #fff);
+  --brand-banner: color-mix(in srgb, var(--tenant-accent) 44%, var(--workspace-surface));
+}
+.workspace.has-custom-brand .workspace-sidebar {
+  background: linear-gradient(150deg, var(--brand-nav), color-mix(in srgb, var(--tenant-accent) 10%, var(--brand-nav)));
+}
+.workspace.has-custom-brand .workspace-sidebar nav a.selected {
+  background: color-mix(in srgb, var(--tenant-primary) 14%, var(--brand-nav));
+}
+.workspace.has-custom-brand .workspace-topbar, .workspace.has-custom-brand .workspace-footer { background: var(--surface-alt); }
+.workspace.has-custom-brand .workspace-topbar { border-top: 3px solid var(--tenant-accent); }
+.workspace.has-custom-brand .workspace-brand .brand-pill-blue { background: var(--tenant-primary); border-color: var(--brand-highlight); }
+.workspace.has-custom-brand .workspace-brand .brand-pill-green { background: var(--tenant-accent); }
+.workspace.has-custom-brand .workspace-breadcrumb a, .workspace.has-custom-brand .workspace-heading .saas-eyebrow,
+.workspace.has-custom-brand .onboarding-panel > a:hover strong { color: var(--brand-ink); }
+.workspace.has-custom-brand .theme-switcher button[aria-pressed="true"] { background: var(--brand-banner); color: var(--brand-ink); }
+.workspace.has-custom-brand .brand-preview-card { border-top: 4px solid var(--tenant-primary); background: var(--brand-banner); }
+.workspace.has-custom-brand .trial-strip:not(.expired) { background: var(--surface-alt); border-color: var(--line); color: var(--brand-ink); }
+.workspace.has-custom-brand .trial-strip:not(.expired) a { color: inherit; }
+[data-theme="dark"] .workspace.has-custom-brand {
+  --workspace-bg: color-mix(in srgb, var(--tenant-primary) 15%, #0b1422);
+  --workspace-surface: color-mix(in srgb, var(--tenant-primary) 16%, #162137);
+  --workspace-text: #eef5ff;
+  --workspace-muted: #b7c7dd;
+  --line: color-mix(in srgb, var(--tenant-accent) 19%, #253550);
+  --line-strong: color-mix(in srgb, var(--tenant-accent) 33%, #253550);
+  --surface-alt: color-mix(in srgb, var(--tenant-accent) 10%, var(--workspace-surface));
+  --brand-ink: color-mix(in srgb, var(--tenant-accent) 37%, #fff);
+  --brand-banner: color-mix(in srgb, var(--tenant-accent) 15%, var(--workspace-surface));
+}
+
+.workspace.has-custom-brand .overview-intro {
+  background: linear-gradient(125deg, var(--brand-banner), var(--workspace-surface) 84%);
+}
+.workspace.has-custom-brand .overview-intro :is(.saas-eyebrow, h1 em),
+.workspace.has-custom-brand .overview-plan-icon { color: var(--brand-ink); }
+.workspace.has-custom-brand .overview-plan-icon { background: var(--brand-banner); border-color: var(--line); }
+.workspace.has-custom-brand .overview-plan-summary { border-color: var(--line-strong); }
+.workspace.has-custom-brand .setup-progress::-webkit-progress-value { background: var(--tenant-primary); }
+.workspace.has-custom-brand .setup-progress::-moz-progress-bar { background: var(--tenant-primary); }
+.workspace.has-custom-brand .workspace-sidebar :is(a, button):focus-visible { outline-color: var(--brand-highlight); }
 
 .workspace :is(.saas-panel, .application-card, .brand-preview, .brand-preview-card, .workspace-breadcrumb) {
   min-width: 0;
@@ -234,3 +258,15 @@
 }
 .workspace .widget-install-instructions summary { cursor: pointer; }
 .workspace .widget-install-instructions textarea { width: 100%; }
+
+.profile-photo-options {
+  width: min(100%, 380px);
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-alt);
+}
+.profile-photo-options :is(h3, p) { margin: 0; }
+.profile-photo-options p { color: var(--workspace-muted); }

@@ -17,3 +17,35 @@ test("recuperacao exige e-mail configurado, codigo de cinco minutos e permite re
 test("aviso do teste somente na visao geral e notificacao unica apos login",async({page})=>{
  await seed(page);await page.addInitScript(()=>{if(!sessionStorage.getItem("notice-test-initialized")){sessionStorage.setItem("show-trial-notice","true");sessionStorage.setItem("notice-test-initialized","true");}});await page.route("**/api/platform/**",route=>route.fulfill({json:context()}));await page.goto("/app");await expect(page.locator(".trial-strip")).toBeVisible();await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem("show-trial-notice"))).toBeNull();await page.goto("/app/integracoes");await expect(page.getByRole("heading",{name:"Central de integrações."})).toBeVisible();await expect(page.locator(".trial-strip")).toHaveCount(0);await expect(page.locator(".toast")).toHaveCount(0);await page.goto("/app/perfil");await expect(page.getByRole("button",{name:"Editar perfil"})).toBeVisible();await expect(page.locator(".trial-strip")).toHaveCount(0);await page.screenshot({path:"test-results/profile-no-trial-banner.png",fullPage:true});
 });
+
+test("foto do Google pode ser escolhida no perfil e a logo volta à visão geral", async ({ page }) => {
+ await seed(page);
+ const account = context();
+ const photo = "https://lh3.googleusercontent.com/profile-test";
+ await page.route("**/api/platform/**", route => route.fulfill({ json: account }));
+ await page.route("https://accounts.google.com/gsi/client", route => route.fulfill({
+  contentType: "application/javascript",
+  body: 'let cb; window.google={accounts:{id:{initialize(options){cb=options.callback},renderButton(el){const b=document.createElement("button");b.textContent="Escolher conta Google";b.onclick=()=>cb({credential:"photo-test-token"});el.append(b)}}}};',
+ }));
+ await page.route("**/api/auth/google/photo", route => {
+  expect(route.request().postDataJSON()).toEqual({ credential: "photo-test-token" });
+  account.photo = photo;
+  return route.fulfill({ json: { photo } });
+ });
+ await page.goto("/app/perfil");
+ await page.getByRole("button", { name: "Trocar foto do perfil" }).click();
+ const options = page.getByRole("region", { name: "Opções de foto" });
+ await expect(options.getByRole("button", { name: "Enviar imagem" })).toBeVisible();
+ await options.getByRole("button", { name: "Escolher conta Google" }).click();
+ await expect(page.locator(".profile-photo img")).toHaveAttribute("src", photo);
+ await page.locator(".workspace-sidebar .workspace-brand").click();
+ await expect(page).toHaveURL(/\/app$/);
+});
+
+test("logo do login e do cadastro abre a página inicial", async ({ page }) => {
+ for (const path of ["/login", "/register"]) {
+  await page.goto(path);
+  await page.getByRole("link", { name: "ConsorTech — início" }).filter({ visible: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+ }
+});

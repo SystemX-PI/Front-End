@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../components/BrandLogo";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { InlineFeedback } from "../components/IntegrationUi";
@@ -24,7 +24,7 @@ export default function BeneficiaryPortal() {
     catch (e) { navigate("/login", { replace: true, state: { logoutWarning: e instanceof Error ? e.message : "Falha ao encerrar sessao." } }); }
   }
   return <div className="portal-page">
-    <header className="portal-header"><div className="portal-brand"><BrandLogo compact /><span>Portal do Cliente</span></div><span>{localStorage.getItem("userEmail")}</span><ThemeSwitcher /><button className="button secondary" onClick={() => void leave()}>Sair</button></header>
+    <header className="portal-header"><Link className="portal-brand" to="/portal" aria-label="ConsorTech — meus processos"><BrandLogo compact /><span>Portal do Cliente</span></Link><span>{localStorage.getItem("userEmail")}</span><ThemeSwitcher /><button className="button secondary" onClick={() => void leave()}>Sair</button></header>
     <main className="portal-content">
       <section className="portal-hero"><h1>Meus processos</h1><p>Acompanhe os processos vinculados à sua conta.</p></section>
       {list.error && <InlineFeedback kind="error" message={list.error} />}

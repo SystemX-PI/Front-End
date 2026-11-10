@@ -10,7 +10,7 @@ import {
   MessageCircle,
   ShieldCheck,
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { logout } from "../services/auth";
@@ -96,8 +96,10 @@ export default function IntegrationShell({
     <div className="app-shell">
       <aside className={`sidebar ${menuOpen ? "menu-open" : ""}`}>
         <div className="brand-row">
-          <BrandLogo compact />
-          <strong>ConsorTech</strong>
+          <Link className="sidebar-brand-link" to="/admin/dashboard" aria-label="ConsorTech — visão geral" onClick={() => setMenuOpen(false)}>
+            <BrandLogo compact />
+            <strong>ConsorTech</strong>
+          </Link>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(value => !value)}>
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>

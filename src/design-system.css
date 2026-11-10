@@ -3367,3 +3367,12 @@ body {
 
   .admin-main .admin-table-cards :is(.form-actions, .admin-row-actions) { flex-wrap: wrap; }
 }
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.portal-brand, a.auth-brand-row { color: inherit; text-decoration: none; }

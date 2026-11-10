@@ -51,6 +51,10 @@ test("a marca muda o menu e as superfícies na prévia e após salvar", async ({
  await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
  await expect(menu).not.toHaveCSS("background-image", oldMenu);
  await expect(topbar).not.toHaveCSS("background-color", oldTopbar);
+ await page.getByRole("button", { name: "Voltar às cores originais" }).click();
+ await expect(menu).toHaveCSS("background-image", oldMenu);
+ await expect(topbar).toHaveCSS("background-color", oldTopbar);
+ await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
  await page.getByRole("link", { name: "Visão geral", exact: true }).click();
  await expect(menu).toHaveCSS("background-image", oldMenu);
  await page.goBack();

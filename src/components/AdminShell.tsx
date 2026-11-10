@@ -12,7 +12,7 @@ import {
   Users,
   UserRound,
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { getUserType, logout } from "../services/auth";
@@ -71,8 +71,10 @@ export default function AdminShell({
       <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
       <aside className={`sidebar admin-sidebar ${menuOpen ? "menu-open" : ""}`}>
         <div className="brand-row">
-          <BrandLogo compact />
-          <strong className="admin-brand-name">ConsorTech</strong>
+          <Link className="sidebar-brand-link" to="/admin/dashboard" aria-label="ConsorTech — visão geral" onClick={() => setMenuOpen(false)}>
+            <BrandLogo compact />
+            <strong className="admin-brand-name">ConsorTech</strong>
+          </Link>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(value => !value)}>
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
