@@ -29,7 +29,7 @@ test("WhatsApp desconecta, reconecta por QR e adiciona outra instancia",async({p
  await page.goto("/app/whatsapp");await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible();page.on("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:"Desconectar",exact:true}).click();await expect(page.getByText("Desconectado",{exact:true}).first()).toBeVisible();await page.getByRole("button",{name:"Gerar QR Code",exact:true}).click();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toBeVisible();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toHaveAttribute("src","data:image/png;base64,dGVzdA==",{timeout:10000});await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible({timeout:15000});await page.getByLabel("Nome do novo WhatsApp").fill("suporte");await page.getByRole("button",{name:"Adicionar WhatsApp"}).click();await expect(page.getByRole("button",{name:/suporte/})).toBeVisible();await page.screenshot({path:"test-results/whatsapp-multiple.png",fullPage:true});
 });
 
-test("a marca muda o menu e as superfícies na prévia e após salvar", async ({ page }) => {
+test("a marca muda na prévia e só é aplicada depois de salvar", async ({ page }) => {
  await seed(page);
  const c = context();
  let saved: unknown;
@@ -47,21 +47,30 @@ test("a marca muda o menu e as superfícies na prévia e após salvar", async ({
  const topbar = page.locator(".workspace-topbar");
  const oldMenu = await menu.evaluate(node => getComputedStyle(node).backgroundImage);
  const oldTopbar = await topbar.evaluate(node => getComputedStyle(node).backgroundColor);
- await page.getByLabel("Nome da marca").fill("Nova Marca");
- await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
- await expect(menu).not.toHaveCSS("background-image", oldMenu);
- await expect(topbar).not.toHaveCSS("background-color", oldTopbar);
- await page.getByRole("button", { name: "Voltar às cores originais" }).click();
- await expect(menu).toHaveCSS("background-image", oldMenu);
+ const editor = page.getByRole("dialog", { name: "Editar sua marca" });
+ const open = page.getByRole("button", { name: "Editar marca e ver prévia" });
+ await open.click();
+ await expect(editor).toBeVisible();
+ const preview = editor.getByRole("region", { name: "Prévia da marca" });
+ await editor.getByLabel("Nome da marca").fill("Rascunho");
+ await editor.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
+ await expect(preview).toContainText("Rascunho");
+ await expect(preview).toHaveCSS("--tenant-accent", "#8fc8ff");
  await expect(topbar).toHaveCSS("background-color", oldTopbar);
- await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
- await page.getByRole("link", { name: "Visão geral", exact: true }).click();
- await expect(menu).toHaveCSS("background-image", oldMenu);
- await page.goBack();
- await expect(topbar).toHaveCSS("background-color", oldTopbar);
- await page.getByLabel("Nome da marca").fill("Nova Marca");
- await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
- await page.getByRole("button", { name: "Salvar identidade" }).click();
+ await editor.getByRole("button", { name: "Fechar prévia" }).click();
+ await expect(editor).toBeHidden();
+ await expect(open).toBeFocused();
+ expect(saved).toBeUndefined();
+
+ await page.setViewportSize({ width: 320, height: 680 });
+ await open.click();
+ await expect(editor.getByLabel("Nome da marca")).toHaveValue("Aurora");
+ await expect(preview).toHaveCSS("--tenant-accent", "#35cda0");
+ expect(await editor.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+ await editor.getByLabel("Nome da marca").fill("Nova Marca");
+ await editor.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
+ await editor.getByRole("button", { name: "Salvar identidade" }).click();
+ await expect(editor).toBeHidden();
  await expect(page.locator(".workspace-sidebar .workspace-brand")).toContainText("Nova Marca");
  expect(saved).toMatchObject({ name: "Nova Marca", primary: "#142d54", accent: "#8fc8ff" });
  await page.goto("/app");

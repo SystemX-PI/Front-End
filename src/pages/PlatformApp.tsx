@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, ChevronRight, CreditCard, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Palette, Plus, PlugZap, RefreshCw, Sparkles, UserRound, Users, X } from "lucide-react";
 import { logout } from "../services/auth";
@@ -15,6 +15,7 @@ import "../platform.css";
 import "../workspace-polish.css";
 
 type BrandColors = { primary: string; accent: string };
+type BrandDraft = BrandColors & { name: string; logo: string };
 const originalColors: BrandColors = { primary: "#315fe8", accent: "#35cda0" };
 const consorTechColors: BrandColors = { primary: "#142d54", accent: "#8fc8ff" };
 
@@ -43,8 +44,6 @@ export function Empty({ icon, title, description, children }: { icon: ReactNode;
 export function Feedback({ message }: { message: string }) { return message ? <p className="saas-error" role="alert">{message}</p> : null; }
 export default function PlatformApp() {
  const [params]=useSearchParams(); const accountId=params.get("account"); const location=useLocation(); const navigate=useNavigate();
- const [preview, setPreview] = useState<{ key: string; colors: BrandColors } | null>(null);
- if (preview && preview.key !== location.key) setPreview(null);
  const section=location.pathname.split("/")[2] || "overview";
  const [context,setContext]=useState<Context|null>(null); const [error,setError]=useState(""); const [loading,setLoading]=useState(true); const [settledScope,setSettledScope]=useState<string|null>(accountId); const [menu,setMenu]=useState(false);
  const load=useCallback(async()=>{ try { const c=await platformRequest<Context>("/context",accountId); setContext(c); setError(""); } catch(e) { setError(e instanceof Error?e.message:"Não foi possível abrir sua conta."); } finally { setLoading(false); setSettledScope(accountId); } },[accountId]);
@@ -64,10 +63,21 @@ export default function PlatformApp() {
   primary: color(account?.primaryColor, originalColors.primary),
   accent: color(account?.accentColor, originalColors.accent),
  };
- const isPreviewing = section === "marca" && preview?.key === location.key;
- const activeColors = isPreviewing ? preview.colors : savedColors;
- const customBrand = activeColors.primary.toLowerCase() !== originalColors.primary || activeColors.accent.toLowerCase() !== originalColors.accent;
- const style = brandStyle(activeColors);
+ const customBrand = savedColors.primary.toLowerCase() !== originalColors.primary || savedColors.accent.toLowerCase() !== originalColors.accent;
+ const style = brandStyle(savedColors);
+
+ function applySavedBrand(brand: BrandDraft) {
+  setContext(current => current?.account && current.account.id === account?.id ? {
+   ...current,
+   account: {
+    ...current.account,
+    brandName: brand.name,
+    logo: brand.logo,
+    primaryColor: brand.primary,
+    accentColor: brand.accent,
+   },
+  } : current);
+ }
  async function signOut() { try {await logout();}catch {notify("Sessão encerrada neste dispositivo.","info");} navigate("/login",{replace:true}); }
  return <div className={customBrand ? "workspace has-custom-brand" : "workspace"} style={style}><a className="skip-link" href="#workspace-content">Pular para o conteúdo</a>
   <button className="workspace-drawer-backdrop" aria-label="Fechar navegação" hidden={!menu} onClick={()=>setMenu(false)}/>
@@ -88,7 +98,7 @@ export default function PlatformApp() {
    <main className="workspace-main" id="workspace-content" tabIndex={-1}>
     {admin&&account&&<div className="account-inspection"><span><Building2 size={17}/>Gerenciando a conta <strong>{account.nome}</strong></span><Link to="/app"><ArrowLeft size={16}/>Voltar aos clientes</Link></div>}
     {section==="overview"&&!clientsOnly&&account&&<div className={`trial-strip ${!context.active?"expired":""}`}><span><span className="connection-dot"/>{account.suspended?"Conta suspensa":planFor(context).tier==="PRO"?`Assinatura ativa até ${date(account.paidUntil)}${context.subscription?.billingProvider==="STRIPE"?" · Stripe":context.simulationEnabled?" · simulação":""}`:context.active?`Seu teste gratuito termina em ${date(account.trialEndsAt)}. Aproveite seu espaço.`:"Seus três dias gratuitos terminaram. Ative a assinatura para continuar."}</span>{manager&&<Link to={href("/assinatura")}>Ver assinatura <ArrowRight size={15}/></Link>}</div>}
-    {section==="perfil"?<ProfileSettings context={context} reload={load}/>:clientsOnly?<ClientDirectory/>:section==="upgrade"&&manager?<PlanUpgrade context={context} accountId={accountId} reload={load}/>:section==="whatsapp"?<PlatformWhatsApp context={context} accountId={accountId} reload={load}/>:section==="gmail"?<Mailboxes context={context} accountId={accountId} reload={load}/>:section==="widget"?<PartnerWidget context={context} accountId={accountId}/>:section==="equipe"?<Team context={context} accountId={accountId} reload={load}/>:section==="marca"&&manager?<Brand key={location.key} context={context} accountId={accountId} reload={load} colors={savedColors} onPreview={colors => setPreview(colors ? { key: location.key, colors } : null)}/>:section==="assinatura"&&manager?<Subscription context={context} accountId={accountId} reload={load}/>:section==="integracoes"?<Integrations context={context} href={href}/>:<Overview context={context} href={href}/>}
+    {section==="perfil"?<ProfileSettings context={context} reload={load}/>:clientsOnly?<ClientDirectory/>:section==="upgrade"&&manager?<PlanUpgrade context={context} accountId={accountId} reload={load}/>:section==="whatsapp"?<PlatformWhatsApp context={context} accountId={accountId} reload={load}/>:section==="gmail"?<Mailboxes context={context} accountId={accountId} reload={load}/>:section==="widget"?<PartnerWidget context={context} accountId={accountId}/>:section==="equipe"?<Team context={context} accountId={accountId} reload={load}/>:section==="marca"&&manager?<Brand key={location.key} context={context} accountId={accountId} colors={savedColors} onSaved={applySavedBrand}/>:section==="assinatura"&&manager?<Subscription context={context} accountId={accountId} reload={load}/>:section==="integracoes"?<Integrations context={context} href={href}/>:<Overview context={context} href={href}/>}
    </main><footer className="workspace-footer"><span>{account?.brandName || "ConsorTech"}</span><span>Seu espaço de trabalho, conectado.</span></footer>
   </div>
  </div>;
@@ -146,19 +156,141 @@ export function Mailboxes({context:c,accountId,reload}:{context:Context;accountI
  async function remove(id:number){if(!window.confirm("Remover a configuração deste Gmail?"))return;setBusy(true);try{await platformRequest(`/mailboxes/${id}`,accountId,"DELETE");await reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  return <><PageTitle eyebrow="INTEGRAÇÕES / GMAIL" title="Cada remetente no seu lugar." description="Configure várias contas Gmail, com um nome para cada uso da sua empresa."/><Feedback message={error}/><div className="saas-two-column"><section className="saas-panel"><div className="saas-panel-heading"><h2>Contas do Gmail</h2><span className="feature-symbol red"><Mail/></span></div>{mailboxes.length?<div className="resource-list">{mailboxes.map(m=><article key={m.id}><span className="channel-icon red"><Mail size={20}/></span><div><strong>{m.name}</strong><small>{m.email}</small></div><span className="saas-badge green">Verificado</span>{manager&&<button className="text-button danger" disabled={busy} onClick={()=>void remove(m.id)}>Remover</button>}</article>)}</div>:<Empty icon={<Mail/>} title="Seu primeiro remetente começa aqui." description="Adicione uma conta Gmail para organizar os canais de e-mail da sua empresa."/>}</section>{manager&&<section className="saas-panel">{full?<div className="quota-upsell"><span className="feature-symbol purple"><Mail/></span><h2>Sua vaga de Gmail está em uso.</h2><p>Seu plano inclui {plan.gmailLimit} {plan.gmailLimit===1?"conta":"contas"}. Conheça os benefícios para ampliar seus canais.</p><Link className="saas-button primary" to={workspaceLink("/upgrade",accountId,"gmail")}>Liberar mais Gmails <ArrowRight size={17}/></Link></div>:<><h2>Adicionar Gmail</h2><p className="saas-muted">Use uma senha de aplicativo do Google. A conexão é verificada antes de salvar.</p><form className="saas-form" onSubmit={submit}><label>Nome da conta<input name="name" required placeholder="Ex.: Financeiro" maxLength={120}/></label><label>E-mail Gmail<input name="email" type="email" required placeholder="empresa@gmail.com"/></label><label>Senha de aplicativo<input name="password" type="password" required autoComplete="new-password"/></label><button disabled={busy||!c.active} className="saas-button primary">{busy?<RefreshCw className="spin" size={17}/>:<Plus size={17}/>}Verificar e adicionar</button><small>As credenciais são protegidas no servidor e não aparecem para os usuários da equipe.</small></form></>}</section>}</div></>;
 }
-function Brand({context:c,accountId,reload,colors,onPreview}:{context:Context;accountId:string|null;reload:()=>Promise<void>;colors:BrandColors;onPreview:(colors:BrandColors|null)=>void}) {
- const [name,setName]=useState(c.account!.brandName);const [logo,setLogo]=useState(c.account!.logo||"");const [primary,setPrimary]=useState(colors.primary);const [accent,setAccent]=useState(colors.accent);const [busy,setBusy]=useState(false);const [error,setError]=useState("");
- async function upload(file:File|undefined){if(!file)return;if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>280000){setError("Envie um PNG, JPG ou WebP de até 280 KB.");return;}const reader=new FileReader();reader.onload=()=>{setLogo(String(reader.result));setError("");};reader.readAsDataURL(file);}
- async function save(e:FormEvent){e.preventDefault();setBusy(true);setError("");try{await platformRequest("/brand",accountId,"PUT",{name,logo,primary,accent});await reload();onPreview(null);notify("Sua identidade foi atualizada.","success");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- return <><PageTitle eyebrow="IDENTIDADE" title="Sua marca" description="Escolha as cores, o nome e o logo do espaço da sua empresa."/><Feedback message={error}/><div className="saas-two-column"><form className="saas-panel saas-form" onSubmit={save}><h2>Identidade da sua empresa</h2><label>Nome da marca<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label><label>Logo da empresa<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>void upload(e.target.files?.[0])}/></label><small>PNG, JPG ou WebP de até 280 KB. Use um logo com boa leitura em fundos claros e escuros.</small>{logo&&<button className="text-button" type="button" onClick={()=>setLogo("")}>Remover logo</button>}<div className="color-fields"><label>Cor principal<input type="color" value={primary} onChange={e=>{setPrimary(e.target.value);onPreview({primary:e.target.value,accent});}}/><small>Menu, botões e links</small></label><label>Cor de destaque<input type="color" value={accent} onChange={e=>{setAccent(e.target.value);onPreview({primary,accent:e.target.value});}}/><small>Fundos, cartões e destaques</small></label></div><button className="saas-button" type="button" onClick={()=>{
-  setPrimary(consorTechColors.primary);
-  setAccent(consorTechColors.accent);
-  onPreview(consorTechColors);
- }}>Usar azul-escuro e azul-claro</button><button className="saas-button" type="button" onClick={()=>{
-  setPrimary(originalColors.primary);
-  setAccent(originalColors.accent);
-  onPreview(originalColors);
- }}>Voltar às cores originais</button><p className="saas-muted">Veja as cores nesta tela antes de salvar.</p><button disabled={busy||!c.active} className="saas-button primary"><Check size={17}/>Salvar identidade</button></form><section className="brand-preview" style={brandStyle({ primary, accent })}><span className="saas-eyebrow">PRÉVIA DA SUA MARCA</span><div className="brand-preview-card"><div className="workspace-brand">{logo?<img src={logo} alt="Prévia do logo"/>:<BrandLogo compact/>}<strong>{name||"Sua marca"}</strong></div><h2>Bem-vindo ao seu espaço.</h2><p>Uma experiência que sua equipe reconhece como sua.</p><span className="saas-badge green">Sua empresa, conectada</span><button type="button" className="saas-button primary">Sua próxima conexão <ArrowRight size={17}/></button></div><p>O nome, o logo e as cores são compartilhados com todos os usuários desta conta.</p></section></div></>;
+function Brand({ context, accountId, colors, onSaved }: {
+ context: Context;
+ accountId: string | null;
+ colors: BrandColors;
+ onSaved: (brand: BrandDraft) => void;
+}) {
+ const account = context.account!;
+ const saved = { name: account.brandName, logo: account.logo ?? "", ...colors };
+ const [draft, setDraft] = useState<BrandDraft>(saved);
+ const [saving, setSaving] = useState(false);
+ const [readingLogo, setReadingLogo] = useState(false);
+ const [error, setError] = useState("");
+ const dialog = useRef<HTMLDialogElement>(null);
+ const busy = saving || readingLogo;
+
+ function openPreview() {
+  setDraft(saved);
+  setError("");
+  dialog.current?.showModal();
+ }
+
+ function closePreview() {
+  if (!busy) dialog.current?.close();
+ }
+
+ function upload(file: File | undefined) {
+  if (!file) return;
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 280000) {
+   setError("Envie um PNG, JPG ou WebP de até 280 KB.");
+   return;
+  }
+  setError("");
+  setReadingLogo(true);
+  const reader = new FileReader();
+  reader.onload = () => setDraft(current => ({ ...current, logo: String(reader.result) }));
+  reader.onerror = () => setError("Não foi possível ler a imagem. Escolha outro arquivo.");
+  reader.onloadend = () => setReadingLogo(false);
+  reader.readAsDataURL(file);
+ }
+
+ async function save(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+  if (busy || !context.active) return;
+  const brand = { ...draft, name: draft.name.trim() };
+  if (!brand.name) {
+   setError("Informe o nome da marca.");
+   return;
+  }
+  setSaving(true);
+  setError("");
+  try {
+   await platformRequest("/brand", accountId, "PUT", brand);
+   onSaved(brand);
+   dialog.current?.close();
+   notify("Sua identidade foi atualizada.", "success");
+  } catch (error) {
+   setError(error instanceof Error ? error.message : "Não foi possível salvar a marca.");
+  } finally {
+   setSaving(false);
+  }
+ }
+
+ return <>
+  <PageTitle eyebrow="IDENTIDADE" title="Sua marca" description="Personalize como a empresa aparece no espaço de trabalho."/>
+  <section className="saas-panel brand-summary">
+   <div className="workspace-brand">
+    {saved.logo ? <img src={saved.logo} alt=""/> : <BrandLogo compact/>}
+    <div><h2>{saved.name}</h2><p>Cores em uso</p></div>
+   </div>
+   <div className="brand-summary-colors">
+    <span><i style={{ backgroundColor: saved.primary }}/><span>Principal <code>{saved.primary}</code></span></span>
+    <span><i style={{ backgroundColor: saved.accent }}/><span>Destaque <code>{saved.accent}</code></span></span>
+   </div>
+   <button className="saas-button primary" type="button" onClick={openPreview}>
+    <Palette size={17}/>Editar marca e ver prévia
+   </button>
+  </section>
+
+  <dialog className="brand-editor" ref={dialog} aria-labelledby="brand-editor-title"
+   onCancel={event => { if (busy) event.preventDefault(); }}>
+   <form className="brand-editor-layout" onSubmit={save}>
+    <header className="brand-editor-header">
+     <div><h2 id="brand-editor-title">Editar sua marca</h2><p>A prévia acompanha cada mudança.</p></div>
+     <button className="saas-button brand-editor-close" type="button" aria-label="Fechar prévia"
+      onClick={closePreview} disabled={busy}><X size={20}/></button>
+    </header>
+    <div className="brand-editor-body">
+     <fieldset className="saas-form brand-editor-fields" disabled={busy}>
+      <label>Nome da marca<input required maxLength={120} value={draft.name}
+       onChange={event => setDraft({ ...draft, name: event.target.value })}/></label>
+      <label>Logo da empresa<input type="file" accept="image/png,image/jpeg,image/webp"
+       onChange={event => { upload(event.target.files?.[0]); event.target.value = ""; }}/></label>
+      <small>PNG, JPG ou WebP de até 280 KB.</small>
+      {draft.logo && <button className="text-button" type="button" onClick={() => setDraft({ ...draft, logo: "" })}>Remover logo</button>}
+      <div className="color-fields">
+       <label>Cor principal<input type="color" value={draft.primary}
+        onChange={event => setDraft({ ...draft, primary: event.target.value })}/></label>
+       <label>Cor de destaque<input type="color" value={draft.accent}
+        onChange={event => setDraft({ ...draft, accent: event.target.value })}/></label>
+      </div>
+      <div className="brand-preset-options">
+       <button className="saas-button" type="button" onClick={() => setDraft({ ...draft, ...originalColors })}>Cores originais</button>
+       <button className="saas-button" type="button" onClick={() => setDraft({ ...draft, ...consorTechColors })}>Azul-escuro e azul-claro</button>
+      </div>
+     </fieldset>
+     <section className="product-preview brand-editor-preview" aria-label="Prévia da marca" style={brandStyle(draft)}>
+      <div className="preview-browser"><span/><span/><span/><small>VISÃO GERAL</small></div>
+      <div className="preview-content">
+       <div className="workspace-brand">
+        {draft.logo ? <img src={draft.logo} alt="Prévia do logo"/> : <BrandLogo compact/>}
+        <strong>{draft.name.trim() || "Sua empresa"}</strong>
+       </div>
+       <div className="brand-preview-intro">
+        <h3>Sua operação, mais conectada.</h3>
+        <p>Seus canais e sua equipe em um só lugar.</p>
+        <span className="saas-button primary">Gerenciar meus canais <ArrowRight size={16}/></span>
+       </div>
+       <div className="preview-stats">
+        <article><MessageCircle size={20}/><strong>WhatsApp</strong></article>
+        <article><Mail size={20}/><strong>Gmail</strong></article>
+       </div>
+      </div>
+     </section>
+    </div>
+    <footer className="brand-editor-footer">
+     <Feedback message={error}/>
+     {!context.active && <p>Ative sua assinatura para salvar a marca.</p>}
+     <button className="saas-button" type="button" disabled={busy} onClick={closePreview}>Cancelar</button>
+     <button className="saas-button primary" disabled={busy || !context.active}>
+      <Check size={17}/>{saving ? "Salvando…" : "Salvar identidade"}
+     </button>
+    </footer>
+   </form>
+  </dialog>
+ </>;
 }
 function Subscription({context:c,accountId}:{context:Context;accountId:string|null;reload:()=>Promise<void>}) {
  const plan=planFor(c);const paid=plan.tier==="PRO";const [busy,setBusy]=useState(false);const [error,setError]=useState("");
