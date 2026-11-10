@@ -30,7 +30,7 @@ export default function Dashboard() {
   );
   const metrics = [
     {
-      label: "Processos na comunicação",
+      label: "Processos recentes na fila",
       value: queue.length,
       icon: BellRing,
       tone: "blue",
@@ -77,7 +77,7 @@ export default function Dashboard() {
             <Link className="button secondary" to="/admin/disparo-manual">
               Disparo manual
             </Link>
-            <Link className="button primary" to="/integracoes/notificacoes">
+            <Link className="button primary" to="/admin/comunicacao">
               Abrir central <ArrowRight size={17} />
             </Link>
           </div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
               <h3>Contemplações recentes</h3>
               <p>Últimos registros da fila de comunicação</p>
             </div>
-            <Link className="text-link" to="/integracoes/notificacoes">
+            <Link className="text-link" to="/admin/comunicacao">
               Ver todos <ArrowRight size={15} />
             </Link>
           </div>
@@ -167,10 +167,10 @@ export default function Dashboard() {
               description="Receba uma contemplação para acompanhar os primeiros registros."
               action={
                 <Link
-                  to="/integracoes/notificacoes"
+                  to="/admin/comunicacao"
                   className="button secondary"
                 >
-                  Receber contemplação
+                  Abrir fila de comunicação
                 </Link>
               }
             />

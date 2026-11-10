@@ -173,6 +173,11 @@ export const backend = {
       ),
   },
   integrations: {
+    notificationSummary: (inicio: string, fim: string, signal?: AbortSignal) =>
+      apiRequest<{ total: number; accepted: number; pending: number; failed: number }>(
+        `/api/integracoes/comunicacoes/historico?${new URLSearchParams({ inicio, fim })}`,
+        { signal },
+      ),
     queuePage: (page = 0, q = "", status = "", signal?: AbortSignal) => apiRequest<PageResponse<QueueItem>>(
       `/api/integracoes/comunicacoes/fila/pagina?${new URLSearchParams({ page: String(page), size: "20", q, status })}`, { signal }),
     queue: (signal?: AbortSignal) =>

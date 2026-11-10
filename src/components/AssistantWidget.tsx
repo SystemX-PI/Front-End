@@ -151,6 +151,7 @@ export default function AssistantWidget() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="assistant-trigger-button"
+        aria-label={open ? "Fechar assistente" : "Abrir assistente IA"}
         aria-expanded={open}
       >
         <Bot size={19} />

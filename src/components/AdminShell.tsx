@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
 import {
+  ArrowDownToLine,
   BellRing,
+  Menu,
+  X,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -15,17 +17,22 @@ import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { getUserType, logout } from "../services/auth";
 
-const links = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/contemplados", label: "Contemplados", icon: BellRing },
-  { to: "/admin/cadastros", label: "Cadastros", icon: ClipboardList },
-  { to: "/admin/clientes", label: "Clientes", icon: UserRound },
-  { to: "/admin/usuarios", label: "Usuários", icon: Users },
-  { to: "/admin/comunicacao", label: "Comunicação", icon: BellRing },
-  { to: "/admin/canais", label: "Canais internos", icon: PlugZap },
-  { to: "/admin/disparo-manual", label: "Disparo manual", icon: Send },
-  { to: "/admin/baixas", label: "Baixas pendentes", icon: ClipboardList },
-  { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
+const navigation = [
+  { label: "Operação", links: [
+    { to: "/admin/dashboard", label: "Visão geral", icon: LayoutDashboard },
+    { to: "/admin/contemplados", label: "Contemplados", icon: ClipboardList },
+    { to: "/admin/baixas", label: "Baixas pendentes", icon: ArrowDownToLine },
+    { to: "/admin/comunicacao", label: "Comunicação", icon: BellRing },
+    { to: "/admin/disparo-manual", label: "Disparo manual", icon: Send },
+  ] },
+  { label: "Gestão", links: [
+    { to: "/admin/clientes", label: "Clientes", icon: UserRound },
+    { to: "/admin/cadastros", label: "Cadastros", icon: ClipboardList },
+    { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
+    { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
+    { to: "/admin/canais", label: "Canais internos", icon: PlugZap, adminOnly: true },
+    { to: "/app", label: "Meu espaço", icon: LayoutDashboard, adminOnly: true },
+  ] },
 ];
 
 export default function AdminShell({
@@ -39,6 +46,7 @@ export default function AdminShell({
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = getUserType() === "ADMINISTRADOR";
   const email = localStorage.getItem("userEmail") || "";
 
   async function handleLogout() {
@@ -60,6 +68,7 @@ export default function AdminShell({
 
   return (
     <div className="app-shell admin-app-shell">
+      <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
       <aside className={`sidebar admin-sidebar ${menuOpen ? "menu-open" : ""}`}>
         <div className="brand-row">
           <BrandLogo compact />
@@ -68,39 +77,25 @@ export default function AdminShell({
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
         </div>
-        <p className="nav-section-label admin-section-label">Administração</p>
-        <nav id="main-navigation" className="sidebar-nav" onClick={() => setMenuOpen(false)} aria-label="Navegação administrativa">
-          {links.filter(link => {
-            if (link.to === "/admin/usuarios" || link.to === "/admin/canais") {
-              return getUserType() === "ADMINISTRADOR";
-            }
-            return true;
-          }).map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/admin/dashboard"}
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <Icon size={18} aria-hidden="true" />
-              <span>{label}</span>
-            </NavLink>
+        <nav id="main-navigation" className="sidebar-nav" aria-label="Navegação administrativa">
+          {navigation.map(({ label, links }) => (
+            <div className="admin-nav-group" key={label}>
+              <p className="admin-section-label">{label}</p>
+              {links.filter(link => !link.adminOnly || isAdmin).map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
-          {getUserType() === "ADMINISTRADOR" ? (
-            <NavLink to="/app" className="nav-item">
-              <BellRing size={18} aria-hidden="true" />
-              <span>Meu espaço</span>
-            </NavLink>
-          ) : null}
         </nav>
-        <div className="sidebar-trust">
-          <div>
-            <strong>Sessão autenticada</strong>
-            <span>{email || "Usuário conectado"}</span>
-          </div>
-        </div>
       </aside>
 
       <div className="app-column">
@@ -110,8 +105,6 @@ export default function AdminShell({
               <span>ConsorTech</span>
               <b>/</b>
               <span>Administração</span>
-              <b>/</b>
-              {title}
             </div>
             <h1>{title}</h1>
             <p>{subtitle}</p>
@@ -120,7 +113,7 @@ export default function AdminShell({
             <ThemeSwitcher />
             <span className="user-copy">
               <strong>{email || "Usuário conectado"}</strong>
-              <small>Área administrativa</small>
+              <small>{isAdmin ? "Administrador" : "Operação"}</small>
             </span>
             <button
               type="button"
@@ -132,7 +125,7 @@ export default function AdminShell({
             </button>
           </div>
         </header>
-        <main id="main-content" className="integration-main admin-main">
+        <main id="main-content" className="integration-main admin-main" tabIndex={-1}>
           {children}
         </main>
       </div>

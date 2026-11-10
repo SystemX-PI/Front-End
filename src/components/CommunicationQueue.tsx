@@ -44,6 +44,18 @@ export default function CommunicationQueue() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const [period, setPeriod] = useState(7);
+  const loadSummary = useCallback((signal: AbortSignal) => {
+    const end = new Date();
+    const start = new Date(end);
+    start.setUTCDate(end.getUTCDate() - period + 1);
+    return backend.integrations.notificationSummary(
+      start.toISOString().slice(0, 10),
+      end.toISOString().slice(0, 10),
+      signal,
+    );
+  }, [period]);
+  const summary = useResource(loadSummary);
   const term = useDebouncedValue(search);
   const load = useCallback((signal: AbortSignal) => backend.integrations.queuePage(page - 1, term, status, signal), [page, term, status]);
   const { data, loading, error, refresh } = useResource(load);
@@ -85,6 +97,7 @@ export default function CommunicationQueue() {
             : "success",
       );
       refresh();
+      summary.refresh();
     } catch (error) {
       const message =
         error instanceof Error
@@ -111,48 +124,42 @@ export default function CommunicationQueue() {
           if (confirmId !== null) void send(confirmId);
         }}
       />
-      <section
-        className="notification-metrics"
-        aria-label="Resumo da comunicação"
-      >
-        {[
-          { label: "Nesta pagina", value: queue.length },
-          {
-            label: "Pendentes",
-            value: queue.filter(
-              (item) =>
-                (item?.comunicacao?.statusGeral || "PENDENTE") === "PENDENTE",
-            ).length,
-          },
-          {
-            label: "Envio em algum canal",
-            value: queue.filter(
-              (item) =>
-                Boolean(item?.comunicacao?.statusGeral) &&
-                item.comunicacao.statusGeral !== "PENDENTE",
-            ).length,
-          },
-          {
-            label: "Com falha",
-            value: queue.filter(
-              (item) =>
-                item?.comunicacao?.statusGeral === "FALHA" ||
-                item?.comunicacao?.email?.status === "FALHA" ||
-                item?.comunicacao?.whatsapp?.status === "FALHA",
-            ).length,
-          },
-        ].map((metric) => (
-          <article key={metric.label}>
-            <small>{metric.label}</small>
-            <strong>{loading || error ? "—" : metric.value}</strong>
-          </article>
-        ))}
+      <section className="panel notification-summary" aria-labelledby="notification-summary-title">
+        <div className="data-panel-heading">
+          <div>
+            <h3 id="notification-summary-title">Notificações no período</h3>
+            <p>Uma tentativa por canal. Enviadas são as aceitas pelo provedor.</p>
+          </div>
+          <label className="field">
+            <span>Período</span>
+            <select value={period} onChange={event => setPeriod(Number(event.target.value))}>
+              <option value={7}>Últimos 7 dias</option>
+              <option value={30}>Últimos 30 dias</option>
+              <option value={90}>Últimos 90 dias</option>
+            </select>
+          </label>
+        </div>
+        {summary.error ? <ErrorState message={summary.error} retry={summary.refresh} /> : (
+          <div className="notification-metrics" aria-busy={summary.loading}>
+            {([
+              ["Tentativas", "total"],
+              ["Enviadas", "accepted"],
+              ["Pendentes", "pending"],
+              ["Falhas", "failed"],
+            ] as const).map(([label, key]) => (
+              <article key={key}>
+                <small>{label}</small>
+                <strong>{summary.loading ? "—" : summary.data?.[key]?.toLocaleString("pt-BR") ?? "—"}</strong>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       <section className="panel data-panel">
         <div className="data-panel-heading">
           <div>
             <h3>Fila de comunicação</h3>
-            <p>Busque em toda a fila. Os indicadores resumem a pagina atual.</p>
+            <p>Busque pelo processo e confira o último envio de cada canal.</p>
           </div>
           <div className="split-actions">
             <Link
