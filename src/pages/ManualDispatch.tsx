@@ -202,6 +202,14 @@ export default function ManualDispatch() {
   const loadOperationalSenders = useCallback((signal: AbortSignal) =>
     apiRequest<{ id: number; name: string }[]>("/api/integracoes/comunicacoes/remetentes-whatsapp", { signal }), []);
   const operationalSenders = useResource(loadOperationalSenders);
+  const loadSenderStatus = useCallback((signal: AbortSignal) => {
+    if (isTestMode) return Promise.resolve(null);
+    const query = selectedSenderId === null ? "" : `?senderId=${selectedSenderId}`;
+    return apiRequest<{ connected: boolean }>(
+      `/api/integracoes/comunicacoes/remetentes-whatsapp/status${query}`, { signal },
+    );
+  }, [selectedSenderId, isTestMode]);
+  const senderStatus = useResource(loadSenderStatus);
   const senderOptions = Array.isArray(operationalSenders.data) ? operationalSenders.data : [];
   const internalInstances = Array.isArray(
     internalChannelsResource.data?.instances,
@@ -753,6 +761,29 @@ export default function ManualDispatch() {
           </div>
         }
       />
+
+      {!isTestMode && (
+        <section className="panel data-panel dispatch-sender-status" aria-label="Conexão do WhatsApp">
+          <div className="data-panel-heading">
+            <div>
+              <h3>Conexão do WhatsApp</h3>
+              <p role="status">
+                {senderStatus.loading ? "Verificando o número de envio…" :
+                  senderStatus.error || typeof senderStatus.data?.connected !== "boolean"
+                    ? "Não foi possível verificar a conexão agora."
+                    : senderStatus.data.connected ? "Número conectado para enviar mensagens."
+                      : "Número desconectado. Conecte o WhatsApp antes de enviar."}
+              </p>
+            </div>
+            <div className="split-actions">
+              <button type="button" className="button secondary compact"
+                disabled={senderStatus.loading} onClick={senderStatus.refresh}>Verificar novamente</button>
+              {isAdmin ? <Link to="/admin/canais">Abrir Canais internos</Link> :
+                <span>Peça a um administrador para reconectar o número.</span>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {invalidUrlProcess ? (
         <InlineFeedback

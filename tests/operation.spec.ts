@@ -15,6 +15,7 @@ test('disparo manual seleciona processo, envia WhatsApp personalizado e exibe hi
   let whatsappPayload:unknown=null;
   await page.route('**/api/**',route=>{
     const url=route.request().url();
+    if(url.includes('/remetentes-whatsapp/status')) return route.fulfill({json:{connected:true}});
     if(url.includes('/comunicacoes/fila/pagina')){
       return route.fulfill({json:{items:[{processoId:7,origem:'SISTEMA_PARCEIRO',idExterno:'CONT-77',statusProcesso:process.status,recebidaEm:'2026-10-29T10:00:00',comunicacao:{processoId:7,statusGeral:'PENDENTE',email:{id:1,destinatario:'cliente@exemplo.com',status:'PENDENTE',erro:null,criadaEm:'2026-10-29T10:00:00',enviadaEm:null},whatsapp:{id:2,destinatario:'5511999998888',status:'PENDENTE',erro:null,criadaEm:'2026-10-29T10:00:00',enviadaEm:null}}}],total:1,page:0,size:20}});
     }
@@ -35,6 +36,7 @@ test('disparo manual seleciona processo, envia WhatsApp personalizado e exibe hi
   });
 
   await page.goto('/admin/disparo-manual');
+  await expect(page.getByText('Número conectado para enviar mensagens.')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Disparo manual de mensagens'})).toBeVisible();
   await page.getByRole('option',{name:/CONT-77/}).click();
   await expect(page.getByRole('heading',{name:/Processo #7 · CONT-77/})).toBeVisible();
@@ -91,10 +93,23 @@ test("beneficiário autenticado entra pelo portal ao abrir a área SaaS", async 
     const claims = btoa(JSON.stringify({ tipo: "CLIENTE", beneficiario: true }));
     localStorage.setItem("token", `test.${claims}.test`);
   });
-  await page.route("**/api/portal/**", route => route.fulfill({
-    json: { items: [], total: 0, size: 20, page: 0 },
-  }));
+  await page.route("**/api/portal/**", route => {
+    const path = new URL(route.request().url()).pathname;
+    const current = { ...process, status: "EM_ANALISE" };
+    return route.fulfill({ json: path.endsWith("/processos") ?
+      { items: [current], total: 1, size: 20, page: 0 } : {
+        processo: current,
+        responsavel: "Operador",
+        cota: "007",
+        valorCredito: 15000,
+        documentos: [],
+        historico: [{ id: 1, novoStatus: "EM_ANALISE", data: process.atualizadoEm }],
+      } });
+  });
   await page.goto("/app");
   await expect(page).toHaveURL(/\/portal$/);
   await expect(page.getByRole("heading", { name: "Meus processos" })).toBeVisible();
+  await expect(page.getByText("Aguarde o resultado da análise da equipe.")).toBeVisible();
+  await page.getByRole("button", { name: "Historico" }).click();
+  await expect(page.locator(".operation-history").getByRole("listitem")).toContainText("Em analise");
 });

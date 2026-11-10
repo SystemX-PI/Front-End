@@ -72,7 +72,12 @@ export default function PlatformApp() {
  return <div className={customBrand ? "workspace has-custom-brand" : "workspace"} style={style}><a className="skip-link" href="#workspace-content">Pular para o conteúdo</a>
   <button className="workspace-drawer-backdrop" aria-label="Fechar navegação" hidden={!menu} onClick={()=>setMenu(false)}/>
   <aside className={`workspace-sidebar ${menu?"is-open":""}`}><Link className="workspace-brand" to={href()}>{account?.logo?<img src={account.logo} alt={account.brandName}/>:<BrandLogo compact/>}<strong>{account?.brandName || "ConsorTech"}</strong></Link><button className="workspace-menu" aria-label={menu?"Fechar menu":"Abrir menu"} aria-expanded={menu} aria-controls="workspace-navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
-   <nav id="workspace-navigation" aria-label="Navegação principal" onClick={()=>setMenu(false)}>
+   <nav id="workspace-navigation" aria-label="Navegação principal" onClick={()=>setMenu(false)}
+    onKeyDown={event => {
+     if (event.key !== "Escape" || !menu) return;
+     setMenu(false);
+     event.currentTarget.closest("aside")?.querySelector<HTMLButtonElement>(".workspace-menu")?.focus();
+    }}>
     {(admin || context.role==="FUNCIONARIO") && <Link className="text-button" to="/admin/dashboard">Operação de consórcios</Link>}
     <small>{clientsOnly?"PLATAFORMA":"SEU ESPAÇO"}</small>
     {admin&&<NavLink end to="/app" className={!account?"selected":""}><Building2 size={18}/>Clientes{account&&<ArrowLeft size={15}/>}</NavLink>}

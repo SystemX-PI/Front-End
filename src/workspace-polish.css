@@ -228,7 +228,6 @@
 .workspace.has-custom-brand .overview-plan-summary { border-color: var(--line-strong); }
 .workspace.has-custom-brand .setup-progress::-webkit-progress-value { background: var(--tenant-primary); }
 .workspace.has-custom-brand .setup-progress::-moz-progress-bar { background: var(--tenant-primary); }
-.workspace.has-custom-brand .workspace-sidebar :is(a, button):focus-visible { outline-color: var(--brand-highlight); }
 
 .workspace :is(.saas-panel, .application-card, .brand-preview, .brand-preview-card, .workspace-breadcrumb) {
   min-width: 0;
@@ -270,3 +269,11 @@
 }
 .profile-photo-options :is(h3, p) { margin: 0; }
 .profile-photo-options p { color: var(--workspace-muted); }
+
+.workspace.has-custom-brand :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--brand-ink);
+  outline-offset: 3px;
+}
+.workspace.has-custom-brand .workspace-sidebar :is(a, button):focus-visible {
+  outline-color: var(--brand-highlight);
+}

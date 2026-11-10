@@ -4,9 +4,22 @@ import { BrandLogo } from "../components/BrandLogo";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { logout } from "../services/auth";
-import { backend } from "../services/backend";
+import { backend, type ProcessStatus } from "../services/backend";
 import { useResource } from "../hooks/useResource";
 import { formatDate, readable } from "../services/format";
+
+const nextSteps: Record<ProcessStatus, string> = {
+  CONTEMPLADO: "Aguarde o primeiro contato da equipe.",
+  AGUARDANDO_COMUNICACAO: "Aguarde o contato da equipe sobre sua contemplação.",
+  EM_COMUNICACAO: "Confira suas mensagens para receber as orientações da equipe.",
+  CLIENTE_CONTATADO: "Siga as orientações recebidas da equipe.",
+  AGUARDANDO_DOCUMENTOS: "Confira os documentos solicitados e siga as orientações da equipe.",
+  DOCUMENTOS_RECEBIDOS: "Aguarde a conferência dos documentos.",
+  EM_ANALISE: "Aguarde o resultado da análise da equipe.",
+  EM_PROCESSO_DE_BAIXA: "Aguarde a confirmação do encerramento.",
+  FINALIZADO: "O processo foi concluído.",
+  CANCELADO: "Entre em contato com a equipe se precisar de informações.",
+};
 
 export default function BeneficiaryPortal() {
   const navigate = useNavigate();
@@ -35,9 +48,9 @@ export default function BeneficiaryPortal() {
         <nav className="portal-tabs" aria-label="Informações do processo">{["processo", "documentos", "historico"].map(value => <button className={`portal-tab ${tab === value ? "active" : ""}`} aria-pressed={tab === value} key={value} onClick={() => setTab(value)}>{readable(value)}</button>)}</nav>
         {detail.error && <InlineFeedback kind="error" message={detail.error} />}
         {detail.loading ? <p role="status">Carregando detalhes...</p> : detail.data && <section className="portal-panel">
-          {tab === "processo" && <><h2>Processo #{detail.data.processo.id}</h2><dl><dt>Situação</dt><dd>{readable(detail.data.processo.status)}</dd><dt>Responsavel</dt><dd>{detail.data.responsavel || "Ainda não atribuído"}</dd><dt>Cota</dt><dd>{detail.data.cota}</dd><dt>Crédito</dt><dd>{detail.data.valorCredito.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</dd><dt>Atualizado em</dt><dd>{formatDate(detail.data.processo.atualizadoEm || detail.data.processo.criadoEm)}</dd></dl></>}
+          {tab === "processo" && <><h2>Processo #{detail.data.processo.id}</h2><dl><dt>Etapa atual</dt><dd>{readable(detail.data.processo.status)}</dd><dt>Próximo passo</dt><dd>{nextSteps[detail.data.processo.status] ?? "Acompanhe as atualizações deste processo."}</dd><dt>Responsável</dt><dd>{detail.data.responsavel || "Ainda não atribuído"}</dd><dt>Cota</dt><dd>{detail.data.cota}</dd><dt>Crédito</dt><dd>{detail.data.valorCredito.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</dd><dt>Atualizado em</dt><dd>{formatDate(detail.data.processo.atualizadoEm || detail.data.processo.criadoEm)}</dd></dl></>}
           {tab === "documentos" && <><h2>Documentos</h2><p>Até 100 registros mais recentes.</p>{detail.data.documentos.length ? detail.data.documentos.map(d => <article className="panel" key={d.id}><h3>{readable(d.tipo)}</h3><p>{readable(d.status)}</p><p>{d.nomeArquivo}</p><p>{d.observacao}</p></article>) : <p>Nenhum documento registrado.</p>}</>}
-          {tab === "historico" && <><h2>Histórico</h2><p>Até 100 movimentações mais recentes.</p>{detail.data.historico.length ? detail.data.historico.map(h => <article className="panel" key={h.id}><h3>{readable(h.novoStatus)}</h3><p>{formatDate(h.data)}</p><p>{h.observacao}</p></article>) : <p>Nenhuma movimentação registrada.</p>}</>}
+          {tab === "historico" && <><h2>Histórico</h2><p>Até 100 movimentações mais recentes.</p>{detail.data.historico.length ? <ol className="operation-history">{detail.data.historico.map(h => <li key={h.id}><h3>{readable(h.novoStatus)}</h3><p>{formatDate(h.data)}</p>{h.observacao && <p>{h.observacao}</p>}</li>)}</ol> : <p>Nenhuma movimentação registrada.</p>}</>}
         </section>}
       </>}
     </main>
