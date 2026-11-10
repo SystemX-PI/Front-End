@@ -233,24 +233,24 @@ export default function Contemplated() {
           <Skeleton rows={2} />
         ) : filteredProcess ? (
           <div className="table-scroll">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Processo</th>
-                  <th>Contemplação</th>
-                  <th>Responsável ID</th>
-                  <th>Status</th>
-                  <th>Criado em</th>
-                  <th>Atualizado em</th>
-                  <th>Ações</th>
+            <table className="admin-table admin-table-cards" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th role="columnheader" scope="col">Processo</th>
+                  <th role="columnheader" scope="col">Contemplação</th>
+                  <th role="columnheader" scope="col">Código do responsável</th>
+                  <th role="columnheader" scope="col">Status</th>
+                  <th role="columnheader" scope="col">Criado em</th>
+                  <th role="columnheader" scope="col">Atualizado em</th>
+                  <th role="columnheader" scope="col">Ações</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>#{filteredProcess.id}</td>
-                  <td>#{filteredProcess.contemplacaoId}</td>
-                  <td>{filteredProcess.responsavelId ?? "Não informado"}</td>
-                  <td>
+              <tbody role="rowgroup">
+                <tr role="row">
+                  <td role="cell" data-label="Processo">#{filteredProcess.id}</td>
+                  <td role="cell" data-label="Contemplação">#{filteredProcess.contemplacaoId}</td>
+                  <td role="cell" data-label="Responsável">{filteredProcess.responsavelId ?? "Não informado"}</td>
+                  <td role="cell" data-label="Status">
                     <StatusPill
                       tone={
                         filteredProcess.status === "FINALIZADO"
@@ -261,9 +261,9 @@ export default function Contemplated() {
                       {readable(filteredProcess.status)}
                     </StatusPill>
                   </td>
-                  <td>{formatDate(filteredProcess.criadoEm)}</td>
-                  <td>{formatDate(filteredProcess.atualizadoEm)}</td>
-                  <td>
+                  <td role="cell" data-label="Criado em">{formatDate(filteredProcess.criadoEm)}</td>
+                  <td role="cell" data-label="Atualizado em">{formatDate(filteredProcess.atualizadoEm)}</td>
+                  <td role="cell" data-label="Ações">
                     <div className="admin-row-actions">
                       <button
                         className="button secondary compact"

@@ -96,11 +96,11 @@ X-Widget-Key: <chave no servidor do parceiro>
               placeholder="https://sistema.suaempresa.com.br" required maxLength={255} />
           </label>
           <button className="saas-button primary" disabled={busy}>
-            {installation?.origin ? "Salvar e trocar chave" : "Ativar widget"}
+            {installation?.origin ? "Salvar e trocar chave" : "Ativar chat"}
           </button>
         </form>
         {installation?.origin && <button type="button" className="text-button danger" disabled={busy}
-          onClick={() => setConfirm("remove")}>Desativar widget</button>}
+          onClick={() => setConfirm("remove")}>Desativar chat</button>}
         {confirm && <div role="group" aria-label="Confirmar alteração">
           <p>{confirm === "rotate" ? "A chave atual e as sessões abertas perderão o acesso." : "O chat deixará de funcionar no sistema parceiro."}</p>
           <button className="saas-button" onClick={() => setConfirm(null)}>Cancelar</button>{" "}
@@ -112,16 +112,20 @@ X-Widget-Key: <chave no servidor do parceiro>
       <section className="saas-panel saas-form">
         <span className="feature-symbol purple"><Code2 /></span>
         <h2>Instalar o chat</h2>
-        {!installation?.origin ? <p>Ative o widget para receber o código de instalação.</p> : <>
+        {!installation?.origin ? <p>Ative o chat para ver o código que sua equipe técnica vai instalar.</p> : <>
           {installation.key && <label>Chave de instalação · exibida apenas agora
             <input value={installation.key} readOnly autoComplete="off" />
             <button className="saas-button" onClick={() => void copy(installation.key!)}><Copy size={16} />Copiar chave</button>
           </label>}
+          <p>Envie estas instruções para quem administra o sistema parceiro.</p>
+          <details className="widget-install-instructions">
+          <summary>Ver instruções para a equipe técnica</summary>
           <p>1. No servidor parceiro, crie <code>POST /systemx/sessao</code>. Valide o login e a permissão do usuário e faça a chamada abaixo. Devolva o JSON recebido com <code>Cache-Control: no-store</code>.</p>
           <textarea readOnly rows={5} value={contract} aria-label="Requisição do servidor parceiro" />
           <p>2. Cole este código na página autenticada do parceiro. Guarde a chave de instalação no servidor parceiro.</p>
           <textarea readOnly rows={3} value={snippet} aria-label="Código de instalação" />
           <button className="saas-button" onClick={() => void copy(snippet)}><Copy size={16} />Copiar código de instalação</button>
+          </details>
         </>}
       </section>
     </div>}

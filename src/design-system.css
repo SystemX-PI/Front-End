@@ -3316,3 +3316,54 @@ body {
     min-height: 44px;
   }
 }
+
+@media (max-width: 600px) {
+  .admin-main .admin-table-cards {
+    display: block;
+    min-width: 0;
+  }
+
+  .admin-main .admin-table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-main .admin-table-cards tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-main .admin-table-cards tbody tr {
+    display: grid;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+
+  .admin-main .admin-table-cards td {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    gap: 8px;
+    padding: 8px 0;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-main .admin-table-cards td::before {
+    content: attr(data-label) / "";
+    color: var(--text-soft);
+    font-weight: 600;
+  }
+
+  .admin-main .admin-table-cards td:last-child {
+    grid-template-columns: minmax(0, 1fr);
+    border-bottom: 0;
+  }
+
+  .admin-main .admin-table-cards :is(.form-actions, .admin-row-actions) { flex-wrap: wrap; }
+}

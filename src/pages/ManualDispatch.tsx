@@ -570,7 +570,7 @@ export default function ManualDispatch() {
         setTestFeedback({
           kind: "error",
           message:
-            "Selecione uma instância de WhatsApp interna ou cadastre uma em Canais internos.",
+            "Escolha um número de WhatsApp conectado. A administração pode adicionar números em Canais internos.",
         });
         return;
       }
@@ -783,7 +783,7 @@ export default function ManualDispatch() {
               <div>
                 <h3>Teste operacional de remetentes internos</h3>
                 <p>
-                  Dispare uma mensagem de verificação usando as instâncias de
+                  Envie uma mensagem de teste usando os números de
                   WhatsApp ou contas Gmail cadastradas em Canais internos.
                 </p>
               </div>
@@ -828,7 +828,7 @@ export default function ManualDispatch() {
                   </span>
                   <div>
                     <strong>Teste de WhatsApp interno</strong>
-                    <small>Use uma instância conectada</small>
+                    <small>Use um número conectado</small>
                   </div>
                 </div>
               </button>
@@ -879,7 +879,7 @@ export default function ManualDispatch() {
                   ) : (
                     <InlineFeedback
                       kind="info"
-                      message="Nenhuma instância interna de WhatsApp cadastrada. Acesse Canais internos (/admin/canais) para adicionar e conectar um aparelho."
+                      message="Nenhum WhatsApp da empresa está cadastrado. Abra Canais internos para adicionar um número."
                     />
                   )}
                 </label>
@@ -1535,7 +1535,7 @@ export default function ManualDispatch() {
                 <div className="dispatch-form-column">
                   {senderOptions.length > 0 ? (
                     <label className="field">
-                      <span>Instância remetente de WhatsApp (opcional)</span>
+                      <span>Número de WhatsApp que vai enviar</span>
                       <select
                         value={selectedSenderId ?? ""}
                         onChange={(event) =>
@@ -1547,7 +1547,7 @@ export default function ManualDispatch() {
                         }
                       >
                         <option value="">
-                          Instância padrão configurada no servidor
+                          Número padrão da empresa
                         </option>
                         {senderOptions.map((inst) => (
                           <option key={inst.id} value={inst.id}>
@@ -1641,7 +1641,7 @@ export default function ManualDispatch() {
                     </span>
                   </div>
                   <p className="subtle-note">
-                    O envio exige uma instância de WhatsApp conectada.
+                    Conecte um WhatsApp antes de enviar.
                   </p>
                 </aside>
               </div>

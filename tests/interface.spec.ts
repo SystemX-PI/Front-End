@@ -17,7 +17,7 @@ test("administrador ve clientes e totais por conta",async({page})=>{
 
 test("menu consistente, responsividade e tema escuro",async({page})=>{
  test.setTimeout(90000);await seed(page);await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/status")?{instanceName:"vendas",state:"open",qrCode:null}:context()}));
- for(const width of [1440,768,360]){await page.setViewportSize({width,height:950});for(const path of ["/app","/app/integracoes","/app/whatsapp","/app/gmail","/app/equipe","/app/marca","/app/assinatura","/app/perfil","/app/upgrade"]){await page.goto(path);await expect(page.locator(".workspace-heading h1")).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${path} ${width}`).toBe(true);expect(await page.locator("body").innerText()).not.toMatch(/Ã[£§¡©ª³]|Â·/);}}
+ for(const width of [1440,768,360,320]){await page.setViewportSize({width,height:950});for(const path of ["/app","/app/integracoes","/app/widget","/app/whatsapp","/app/gmail","/app/equipe","/app/marca","/app/assinatura","/app/perfil","/app/upgrade"]){await page.goto(path);await expect(page.locator(".workspace-heading h1")).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${path} ${width}`).toBe(true);expect(await page.locator("body").innerText()).not.toMatch(/Ã[£§¡©ª³]|Â·/);}}
  await page.setViewportSize({width:1440,height:800});await page.goto("/app");await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toBeVisible();await expect(page.locator(".workspace-topbar").getByText("Titular da conta")).toHaveCount(0);await expect(page.locator(".workspace-account").getByRole("button",{name:"Sair",exact:true})).toBeVisible();
  const before=await page.locator(".workspace-account").boundingBox();await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));const after=await page.locator(".workspace-account").boundingBox();expect(Math.abs(before!.y-after!.y)).toBeLessThan(2);expect(after!.y+after!.height).toBeLessThanOrEqual(800);await page.goto("/app/integracoes");await expect(page.getByRole("heading",{name:"Central de integrações."})).toBeVisible();await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toHaveCount(0);
  await page.setViewportSize({width:390,height:844});await page.goto("/app");await page.screenshot({path:"test-results/workspace-overview-mobile.png",fullPage:true});await page.goto("/app/whatsapp");await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Integrações",exact:true}).click();await page.getByRole("button",{name:"Abrir menu"}).click();await expect(page.getByRole("navigation").getByRole("link",{name:"WhatsApp",exact:true})).toBeVisible();await page.screenshot({path:"test-results/workspace-mobile.png",fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.goto("/app");await page.screenshot({path:"test-results/workspace-desktop.png",fullPage:true});await page.getByRole("button",{name:"Tema escuro",exact:true}).click();await page.screenshot({path:"test-results/workspace-dark.png",fullPage:true});
@@ -26,20 +26,54 @@ test("menu consistente, responsividade e tema escuro",async({page})=>{
 test("WhatsApp desconecta, reconecta por QR e adiciona outra instancia",async({page})=>{
  await seed(page);const c=context();c.subscription={...c.subscription,tier:"PRO",whatsappLimit:3,gmailLimit:2};c.account!.professional=true;c.account!.paidUntil=future();let state="open";let qrCalls=0;
  await page.route("**/api/platform/**",async route=>{const url=route.request().url();if(url.includes("/context"))return route.fulfill({json:c});if(url.includes("/disconnect")){state="close";return route.fulfill({status:204});}if(url.includes("/qr")){qrCalls++;state=qrCalls>=3?"open":"connecting";return route.fulfill({json:{instanceName:"vendas",state,qrCode:state==="open"?null:`data:image/png;base64,${qrCalls===1?"iVBORw0KGgo=":"dGVzdA=="}`}});}if(url.includes("/status")){if(state==="connecting")state="open";return route.fulfill({json:{instanceName:"vendas",state,qrCode:null}});}if(url.endsWith("/instances")&&route.request().method()==="POST"){expect(route.request().postDataJSON()).toEqual({name:"suporte"});c.instances.push({id:2,name:"suporte"});return route.fulfill({status:201,json:c.instances[1]});}return route.fulfill({json:{}});});
- await page.goto("/app/whatsapp");await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible();page.on("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:"Desconectar",exact:true}).click();await expect(page.getByText("Desconectado",{exact:true}).first()).toBeVisible();await page.getByRole("button",{name:"Gerar QR Code",exact:true}).click();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toBeVisible();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toHaveAttribute("src","data:image/png;base64,dGVzdA==",{timeout:10000});await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible({timeout:15000});await page.getByLabel("Nome da nova instância").fill("suporte");await page.getByRole("button",{name:"Adicionar instância"}).click();await expect(page.getByRole("button",{name:/suporte/})).toBeVisible();await page.screenshot({path:"test-results/whatsapp-multiple.png",fullPage:true});
+ await page.goto("/app/whatsapp");await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible();page.on("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:"Desconectar",exact:true}).click();await expect(page.getByText("Desconectado",{exact:true}).first()).toBeVisible();await page.getByRole("button",{name:"Gerar QR Code",exact:true}).click();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toBeVisible();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toHaveAttribute("src","data:image/png;base64,dGVzdA==",{timeout:10000});await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible({timeout:15000});await page.getByLabel("Nome do novo WhatsApp").fill("suporte");await page.getByRole("button",{name:"Adicionar WhatsApp"}).click();await expect(page.getByRole("button",{name:/suporte/})).toBeVisible();await page.screenshot({path:"test-results/whatsapp-multiple.png",fullPage:true});
 });
 
-test("marca persiste na conta",async({page})=>{
- await seed(page);const c=context();let saved:unknown;await page.route("**/api/platform/**",async route=>{if(route.request().url().includes("/brand")){saved=route.request().postDataJSON();c.account!.brandName="Nova Marca";return route.fulfill({status:204});}return route.fulfill({json:c});});await page.goto("/app/marca");await page.getByLabel("Nome da marca").fill("Nova Marca");await page.getByRole("button",{name:"Salvar identidade"}).click();await expect(page.locator(".workspace-sidebar .workspace-brand")).toContainText("Nova Marca");expect(saved).toMatchObject({name:"Nova Marca",primary:"#315fe8",accent:"#35cda0"});
+test("a marca muda o menu e as superfícies na prévia e após salvar", async ({ page }) => {
+ await seed(page);
+ const c = context();
+ let saved: unknown;
+ await page.route("**/api/platform/**", async route => {
+  if (route.request().url().endsWith("/brand")) {
+   const brand = route.request().postDataJSON();
+   saved = brand;
+   Object.assign(c.account!, { brandName: brand.name, primaryColor: brand.primary, accentColor: brand.accent });
+   return route.fulfill({ status: 204 });
+  }
+  return route.fulfill({ json: c });
+ });
+ await page.goto("/app/marca");
+ const menu = page.locator(".workspace-sidebar");
+ const topbar = page.locator(".workspace-topbar");
+ const oldMenu = await menu.evaluate(node => getComputedStyle(node).backgroundImage);
+ const oldTopbar = await topbar.evaluate(node => getComputedStyle(node).backgroundColor);
+ await page.getByLabel("Nome da marca").fill("Nova Marca");
+ await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
+ await expect(menu).not.toHaveCSS("background-image", oldMenu);
+ await expect(topbar).not.toHaveCSS("background-color", oldTopbar);
+ await page.getByRole("link", { name: "Visão geral", exact: true }).click();
+ await expect(menu).toHaveCSS("background-image", oldMenu);
+ await page.goBack();
+ await expect(topbar).toHaveCSS("background-color", oldTopbar);
+ await page.getByLabel("Nome da marca").fill("Nova Marca");
+ await page.getByRole("button", { name: "Usar azul-escuro e azul-claro" }).click();
+ await page.getByRole("button", { name: "Salvar identidade" }).click();
+ await expect(page.locator(".workspace-sidebar .workspace-brand")).toContainText("Nova Marca");
+ expect(saved).toMatchObject({ name: "Nova Marca", primary: "#142d54", accent: "#8fc8ff" });
+ await page.goto("/app");
+ await expect(page.locator(".overview-intro")).toBeVisible();
+ await expect(page.locator(".workspace")).toHaveCSS("--tenant-accent", "#8fc8ff");
+ await expect(menu).not.toHaveCSS("background-image", oldMenu);
+ await expect(topbar).not.toHaveCSS("background-color", oldTopbar);
 });
 for(const method of ["PIX","CARD"] as const) test(`upgrade por ${method} mantem 1+1 ate confirmar e libera 3+2`,async({page})=>{
  await seed(page);const c=context();let confirmed=false;let opened=false;
  const order={id:"order-"+method,paymentMethod:method,status:"PENDING",amountCents:9990,currency:"BRL",expiresAt:future(),paidAt:null,simulation:true,pixCode:method==="PIX"?"SIMULACAO-SEM-VALOR-PIX-order":null};
  await page.route("**/api/platform/**",async route=>{const url=route.request().url();if(url.endsWith("/confirm")){confirmed=true;c.active=true;c.subscription={...c.subscription,tier:"PRO",whatsappLimit:3,gmailLimit:2};c.account!.professional=true;c.account!.paidUntil=future();return route.fulfill({json:{...order,status:"PAID"}});}if(url.endsWith("/checkout")){opened=true;expect(route.request().postDataJSON()).toEqual({paymentMethod:method});return route.fulfill({status:201,json:order});}if(url.includes("/status"))return route.fulfill({json:{instanceName:"vendas",state:"open",qrCode:null}});return route.fulfill({json:c});});
- await page.goto(method==="PIX"?"/app/whatsapp":"/app/gmail");await expect(page.getByLabel(method==="PIX"?"Nome da nova instância":"E-mail Gmail")).toHaveCount(0);await page.getByRole("link",{name:method==="PIX"?"Liberar mais WhatsApps":"Liberar mais Gmails"}).click();await expect(page).toHaveURL(/upgrade/);await expect(page.getByText("3 WhatsApps + 2 Gmails",{exact:true})).toBeVisible();
+ await page.goto(method==="PIX"?"/app/whatsapp":"/app/gmail");await expect(page.getByLabel(method==="PIX"?"Nome do novo WhatsApp":"E-mail Gmail")).toHaveCount(0);await page.getByRole("link",{name:method==="PIX"?"Liberar mais WhatsApps":"Liberar mais Gmails"}).click();await expect(page).toHaveURL(/upgrade/);await expect(page.getByText("3 WhatsApps + 2 Gmails",{exact:true})).toBeVisible();
  if(method==="CARD")await page.getByRole("button",{name:/Cartão de crédito/}).click();await page.getByRole("button",{name:method==="PIX"?"Continuar com Pix":"Continuar com cartão"}).click();expect(opened).toBe(true);expect(confirmed).toBe(false);expect(c.subscription.whatsappLimit).toBe(1);expect(c.subscription.gmailLimit).toBe(1);
  await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:`test-results/checkout-${method}.png`,fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/checkout-${method}-mobile.png`,fullPage:true});
- await page.getByRole("button",{name:method==="PIX"?"Confirmar Pix de teste":"Simular pagamento com cartão"}).click();await expect(page.getByRole("heading",{name:"Mais espaço para suas conexões."})).toBeVisible();expect(confirmed).toBe(true);await page.getByRole("link",{name:"Voltar e adicionar conexão"}).click();await expect(page.getByLabel(method==="PIX"?"Nome da nova instância":"E-mail Gmail")).toBeVisible();
+ await page.getByRole("button",{name:method==="PIX"?"Confirmar Pix de teste":"Simular pagamento com cartão"}).click();await expect(page.getByRole("heading",{name:"Mais espaço para suas conexões."})).toBeVisible();expect(confirmed).toBe(true);await page.getByRole("link",{name:"Voltar e adicionar conexão"}).click();await expect(page.getByLabel(method==="PIX"?"Nome do novo WhatsApp":"E-mail Gmail")).toBeVisible();
 });
 
 test("menu fixo ocupa a janela e rodape nao sobe ao rolar",async({page})=>{

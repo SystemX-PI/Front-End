@@ -175,22 +175,22 @@ export default function Closures() {
         ) : validItems.length ? (
           <>
             <div className="table-scroll">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Processo</th>
-                    <th>Status</th>
-                    <th>Atualizado em</th>
-                    <th>Ação</th>
+              <table className="admin-table admin-table-cards" role="table">
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th role="columnheader" scope="col">Processo</th>
+                    <th role="columnheader" scope="col">Status</th>
+                    <th role="columnheader" scope="col">Atualizado em</th>
+                    <th role="columnheader" scope="col">Ação</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   {validItems.map((p) => (
-                    <tr key={p.id}>
-                      <td>#{p.id}</td>
-                      <td>{readable(p.status)}</td>
-                      <td>{formatDate(p.atualizadoEm)}</td>
-                      <td>
+                    <tr role="row" key={p.id}>
+                      <td role="cell" data-label="Processo">#{p.id}</td>
+                      <td role="cell" data-label="Status">{readable(p.status)}</td>
+                      <td role="cell" data-label="Atualizado em">{formatDate(p.atualizadoEm)}</td>
+                      <td role="cell" data-label="Ação">
                         <button
                           className="button secondary"
                           onClick={() => {
