@@ -178,6 +178,10 @@ export const backend = {
         `/api/integracoes/comunicacoes/historico?${new URLSearchParams({ inicio, fim })}`,
         { signal },
       ),
+    queueSummary: (signal?: AbortSignal) =>
+      apiRequest<{ total: number; pendentes: number; comunicados: number; comFalha: number }>(
+        "/api/integracoes/comunicacoes/fila/resumo", { signal },
+      ),
     queuePage: (page = 0, q = "", status = "", signal?: AbortSignal) => apiRequest<PageResponse<QueueItem>>(
       `/api/integracoes/comunicacoes/fila/pagina?${new URLSearchParams({ page: String(page), size: "20", q, status })}`, { signal }),
     queue: (signal?: AbortSignal) =>
@@ -237,9 +241,9 @@ export const backend = {
     get: (id: number, signal?: AbortSignal) => apiRequest<PortalProcessResponse>(`/api/portal/processos/${id}`, { signal }),
   },
   operation: {
-    pending: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status:'EM_PROCESSO_DE_BAIXA'}),{signal}),
-    history: (id:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page=0&size=100',{signal}),
-    audit: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q}),{signal}),
+    closures: (page:number,q:string,status: 'EM_PROCESSO_DE_BAIXA' | 'FINALIZADO',signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status}),{signal}),
+    history: (id:number,page:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page='+page+'&size=20',{signal}),
+    audit: (page:number,q:string,acao:string,data:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q,acao,...(data ? {data} : {})}),{signal}),
   },
   processes: {
     get: (id: number) =>

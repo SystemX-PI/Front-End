@@ -184,20 +184,14 @@ export function renewSession(): Promise<string> {
   return refreshInFlight;
 }
 
-function parseTokenUserType(token: string | null): AuthResponse["tipo"] | null {
+function parseSessionClaims(token: string | null): { tipo?: unknown; beneficiario?: unknown } | null {
   if (!token) return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   try {
     const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded)) as { tipo?: unknown };
-    return payload?.tipo === "ADMINISTRADOR" ||
-      payload?.tipo === "FUNCIONARIO" ||
-      payload?.tipo === "CLIENTE" ||
-      payload?.tipo === "USUARIO"
-      ? payload.tipo
-      : null;
+    return JSON.parse(atob(padded));
   } catch {
     return null;
   }
@@ -208,10 +202,9 @@ export function getToken(): string | null {
 }
 
 export function getUserType(): AuthResponse["tipo"] | null {
-  const tokenType = parseTokenUserType(getToken());
-  if (tokenType) {
-    return tokenType === "USUARIO" ? "CLIENTE" : tokenType;
-  }
+  const tokenType = parseSessionClaims(getToken())?.tipo;
+  if (tokenType === "ADMINISTRADOR" || tokenType === "FUNCIONARIO" || tokenType === "CLIENTE") return tokenType;
+  if (tokenType === "USUARIO") return "CLIENTE";
   const userType = localStorage.getItem("userType");
   return userType === "ADMINISTRADOR" ||
     userType === "FUNCIONARIO" ||
@@ -220,6 +213,15 @@ export function getUserType(): AuthResponse["tipo"] | null {
     : userType === "USUARIO"
       ? "CLIENTE"
       : null;
+}
+
+export function isBeneficiarySession(): boolean {
+  return getUserType() === "CLIENTE" && parseSessionClaims(getToken())?.beneficiario === true;
+}
+
+export function sessionHome(): string {
+  if (isBeneficiarySession()) return "/portal";
+  return getUserType() === "FUNCIONARIO" ? "/admin/dashboard" : "/app";
 }
 
 export function isAuthenticated(): boolean {

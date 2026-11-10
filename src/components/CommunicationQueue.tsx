@@ -74,28 +74,18 @@ export default function CommunicationQueue() {
     setFeedback("");
     try {
       const result = await backend.processes.resendCommunication(id);
-      const channels = [result.email, result.whatsapp].filter(
-        (channel) => channel !== null,
-      );
-      const errors = channels
-        .filter((channel) => channel.erro)
-        .map((channel) => channel.erro)
-        .join(" ");
-      const message =
-        errors ||
-        (channels.length > 0 &&
-        channels.every((channel) => channel.status === "SUCESSO")
+      const channels = [result.email, result.whatsapp].filter(channel => channel != null);
+      const accepted = channels.filter(channel => ["SUCESSO", "REALIZADA"].includes(channel.status)).length;
+      const errors = channels.map(channel => channel.erro).filter(Boolean).join(" ");
+      const failed = channels.some(channel => channel.status === "FALHA");
+      const message = accepted > 0
+        ? accepted === channels.length
           ? "Envio aceito pelos canais configurados."
-          : "Envio ainda pendente. Confira a configuração dos canais.");
-      setFeedback(message);
-      notify(
-        message,
-        errors
-          ? "error"
-          : result.statusGeral === "PENDENTE"
-            ? "info"
-            : "success",
-      );
+          : "Envio parcial. Um canal aceitou a mensagem e o outro precisa de atenção."
+        : failed ? "Os canais não confirmaram o envio." : "Envio pendente. Confira a configuração dos canais.";
+      const detail = errors ? `${message} ${errors}` : message;
+      setFeedback(detail);
+      notify(detail, accepted > 0 && accepted === channels.length ? "success" : failed && !accepted ? "error" : "info");
       refresh();
       summary.refresh();
     } catch (error) {

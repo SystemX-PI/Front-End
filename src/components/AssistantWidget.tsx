@@ -1,5 +1,7 @@
 import { useState, type FormEvent, useEffect, useRef } from "react";
 import { Bot, Send, X, Sparkles, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ApiError } from "../services/http";
 import { getUserType, isAuthenticated } from "../services/auth";
 import { assistant, type AssistantAction } from "../services/backend";
 
@@ -16,6 +18,7 @@ export default function AssistantWidget() {
       text: "Olá! Sou o Assistente IA do ConsorTech. Posso consultar processos, cotas ou preparar uma notificação de WhatsApp para sua validação.",
     },
   ]);
+  const [unavailable, setUnavailable] = useState(false);
   const [action, setAction] = useState<AssistantAction | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +42,7 @@ export default function AssistantWidget() {
 
     try {
       const response = await assistant.message(question);
+      setUnavailable(false);
       const replyText =
         typeof response?.mensagem === "string" && response.mensagem.trim()
           ? response.mensagem
@@ -46,11 +50,15 @@ export default function AssistantWidget() {
       setMessages((current) => [...current, { author: "assistant", text: replyText }]);
       setAction(response?.acao ?? null);
     } catch (error) {
+      const providerUnavailable = error instanceof ApiError && [502, 503, 504].includes(error.status);
+      setUnavailable(providerUnavailable);
       setMessages((current) => [
         ...current,
         {
           author: "assistant",
-          text: error instanceof Error ? error.message : "Não foi possível conectar ao assistente no momento.",
+          text: providerUnavailable
+            ? "O chat por IA está indisponível. Use os atalhos abaixo para continuar sua operação."
+            : error instanceof Error ? error.message : "Não foi possível conectar ao assistente no momento.",
         },
       ]);
     } finally {
@@ -65,7 +73,9 @@ export default function AssistantWidget() {
       const result = await assistant.confirm(action.token);
       setMessages((current) => [
         ...current,
-        { author: "assistant", text: `Notificação enviada com sucesso! Status geral: ${result.statusGeral}.` },
+        { author: "assistant", text: result.whatsapp?.status === "SUCESSO"
+          ? "O WhatsApp aceitou a mensagem. Consulte o histórico do processo."
+          : result.whatsapp?.erro || "O envio não foi confirmado pelo WhatsApp. Consulte o histórico do processo." },
       ]);
       setAction(null);
     } catch (error) {
@@ -96,7 +106,14 @@ export default function AssistantWidget() {
             </button>
           </header>
 
-          <div className="assistant-messages">
+          {unavailable && (
+            <nav className="assistant-shortcuts" aria-label="Atalhos de operação">
+              <Link to="/admin/contemplados" onClick={() => setOpen(false)}>Consultar processos</Link>
+              <Link to="/admin/comunicacao" onClick={() => setOpen(false)}>Ver comunicações</Link>
+              <Link to="/admin/disparo-manual" onClick={() => setOpen(false)}>Disparo manual</Link>
+            </nav>
+          )}
+          <div className="assistant-messages" role="log" aria-label="Conversa">
             {messages.map((message, index) => (
               <div key={index} className={`assistant-bubble-msg ${message.author}`}>
                 {message.text}

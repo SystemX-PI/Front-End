@@ -73,3 +73,28 @@ test('trocar de processo limpa o destinatário e a mensagem anteriores', async (
   await expect(phone).toHaveValue('');
   await expect(message).not.toHaveValue('Mensagem exclusiva do processo anterior.');
 });
+
+test("assistente oferece atalhos quando o serviço de IA está indisponível", async ({ page }) => {
+  await session(page, "FUNCIONARIO");
+  await page.route("**/api/assistente/mensagens", route =>
+    route.fulfill({ status: 503, json: { message: "Assistente indisponível" } }));
+  await page.goto("/admin/comunicacao");
+  await page.getByRole("button", { name: "Abrir assistente IA" }).click();
+  const assistant = page.getByRole("region", { name: "Assistente Inteligente ConsorTech" });
+  await assistant.getByRole("textbox").fill("Consultar contemplações");
+  await assistant.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(assistant.getByRole("link", { name: "Disparo manual" })).toBeVisible();
+});
+
+test("beneficiário autenticado entra pelo portal ao abrir a área SaaS", async ({ page }) => {
+  await page.addInitScript(() => {
+    const claims = btoa(JSON.stringify({ tipo: "CLIENTE", beneficiario: true }));
+    localStorage.setItem("token", `test.${claims}.test`);
+  });
+  await page.route("**/api/portal/**", route => route.fulfill({
+    json: { items: [], total: 0, size: 20, page: 0 },
+  }));
+  await page.goto("/app");
+  await expect(page).toHaveURL(/\/portal$/);
+  await expect(page.getByRole("heading", { name: "Meus processos" })).toBeVisible();
+});

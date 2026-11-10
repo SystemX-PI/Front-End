@@ -2,7 +2,7 @@ import { ArrowRight, Check, ArrowUpRight, MessageCircle, Mail, Palette, Users, S
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { BrandLogo } from "../components/BrandLogo";
-import { isAuthenticated } from "../services/auth";
+import { isAuthenticated, sessionHome } from "../services/auth";
 import "../platform.css";
 
 export default function Landing() {
@@ -50,7 +50,7 @@ export default function Landing() {
         <nav id="marketing-navigation" className={menu ? "is-open" : ""} aria-label="Navegação do produto">
           <a href="#recursos" onClick={() => setMenu(false)}>O que você pode fazer</a>
           <a href="#como-funciona" onClick={() => setMenu(false)}>Como funciona</a>
-          <Link to={isAuthenticated() ? "/app" : "/login"}>Entrar <ArrowUpRight size={15} /></Link>
+          <Link to={isAuthenticated() ? sessionHome() : "/login"}>Entrar <ArrowUpRight size={15} /></Link>
           <Link className="saas-button dark" to="/register">Começar grátis <ArrowRight size={16} /></Link>
         </nav>
       </header>

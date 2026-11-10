@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import AdminShell from "../components/AdminShell";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { ErrorState } from "../components/DataUi";
@@ -41,7 +41,6 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const term = useDebouncedValue(search);
-  const [revision, setRevision] = useState(0);
   const [draft, setDraft] = useState<Record<string, string | boolean> | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
@@ -53,9 +52,8 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
   const admin = getUserType() === "ADMINISTRADOR";
   const url = `/api/${resource}`;
   const listUrl = clientsOnly ? "/api/clientes" : url;
-  const load = useCallback((signal: AbortSignal) => apiRequest<PageResponse<Row>>(`${listUrl}/pagina?${new URLSearchParams({ page: String(page - 1), size: "20", q: term })}`, { signal }), [listUrl, page, term, revision]);
+  const load = useCallback((signal: AbortSignal) => apiRequest<PageResponse<Row>>(`${listUrl}/pagina?${new URLSearchParams({ page: String(page - 1), size: "20", q: term })}`, { signal }), [listUrl, page, term]);
   const { data, loading, error, refresh } = useResource(load);
-  useEffect(() => { if (data && page > 1 && !data.items.length) setPage(Math.max(1, Math.ceil(data.total / 20))); }, [data, page]);
   function reset() { setDraft(null); setEditing(null); setDetail(null); setDeleting(null); setPasswordId(null); setPassword(""); }
   function create() {
     reset(); setFeedback("");
@@ -84,13 +82,13 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
       if (resource === "usuarios" && editing === null) body.senha = draft.senha;
       if (clientsOnly) body.tipo = "CLIENTE";
       await apiRequest(`${url}${editing === null ? "" : `/${editing}`}`, { method: editing === null ? "POST" : "PUT", body: JSON.stringify(body) });
-      reset(); setFeedback("Cadastro salvo."); setRevision(v => v + 1);
+      reset(); setFeedback("Cadastro salvo."); refresh();
     } catch (e) { setFeedback(e instanceof Error ? e.message : "Falha ao salvar."); }
     finally { setBusy(false); }
   }
   async function remove() {
     if (!deleting || busy) return; setBusy(true); setFeedback("");
-    try { await apiRequest(`${url}/${deleting.id}`, { method: "DELETE" }); reset(); setFeedback("Registro excluído."); setRevision(v => v + 1); }
+    try { await apiRequest(`${url}/${deleting.id}`, { method: "DELETE" }); reset(); setFeedback("Registro excluído."); if (page > 1 && data?.items.length === 1) setPage(page - 1); else refresh(); }
     catch (e) { setFeedback(e instanceof Error ? e.message : "Falha na exclusão."); }
     finally { setBusy(false); }
   }
@@ -102,7 +100,7 @@ export default function Registries({ initial = "consorcios", clientsOnly = false
   }
   const title = clientsOnly ? "Clientes" : titles[resource];
   return <AdminShell title={title} subtitle="Consulta e manutenção dos cadastros">
-    {!locked && <nav className="list-toolbar" aria-label="Cadastros">{(Object.keys(titles) as Resource[]).filter(key => admin || key !== "usuarios").map(key => <button key={key} className={`button ${resource === key ? "primary" : "secondary"}`} disabled={busy} onClick={() => { setResource(key); setPage(1); setSearch(""); reset(); setFeedback(""); }}>{titles[key]}</button>)}</nav>}
+    {!locked && <nav className="list-toolbar" aria-label="Cadastros">{(Object.keys(titles) as Resource[]).filter(key => key !== "usuarios").map(key => <button key={key} className={`button ${resource === key ? "primary" : "secondary"}`} disabled={busy} onClick={() => { setResource(key); setPage(1); setSearch(""); reset(); setFeedback(""); }}>{titles[key]}</button>)}</nav>}
     <section className="panel data-panel">
       <div className="data-panel-heading"><h2>{title}</h2><div className="form-actions">
         <button className="button secondary" disabled={loading || busy} onClick={refresh}>Atualizar</button>

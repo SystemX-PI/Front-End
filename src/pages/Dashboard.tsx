@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   ArrowRight,
   BellRing,
@@ -21,50 +22,19 @@ import { formatDate, readable } from "../services/format";
 
 export default function Dashboard() {
   const isAdmin = getUserType() === "ADMINISTRADOR";
-  const { data, loading, error, refresh } = useResource(
-    backend.integrations.queue,
-  );
-  const rawQueue = Array.isArray(data) ? data : [];
+  const loadRecent = useCallback((signal: AbortSignal) =>
+    backend.integrations.queuePage(0, "", "", signal), []);
+  const { data, loading, error, refresh } = useResource(loadRecent);
+  const rawQueue = Array.isArray(data?.items) ? data.items : [];
   const queue = rawQueue.filter(
     (item) => Number.isSafeInteger(item?.processoId) && item.processoId > 0,
   );
+  const summary = useResource(backend.integrations.queueSummary);
   const metrics = [
-    {
-      label: "Processos recentes na fila",
-      value: queue.length,
-      icon: BellRing,
-      tone: "blue",
-    },
-    {
-      label: "Aguardando comunicação",
-      value: queue.filter(
-        (item) => (item?.comunicacao?.statusGeral || "PENDENTE") === "PENDENTE",
-      ).length,
-      icon: Clock3,
-      tone: "amber",
-    },
-    {
-      label: "Com algum canal enviado",
-      value: queue.filter(
-        (item) =>
-          Boolean(item?.comunicacao?.statusGeral) &&
-          item.comunicacao.statusGeral !== "PENDENTE",
-      ).length,
-      icon: CheckCircle2,
-      tone: "green",
-    },
-    {
-      label: "Precisam de atenção",
-      value: queue.filter(
-        (item) =>
-          Boolean(item?.comunicacao?.email?.erro) ||
-          Boolean(item?.comunicacao?.whatsapp?.erro) ||
-          item?.comunicacao?.email?.status === "FALHA" ||
-          item?.comunicacao?.whatsapp?.status === "FALHA",
-      ).length,
-      icon: TriangleAlert,
-      tone: "red",
-    },
+    { label: "Processos na fila", value: summary.data?.total, icon: BellRing, tone: "blue" },
+    { label: "Aguardando comunicação", value: summary.data?.pendentes, icon: Clock3, tone: "amber" },
+    { label: "Com algum canal enviado", value: summary.data?.comunicados, icon: CheckCircle2, tone: "green" },
+    { label: "Com falha no último envio", value: summary.data?.comFalha, icon: TriangleAlert, tone: "red" },
   ];
   return (
     <AdminShell title="Dashboard" subtitle="Sua operação, com mais clareza">
@@ -84,12 +54,13 @@ export default function Dashboard() {
         }
       />
       {error ? <ErrorState message={error} retry={refresh} /> : null}
+      {summary.error && <ErrorState message={summary.error} retry={summary.refresh} />}
       <section className="admin-metrics">
         {metrics.map(({ label, value, icon: Icon, tone }) => (
           <article className={`metric-card metric-${tone}`} key={label}>
             <Icon size={22} />
             <span>
-              <strong>{loading || error ? "—" : value}</strong>
+              <strong>{summary.loading || summary.error ? "—" : value ?? "—"}</strong>
               <small>{label}</small>
             </span>
           </article>

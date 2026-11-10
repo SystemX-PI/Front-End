@@ -199,6 +199,10 @@ export default function ManualDispatch() {
     }
   }, [isAdmin]);
   const internalChannelsResource = useResource(loadInternalChannels);
+  const loadOperationalSenders = useCallback((signal: AbortSignal) =>
+    apiRequest<{ id: number; name: string }[]>("/api/integracoes/comunicacoes/remetentes-whatsapp", { signal }), []);
+  const operationalSenders = useResource(loadOperationalSenders);
+  const senderOptions = Array.isArray(operationalSenders.data) ? operationalSenders.data : [];
   const internalInstances = Array.isArray(
     internalChannelsResource.data?.instances,
   )
@@ -472,8 +476,8 @@ export default function ManualDispatch() {
             "O backend registrou falha ao tentar enviar a mensagem pelo WhatsApp.";
           setFeedback({ kind: "error", message: errorMsg });
           notify(errorMsg, "error");
-        } else if (whatsappStatus === "SUCESSO" || whatsappStatus === "REALIZADA") {
-          const successMsg = `Disparo manual de WhatsApp confirmado para o processo #${selectedProcessId} (${formatPhone(cleanPhone)}).`;
+        } else if (response.whatsapp && (whatsappStatus === "SUCESSO" || whatsappStatus === "REALIZADA")) {
+          const successMsg = `Disparo manual de WhatsApp confirmado para o processo #${selectedProcessId} (${formatPhone(cleanPhone)}). Registro #${response.whatsapp.id} no histórico.`;
           setFeedback({ kind: "success", message: successMsg });
           notify(successMsg, "success");
         } else {
@@ -1529,7 +1533,7 @@ export default function ManualDispatch() {
             {channelMode === "WHATSAPP" ? (
               <div className="dispatch-whatsapp-workspace">
                 <div className="dispatch-form-column">
-                  {isAdmin && internalInstances.length > 0 ? (
+                  {senderOptions.length > 0 ? (
                     <label className="field">
                       <span>Instância remetente de WhatsApp (opcional)</span>
                       <select
@@ -1545,7 +1549,7 @@ export default function ManualDispatch() {
                         <option value="">
                           Instância padrão configurada no servidor
                         </option>
-                        {internalInstances.map((inst) => (
+                        {senderOptions.map((inst) => (
                           <option key={inst.id} value={inst.id}>
                             #{inst.id} · {inst.name}
                           </option>

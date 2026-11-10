@@ -25,10 +25,11 @@ export default function Closures() {
   const page = Math.max(1, Number(params.get("page")) || 1);
   const [search, setSearch] = useState(params.get("q") || "");
   const q = useDebouncedValue(search);
+  const finalized = params.get("status") === "FINALIZADO";
   const load = useCallback(
     (signal: AbortSignal) =>
-      backend.operation.pending(page - 1, q, signal).catch(operationError),
-    [page, q],
+      backend.operation.closures(page - 1, q, finalized ? "FINALIZADO" : "EM_PROCESSO_DE_BAIXA", signal).catch(operationError),
+    [page, q, finalized],
   );
   const list = useResource(load);
 
@@ -83,6 +84,7 @@ export default function Closures() {
     const trimmed = id.trim();
     const nextParams: Record<string, string> = {};
     if (search) nextParams.q = search;
+    if (finalized) nextParams.status = "FINALIZADO";
     if (page > 1) nextParams.page = String(page);
     if (trimmed) nextParams.processo = trimmed;
     if (trimmed && trimmed !== paramProcessId) {
@@ -130,7 +132,20 @@ export default function Closures() {
       subtitle="Confira o processo antes de concluir a baixa"
     >
       <section className="panel data-panel">
-        <h2>Processos em baixa</h2>
+        <h2>{finalized ? "Baixas concluídas" : "Processos em baixa"}</h2>
+        <label className="field">
+          Situação da baixa
+          <select value={finalized ? "FINALIZADO" : ""} onChange={event => {
+            const next = new URLSearchParams(params);
+            next.delete("page");
+            if (event.target.value) next.set("status", event.target.value);
+            else next.delete("status");
+            setParams(next);
+          }}>
+            <option value="">Pendentes</option>
+            <option value="FINALIZADO">Concluídas</option>
+          </select>
+        </label>
         <label className="field">
           Buscar processos
           <input
@@ -141,6 +156,7 @@ export default function Closures() {
                 q: e.target.value,
                 page: "1",
               };
+              if (finalized) nextParams.status = "FINALIZADO";
               if (paramProcessId) nextParams.processo = paramProcessId;
               setParams(nextParams);
             }}
@@ -172,6 +188,11 @@ export default function Closures() {
                         <button
                           className="button secondary"
                           onClick={() => {
+                            if (p.status === "FINALIZADO") {
+                              setId(String(p.id));
+                              void lookupById(String(p.id));
+                              return;
+                            }
                             setId(String(p.id));
                             setProcess(p);
                             setClosure(null);
@@ -196,6 +217,7 @@ export default function Closures() {
                   q: search,
                   page: String(n),
                 };
+                if (finalized) nextParams.status = "FINALIZADO";
                 if (paramProcessId) nextParams.processo = paramProcessId;
                 setParams(nextParams);
               }}
@@ -203,8 +225,8 @@ export default function Closures() {
           </>
         ) : (
           <EmptyState
-            title="Nenhuma baixa pendente"
-            description="Os processos em fase de baixa aparecerão nesta lista."
+            title={finalized ? "Nenhuma baixa concluída encontrada" : "Nenhuma baixa pendente"}
+            description={finalized ? "Os comprovantes ficam disponíveis após concluir uma baixa." : "Os processos em fase de baixa aparecerão nesta lista."}
           />
         )}
       </section>

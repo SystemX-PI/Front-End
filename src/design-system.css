@@ -3277,3 +3277,42 @@ body {
   .admin-main .metric-card { padding: 12px; gap: 8px; }
   .admin-main .metric-card > svg { width: 16px; height: 16px; padding: 6px; }
 }
+
+.assistant-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.assistant-shortcuts a {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.admin-audit-filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .confirm-dialog {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .confirm-dialog button,
+  .admin-main .table-scroll button,
+  .admin-main .admin-audit-filters input,
+  .admin-main .admin-audit-filters select {
+    min-height: 44px;
+  }
+}

@@ -18,22 +18,22 @@ import AdminChannels from "../pages/AdminChannels";
 import WidgetChat from "../pages/WidgetChat";
 import BeneficiaryPortal from "../pages/BeneficiaryPortal";
 import AssistantWidget from "../components/AssistantWidget";
-import { getUserType } from "../services/auth";
+import { getUserType, isBeneficiarySession, sessionHome } from "../services/auth";
 import type { ReactNode } from "react";
 import { isAuthenticated } from "../services/auth";
 function ProtectedApp() {
     if (!isAuthenticated()) return <Navigate to="/login" replace />;
-    if (getUserType() === "FUNCIONARIO") return <Navigate to="/admin/dashboard" replace />;
+    if (isBeneficiarySession() || getUserType() === "FUNCIONARIO") return <Navigate to={sessionHome()} replace />;
     return <PlatformApp />;
 }
 function DefaultRedirect() {
     if (!isAuthenticated()) return <Navigate to="/" replace />;
-    return <Navigate to={getUserType() === "FUNCIONARIO" ? "/admin/dashboard" : "/app"} replace />;
+    return <Navigate to={sessionHome()} replace />;
 }
 function RoleRoute({ children, roles }: { children: ReactNode; roles: string[] }) {
     if (!isAuthenticated()) return <Navigate to="/login" replace />;
     const currentRole = getUserType();
-    if (!roles.includes(currentRole || "")) return <AdminShell title="Acesso restrito" subtitle="Permissão necessária"><p role="alert">Seu perfil não tem acesso a esta área.</p><a href={currentRole === "FUNCIONARIO" ? "/admin/dashboard" : "/app"}>Voltar ao meu espaço</a></AdminShell>;
+    if (!roles.includes(currentRole || "")) return <AdminShell title="Acesso restrito" subtitle="Permissão necessária"><p role="alert">Seu perfil não tem acesso a esta área.</p><a href={sessionHome()}>Voltar ao meu espaço</a></AdminShell>;
     return children;
 }
 function SessionListener() {

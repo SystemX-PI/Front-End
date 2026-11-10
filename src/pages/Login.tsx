@@ -5,7 +5,7 @@ import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { ApiError } from "../services/http";
-import { login, loginWithGoogle } from "../services/auth";
+import { login, loginWithGoogle, sessionHome } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -29,8 +29,8 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const auth = await login({ email, password });
-      navigate(auth.tipo === "FUNCIONARIO" ? "/admin/dashboard" : "/app", {
+      await login({ email, password });
+      navigate(sessionHome(), {
         replace: true,
       });
     } catch (requestError) {
@@ -50,7 +50,7 @@ export default function Login() {
     setError("");
     try {
       await loginWithGoogle(credential);
-      navigate("/app", { replace: true });
+      navigate(sessionHome(), { replace: true });
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 403) {
         navigate("/register", {

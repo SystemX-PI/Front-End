@@ -1129,6 +1129,17 @@ export function devMockPlugin(): Plugin {
           }
 
           // 3. Integrations & Queue Endpoints
+          if (pathname === "/api/integracoes/comunicacoes/fila/resumo") {
+            const pendentes = queueItems.filter(item => item.comunicacao.statusGeral === "PENDENTE").length;
+            const comFalha = queueItems.filter(item => item.comunicacao.email?.status === "FALHA"
+              || item.comunicacao.whatsapp?.status === "FALHA").length;
+            return sendJson({ total: queueItems.length, pendentes, comunicados: queueItems.length - pendentes, comFalha });
+          }
+
+          if (pathname === "/api/integracoes/comunicacoes/remetentes-whatsapp") {
+            return sendJson([]);
+          }
+
           if (pathname === "/api/integracoes/comunicacoes/fila") {
             return sendJson(queueItems);
           }
@@ -1342,13 +1353,9 @@ export function devMockPlugin(): Plugin {
           if (processHistoryMatch && method === "GET") {
             const procId = Number(processHistoryMatch[1]);
             const items = historyByProcess.get(procId) || [];
-            return sendJson({
-              items,
-              total: items.length,
-              totalPages: 1,
-              page: 0,
-              size: 100,
-            });
+            const page = Number(searchParams.get("page") ?? 0);
+            const size = Number(searchParams.get("size") ?? 20);
+            return sendJson({ items: items.slice(page * size, (page + 1) * size), total: items.length, page, size });
           }
 
           if (

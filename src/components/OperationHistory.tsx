@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { backend, type OperationEvent } from "../services/backend";
 import { operationError } from "../services/operationErrors";
 import { useResource } from "../hooks/useResource";
@@ -15,10 +15,11 @@ type HistoryItem = Partial<OperationEvent> & {
 };
 
 export default function OperationHistory({ processId }: { processId: number }) {
+  const [page, setPage] = useState(0);
   const load = useCallback(
     (signal: AbortSignal) =>
-      backend.operation.history(processId, signal).catch(operationError),
-    [processId],
+      backend.operation.history(processId, page, signal).catch(operationError),
+    [processId, page],
   );
   const result = useResource(load);
   const items: HistoryItem[] = Array.isArray(result.data?.items)
@@ -30,6 +31,7 @@ export default function OperationHistory({ processId }: { processId: number }) {
   return (
     <section className="panel data-panel">
       <h3>Histórico de comunicações</h3>
+      {result.data && <p>{result.data.total} registros</p>}
       {result.loading ? (
         <Skeleton />
       ) : result.error ? (
@@ -68,6 +70,16 @@ export default function OperationHistory({ processId }: { processId: number }) {
           title="Nenhuma comunicação registrada"
           description="As tentativas de contato aparecerão aqui quando registradas."
         />
+      )}
+      {result.data && result.data.total > result.data.size && (
+        <nav className="split-actions" aria-label="Paginação do histórico">
+          <button className="button secondary compact" disabled={page === 0 || result.loading}
+            onClick={() => setPage(page - 1)}>Anterior</button>
+          <span>Página {page + 1}</span>
+          <button className="button secondary compact"
+            disabled={result.loading || (page + 1) * result.data.size >= result.data.total}
+            onClick={() => setPage(page + 1)}>Próxima</button>
+        </nav>
       )}
     </section>
   );
