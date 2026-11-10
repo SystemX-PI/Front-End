@@ -36,7 +36,9 @@ const statuses: ProcessStatus[] = [
 export default function Contemplated() {
   const [params, setParams] = useSearchParams();
   const urlProcessParam = params.get("processo");
-  const [processId, setProcessId] = useState(urlProcessParam || "");
+  const [input, setInput] = useState({ param: urlProcessParam, value: urlProcessParam || "" });
+  const processId = input.param === urlProcessParam ? input.value : (urlProcessParam || "");
+  const setProcessId = (value: string) => setInput({ param: urlProcessParam, value });
   const [process, setProcess] = useState<ProcessResponse | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export default function Contemplated() {
   const [resending, setResending] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  const executeLookup = useCallback(async (rawValue: string) => {
+  const executeLookup = useCallback(async (rawValue: string, signal?: AbortSignal) => {
     const id = Number(rawValue.trim());
     if (!Number.isSafeInteger(id) || id <= 0) {
       setFeedback({
@@ -61,7 +63,8 @@ export default function Contemplated() {
     setFeedback(null);
     setCommunication(null);
     try {
-      const result = await backend.processes.get(id);
+      const result = await backend.processes.get(id, signal);
+      if (signal?.aborted) return;
       if (
         !result ||
         !Number.isSafeInteger(result.id) ||
@@ -73,6 +76,7 @@ export default function Contemplated() {
       }
       setProcess(result);
     } catch (error) {
+      if (signal?.aborted) return;
       setProcess(null);
       setFeedback({
         kind: "error",
@@ -82,14 +86,17 @@ export default function Contemplated() {
             : "Não foi possível consultar o processo.",
       });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, []);
+  }, [setFeedback, setProcess, setCommunication, setLoading]);
 
   useEffect(() => {
     if (!urlProcessParam) return;
-    setProcessId(urlProcessParam);
-    void executeLookup(urlProcessParam);
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void executeLookup(urlProcessParam, controller.signal);
+    });
+    return () => controller.abort();
   }, [urlProcessParam, executeLookup]);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {

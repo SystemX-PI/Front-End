@@ -34,7 +34,9 @@ export default function Closures() {
   const list = useResource(load);
 
   const paramProcessId = params.get("processo") || "";
-  const [id, setId] = useState(paramProcessId);
+  const [input, setInput] = useState({ param: paramProcessId, value: paramProcessId });
+  const id = input.param === paramProcessId ? input.value : (paramProcessId);
+  const setId = (value: string) => setInput({ param: paramProcessId, value });
   const [process, setProcess] = useState<ProcessResponse | null>(null);
   const [closure, setClosure] = useState<ClosureResponse | null>(null);
   const [note, setNote] = useState("");
@@ -42,7 +44,7 @@ export default function Closures() {
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState("");
 
-  const lookupById = useCallback(async (rawId: string) => {
+  const lookupById = useCallback(async (rawId: string, signal?: AbortSignal) => {
     setBusy(true);
     setError("");
     setProcess(null);
@@ -53,7 +55,8 @@ export default function Closures() {
       if (!Number.isSafeInteger(value) || value < 1) {
         throw new Error("Informe um processo válido.");
       }
-      const p = await backend.processes.get(value);
+      const p = await backend.processes.get(value, signal);
+      if (signal?.aborted) return;
       if (!p || !Number.isSafeInteger(p.id) || typeof p.status !== "string") {
         throw new Error(
           "O servidor retornou dados incompletos para o processo.",
@@ -61,21 +64,24 @@ export default function Closures() {
       }
       setProcess(p);
       if (p.status === "FINALIZADO") {
-        const c = await backend.processes.getClosure(value).catch(() => null);
-        setClosure(c);
+        const c = await backend.processes.getClosure(value, signal).catch(() => null);
+        if (!signal?.aborted) setClosure(c);
       }
     } catch (e) {
-      setError((e as Error).message);
+      if (!signal?.aborted) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (!signal?.aborted) setBusy(false);
     }
-  }, []);
+  }, [setBusy, setError, setProcess, setClosure, setNote]);
 
   useEffect(() => {
     const trimmed = paramProcessId.trim();
     if (!trimmed) return;
-    setId(trimmed);
-    void lookupById(trimmed);
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void lookupById(trimmed, controller.signal);
+    });
+    return () => controller.abort();
   }, [paramProcessId, lookupById]);
 
   async function inspect(event: FormEvent) {

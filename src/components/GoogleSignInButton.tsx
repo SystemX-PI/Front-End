@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
 type GoogleCredentialResponse = { credential?: string };
-type GoogleTokenResponse = { access_token?: string; error?: string };
 type GoogleSignInPurpose = "signin" | "link" | "register";
 
 interface GoogleIdentitySdk {
@@ -25,16 +24,6 @@ interface GoogleIdentitySdk {
           locale: "pt-BR";
         },
       ): void;
-    };
-    oauth2: {
-      initTokenClient(options: {
-        client_id: string;
-        scope: string;
-        callback: (response: GoogleTokenResponse) => void;
-        error_callback?: (error: { type?: string }) => void;
-      }): {
-        requestAccessToken(options?: { prompt?: string; login_hint?: string }): void;
-      };
     };
   };
 }
@@ -96,36 +85,6 @@ function loadGoogleIdentity(): Promise<GoogleIdentitySdk> {
   });
 
   return googleScriptPromise;
-}
-
-export function requestGoogleDataSharing(loginHint?: string): Promise<void> {
-  const google = window.google;
-  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim();
-  if (!google?.accounts.oauth2 || !clientId) {
-    return Promise.reject(new Error("A autorização do Google não está disponível. Atualize a página e tente novamente."));
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const fail = (message: string) => reject(new Error(message));
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: "openid email profile",
-      callback: (response) => {
-        if (response.error || !response.access_token) {
-          fail("O compartilhamento dos dados não foi autorizado. Você pode tentar novamente.");
-          return;
-        }
-        resolve();
-      },
-      error_callback: (error) => {
-        fail(error.type === "popup_closed"
-          ? "A janela de autorização foi fechada antes da confirmação."
-          : "Não foi possível abrir a autorização do Google. Tente novamente.");
-      },
-    });
-    // Use Google's official consent dialog after the user explicitly chose to create an account.
-    client.requestAccessToken({ prompt: "consent", ...(loginHint ? { login_hint: loginHint } : {}) });
-  });
 }
 
 export default function GoogleSignInButton({

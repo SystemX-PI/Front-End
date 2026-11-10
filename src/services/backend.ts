@@ -246,8 +246,8 @@ export const backend = {
     audit: (page:number,q:string,acao:string,data:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q,acao,...(data ? {data} : {})}),{signal}),
   },
   processes: {
-    get: (id: number) =>
-      apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`),
+    get: (id: number, signal?: AbortSignal) =>
+      apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`, { signal }),
     updateStatus: (
       id: number,
       payload: {
@@ -279,8 +279,8 @@ export const backend = {
         method: "POST",
         body: JSON.stringify({ usuarioId, observacao }),
       }),
-    getClosure: (id: number) =>
-      apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`),
+    getClosure: (id: number, signal?: AbortSignal) =>
+      apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, { signal }),
   },
 };
 
