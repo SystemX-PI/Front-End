@@ -292,75 +292,39 @@
 .brand-summary-colors i { width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 8px; }
 .brand-summary-colors code { display: block; color: var(--workspace-muted); }
 
-.brand-editor {
-  width: min(940px, calc(100% - 24px));
-  max-height: calc(100dvh - 24px);
-  margin: auto;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--workspace-surface);
-  color: var(--workspace-text);
-  box-shadow: 0 24px 90px #101a2c48;
-}
-.brand-editor::backdrop { background: #101a2c9e; }
-.brand-editor[open] { display: block; overflow: auto; overscroll-behavior: contain; }
-.brand-editor-header, .brand-editor-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px clamp(14px, 3vw, 26px);
-  background: var(--workspace-surface);
-}
-.brand-editor-header { position: sticky; top: 0; z-index: 1; border-bottom: 1px solid var(--line); }
-.brand-editor-header h2, .brand-editor-header p, .brand-editor-footer p { margin: 0; }
-.brand-editor-header p { margin-top: 4px; color: var(--workspace-muted); }
-.brand-editor-close { width: 44px; padding: 0; justify-content: center; flex-shrink: 0; }
-.brand-editor-body {
-  display: grid;
-  grid-template-columns: minmax(230px, 1fr) minmax(0, 1.3fr);
-  align-items: start;
-  gap: clamp(14px, 3vw, 26px);
-  padding: clamp(14px, 3vw, 26px);
-}
+.brand-live-preview { margin-bottom: 20px; }
+.brand-live-preview-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+.brand-live-preview-heading h2 { margin: 5px 0 0; font-size: 18px; }
+.brand-live-preview-card.product-preview { width: 100%; margin: 0; transform: none; overflow: hidden; color: var(--workspace-text); background: var(--workspace-surface); border-color: var(--line); box-shadow: none; }
+.brand-live-preview-card .preview-browser { background: color-mix(in srgb, var(--tenant-accent) 18%, var(--workspace-surface)); border-bottom-color: var(--line); }
+.brand-live-preview-card .preview-browser small { color: var(--workspace-muted); }
+.brand-live-preview-card .preview-content { padding: clamp(16px, 3vw, 28px); }
+.brand-live-preview-card .preview-monogram { overflow: hidden; background: color-mix(in srgb, var(--tenant-primary) 12%, var(--workspace-surface)); }
+.brand-live-preview-card .preview-monogram img { width: 100%; height: 100%; object-fit: contain; }
+.brand-live-preview-card .preview-monogram .brand-logo.compact .brand-pill-blue { background: var(--tenant-primary); }
+.brand-live-preview-card .preview-monogram .brand-logo.compact .brand-pill-green { background: var(--tenant-accent); }
+.brand-live-preview-card .live-badge { color: var(--tenant-primary); background: color-mix(in srgb, var(--tenant-primary) 10%, var(--workspace-surface)); }
+.brand-live-preview-card .preview-stats { margin: 0; }
+.brand-live-preview-card .preview-stats article { background: var(--surface-alt); border-color: var(--line); }
+.brand-live-preview-card .preview-stats article:first-child svg { color: var(--tenant-primary); }
+.brand-live-preview-card .preview-stats article:nth-child(2) svg { color: var(--tenant-accent); }
+.brand-live-preview-colors { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.brand-live-preview-colors span { display: inline-flex; align-items: center; gap: 7px; color: var(--workspace-muted); font-size: 12px; }
+.brand-live-preview-colors i { width: 18px; height: 18px; border: 1px solid var(--line-strong); border-radius: 6px; }
+.brand-live-preview-colors code { color: var(--workspace-text); }
+.brand-editor-form .saas-panel-heading { align-items: flex-start; }
+.brand-editor-form .saas-panel-heading h2, .brand-editor-form .saas-panel-heading p { margin: 4px 0 0; }
+.brand-editor-form .saas-panel-heading p { color: var(--workspace-muted); }
+.brand-editor-form .saas-panel-heading > svg { color: var(--tenant-primary); flex: 0 0 auto; }
 .brand-editor-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .brand-editor-fields input { width: 100%; min-width: 0; }
 .brand-preset-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.brand-editor-preview.product-preview {
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-  color: var(--workspace-text);
-  background: var(--workspace-surface);
-  border-color: var(--line);
-  overflow: hidden;
-  box-shadow: none;
-}
-.brand-editor-preview .preview-browser {
-  background: color-mix(in srgb, var(--tenant-accent) 22%, var(--workspace-surface));
-  border-bottom-color: var(--line);
-}
-.brand-editor-preview .preview-browser small { color: var(--workspace-muted); }
-.brand-editor-preview .preview-content { padding: clamp(14px, 3vw, 22px); }
-.brand-editor-preview .workspace-brand { padding: 0; }
-.brand-editor-preview .brand-pill-blue { background: var(--tenant-primary); }
-.brand-editor-preview .brand-pill-green { background: var(--tenant-accent); }
-.brand-preview-intro {
-  margin-block: 16px;
-  padding: clamp(12px, 3vw, 20px);
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--tenant-accent) 30%, var(--workspace-surface));
-}
-.brand-preview-intro h3, .brand-preview-intro p { margin: 0 0 10px; }
-.brand-preview-intro .saas-button { cursor: default; }
-.brand-editor-preview .preview-stats { margin: 0; }
-.brand-editor-preview .preview-stats article { background: var(--surface-alt); border-color: var(--line); }
-.brand-editor-footer { flex-wrap: wrap; justify-content: flex-end; border-top: 1px solid var(--line); }
-.brand-editor-footer p { flex: 1 0 100%; }
+.brand-editor-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.brand-editor-actions > span { color: var(--workspace-muted); font-size: 13px; }
 @media (max-width: 640px) {
-  .brand-editor-body { grid-template-columns: minmax(0, 1fr); }
-  .brand-editor-preview { grid-row: 1; }
-  .brand-editor-header h2 { font-size: 19px; }
+  .brand-live-preview-heading h2 { font-size: 16px; }
+  .brand-live-preview-card .preview-greeting { flex-wrap: wrap; }
+  .brand-live-preview-card .live-badge { margin-left: 54px; }
+  .brand-live-preview-card .preview-content>h2 { font-size: 21px; }
+  .brand-editor-actions > span { flex: 1 0 100%; }
 }

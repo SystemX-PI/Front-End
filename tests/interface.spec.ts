@@ -29,7 +29,7 @@ test("WhatsApp desconecta, reconecta por QR e adiciona outra instancia",async({p
  await page.goto("/app/whatsapp");await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible();page.on("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:"Desconectar",exact:true}).click();await expect(page.getByText("Desconectado",{exact:true}).first()).toBeVisible();await page.getByRole("button",{name:"Gerar QR Code",exact:true}).click();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toBeVisible();await expect(page.getByRole("img",{name:"QR Code de vendas"})).toHaveAttribute("src","data:image/png;base64,dGVzdA==",{timeout:10000});await expect(page.getByText("Seu WhatsApp está conectado.")).toBeVisible({timeout:15000});await page.getByLabel("Nome do novo WhatsApp").fill("suporte");await page.getByRole("button",{name:"Adicionar WhatsApp"}).click();await expect(page.getByRole("button",{name:/suporte/})).toBeVisible();await page.screenshot({path:"test-results/whatsapp-multiple.png",fullPage:true});
 });
 
-test("a marca muda na prévia e só é aplicada depois de salvar", async ({ page }) => {
+test("a prévia da marca fica acima dos campos e só aplica ao salvar", async ({ page }) => {
  await seed(page);
  const c = context();
  let saved: unknown;
@@ -47,32 +47,29 @@ test("a marca muda na prévia e só é aplicada depois de salvar", async ({ page
  const topbar = page.locator(".workspace-topbar");
  const oldMenu = await menu.evaluate(node => getComputedStyle(node).backgroundImage);
  const oldTopbar = await topbar.evaluate(node => getComputedStyle(node).backgroundColor);
- const editor = page.getByRole("dialog", { name: "Editar sua marca" });
- const open = page.getByRole("button", { name: "Editar marca e ver prévia" });
- await open.click();
- await expect(editor).toBeVisible();
- const preview = editor.getByRole("region", { name: "Prévia da marca" });
- await editor.getByLabel("Nome da marca").fill("Rascunho");
- await editor.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
+ const preview = page.getByRole("region", { name: "Prévia da marca" });
+ const editor = page.locator(".brand-editor-form");
+ await expect(preview).toBeVisible();
+ await expect(page.getByLabel("Nome da marca")).toHaveValue("Aurora");
+ const save = page.getByRole("button", { name: "Salvar identidade" });
+ await expect(save).toBeDisabled();
+ await page.getByLabel("Nome da marca").fill("Rascunho");
+ await page.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
  await expect(preview).toContainText("Rascunho");
  await expect(preview).toHaveCSS("--tenant-accent", "#8fc8ff");
  await expect(topbar).toHaveCSS("background-color", oldTopbar);
- await editor.getByRole("button", { name: "Fechar prévia" }).click();
- await expect(editor).toBeHidden();
- await expect(open).toBeFocused();
  expect(saved).toBeUndefined();
 
  await page.setViewportSize({ width: 320, height: 680 });
- await open.click();
- await expect(editor.getByLabel("Nome da marca")).toHaveValue("Aurora");
- await expect(preview).toHaveCSS("--tenant-accent", "#35cda0");
  expect(await editor.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
- await editor.getByLabel("Nome da marca").fill("Nova Marca");
- await editor.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
- await editor.getByRole("button", { name: "Salvar identidade" }).click();
- await expect(editor).toBeHidden();
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+ await page.getByLabel("Nome da marca").fill("Nova Marca");
+ await page.getByLabel("Logo da empresa").setInputFiles({name:"logo.png",mimeType:"image/png",buffer:Buffer.from("logo")});
+ await page.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
+ await expect(preview.locator("img[alt='Prévia do logo']")).toHaveAttribute("src", "data:image/png;base64,bG9nbw==");
+ await save.click();
  await expect(page.locator(".workspace-sidebar .workspace-brand")).toContainText("Nova Marca");
- expect(saved).toMatchObject({ name: "Nova Marca", primary: "#142d54", accent: "#8fc8ff" });
+ expect(saved).toMatchObject({ name: "Nova Marca", logo: "data:image/png;base64,bG9nbw==", primary: "#142d54", accent: "#8fc8ff" });
  await page.goto("/app");
  await expect(page.locator(".overview-intro")).toBeVisible();
  await expect(page.locator(".workspace")).toHaveCSS("--tenant-accent", "#8fc8ff");
