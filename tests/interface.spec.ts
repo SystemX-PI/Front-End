@@ -56,6 +56,11 @@ test("a prévia da marca fica acima dos campos e só aplica ao salvar", async ({
  await expect(page.getByLabel("Nome da marca")).toHaveValue("Aurora");
  const save = page.getByRole("button", { name: "Salvar identidade" });
  await expect(save).toBeDisabled();
+ await page.setViewportSize({ width: 1440, height: 900 });
+ const previewBox = await preview.boundingBox();
+ const controlsBox = await editor.locator(".brand-editor-form").boundingBox();
+ expect(previewBox!.x + previewBox!.width).toBeLessThan(controlsBox!.x);
+ expect(controlsBox!.y).toBeLessThan(900);
  await page.getByLabel("Nome da marca").fill("Rascunho");
  await page.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
  await expect(preview).toContainText("Rascunho");
