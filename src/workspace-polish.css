@@ -292,7 +292,8 @@
 .brand-summary-colors i { width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 8px; }
 .brand-summary-colors code { display: block; color: var(--workspace-muted); }
 
-.brand-live-preview { margin-bottom: 20px; }
+.brand-settings-card { display: block; }
+.brand-live-preview { padding-bottom: clamp(18px, 3vw, 28px); border-bottom: 1px solid var(--line); }
 .brand-live-preview-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
 .brand-live-preview-heading h2 { margin: 5px 0 0; font-size: 18px; }
 .brand-live-preview-card.product-preview { width: 100%; margin: 0; transform: none; overflow: hidden; color: var(--workspace-text); background: var(--workspace-surface); border-color: var(--line); box-shadow: none; }
@@ -312,12 +313,25 @@
 .brand-live-preview-colors span { display: inline-flex; align-items: center; gap: 7px; color: var(--workspace-muted); font-size: 12px; }
 .brand-live-preview-colors i { width: 18px; height: 18px; border: 1px solid var(--line-strong); border-radius: 6px; }
 .brand-live-preview-colors code { color: var(--workspace-text); }
-.brand-editor-form .saas-panel-heading { align-items: flex-start; }
-.brand-editor-form .saas-panel-heading h2, .brand-editor-form .saas-panel-heading p { margin: 4px 0 0; }
-.brand-editor-form .saas-panel-heading p { color: var(--workspace-muted); }
-.brand-editor-form .saas-panel-heading > svg { color: var(--tenant-primary); flex: 0 0 auto; }
-.brand-editor-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.brand-editor-form { padding-top: clamp(18px, 3vw, 28px); }
+.brand-controls-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.brand-controls-heading h2 { margin: 5px 0 0; font-size: 18px; }
+.brand-controls-heading p { margin: 6px 0 0; color: var(--workspace-muted); font-size: 13px; line-height: 1.6; }
+.brand-controls-heading > svg { color: var(--tenant-primary); flex: 0 0 auto; }
+.brand-editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; min-width: 0; margin: 0; padding: 0; border: 0; gap: 18px; }
+.brand-logo-control { display: grid; gap: 7px; min-width: 0; }
+.brand-logo-control small { color: var(--workspace-muted); font-size: 12px; }
+.brand-logo-control .text-button { justify-self: start; }
 .brand-editor-fields input { width: 100%; min-width: 0; }
+.brand-editor-fields .color-fields, .brand-preset-options { grid-column: 1 / -1; }
+.brand-editor-fields .color-fields { gap: 14px; }
+.brand-color-field { min-width: 0; gap: 8px !important; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-alt); }
+.brand-color-field > span { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand-color-field strong { font-size: 13px; }
+.brand-color-field code { color: var(--workspace-muted); font-size: 12px; font-weight: 500; }
+.brand-editor-fields input[type="color"] { height: 52px; padding: 4px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--workspace-surface); cursor: pointer; }
+.brand-editor-fields input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.brand-editor-fields input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 6px; }
 .brand-preset-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .brand-editor-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
 .brand-editor-actions > span { color: var(--workspace-muted); font-size: 13px; }
@@ -326,5 +340,8 @@
   .brand-live-preview-card .preview-greeting { flex-wrap: wrap; }
   .brand-live-preview-card .live-badge { margin-left: 54px; }
   .brand-live-preview-card .preview-content>h2 { font-size: 21px; }
+  .brand-editor-fields { grid-template-columns: minmax(0, 1fr); }
+  .brand-editor-fields .color-fields, .brand-preset-options { grid-column: auto; }
+  .brand-editor-fields .color-fields { grid-template-columns: minmax(0, 1fr); }
   .brand-editor-actions > span { flex: 1 0 100%; }
 }

@@ -48,7 +48,10 @@ test("a prévia da marca fica acima dos campos e só aplica ao salvar", async ({
  const oldMenu = await menu.evaluate(node => getComputedStyle(node).backgroundImage);
  const oldTopbar = await topbar.evaluate(node => getComputedStyle(node).backgroundColor);
  const preview = page.getByRole("region", { name: "Prévia da marca" });
- const editor = page.locator(".brand-editor-form");
+ const editor = page.locator(".brand-settings-card");
+ await expect(page.locator(".brand-settings-card")).toHaveCount(1);
+ await expect(editor.locator(".brand-live-preview")).toBeVisible();
+ await expect(editor.locator(".brand-editor-form")).toBeVisible();
  await expect(preview).toBeVisible();
  await expect(page.getByLabel("Nome da marca")).toHaveValue("Aurora");
  const save = page.getByRole("button", { name: "Salvar identidade" });
@@ -65,6 +68,8 @@ test("a prévia da marca fica acima dos campos e só aplica ao salvar", async ({
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
  await page.getByLabel("Nome da marca").fill("Nova Marca");
  await page.getByLabel("Logo da empresa").setInputFiles({name:"logo.png",mimeType:"image/png",buffer:Buffer.from("logo")});
+ await expect(page.getByLabel("Cor principal")).toBeVisible();
+ await expect(page.getByLabel("Cor principal")).toHaveCSS("height", "52px");
  await page.getByRole("button", { name: "Azul-escuro e azul-claro" }).click();
  await expect(preview.locator("img[alt='Prévia do logo']")).toHaveAttribute("src", "data:image/png;base64,bG9nbw==");
  await save.click();

@@ -210,35 +210,34 @@ function Brand({ context, accountId, colors, onSaved }: {
 
  return <>
   <PageTitle eyebrow="IDENTIDADE" title="Sua marca" description="Personalize seu espaço e veja o resultado antes de aplicar as mudanças."/>
-  <section className="saas-panel brand-live-preview" aria-label="Prévia da marca" style={brandStyle(draft)}>
-   <div className="brand-live-preview-heading"><div><span className="saas-eyebrow">PRÉVIA AO VIVO</span><h2>Assim sua equipe verá o espaço</h2></div><span className="saas-badge muted">Ainda não aplicada</span></div>
-   <div className="product-preview brand-live-preview-card">
-    <div className="preview-browser"><span/><span/><span/><small>VISÃO GERAL</small></div>
-    <div className="preview-content">
-     <div className="preview-greeting">
-      <span className="preview-monogram">{draft.logo ? <img src={draft.logo} alt="Prévia do logo"/> : <BrandLogo compact/>}</span>
-      <div><small>SEU ESPAÇO DE TRABALHO</small><h3>{draft.name.trim() || "Sua empresa"}</h3></div>
-      <span className="live-badge">Tudo em um lugar</span>
+  <form className="saas-panel brand-settings-card" onSubmit={save} style={brandStyle(draft)}>
+   <section className="brand-live-preview" aria-label="Prévia da marca">
+    <div className="brand-live-preview-heading"><div><span className="saas-eyebrow">PRÉVIA AO VIVO</span><h2>Assim sua equipe verá o espaço</h2></div><span className="saas-badge muted">Ainda não aplicada</span></div>
+    <div className="product-preview brand-live-preview-card">
+     <div className="preview-browser"><span/><span/><span/><small>VISÃO GERAL</small></div>
+     <div className="preview-content">
+      <div className="preview-greeting">
+       <span className="preview-monogram">{draft.logo ? <img src={draft.logo} alt="Prévia do logo"/> : <BrandLogo compact/>}</span>
+       <div><small>SEU ESPAÇO DE TRABALHO</small><h3>{draft.name.trim() || "Sua empresa"}</h3></div>
+       <span className="live-badge">Tudo em um lugar</span>
+      </div>
+      <h2>O próximo passo fica mais simples.</h2>
+      <div className="preview-stats">
+       <article><MessageCircle/><strong>WhatsApp</strong><small>Vários números, uma operação</small></article>
+       <article><Mail/><strong>Gmail</strong><small>Cada remetente no seu lugar</small></article>
+      </div>
+      <div className="brand-live-preview-colors"><span><i style={{backgroundColor:draft.primary}}/>Cor principal <code>{draft.primary}</code></span><span><i style={{backgroundColor:draft.accent}}/>Cor de destaque <code>{draft.accent}</code></span></div>
      </div>
-     <h2>O próximo passo fica mais simples.</h2>
-     <div className="preview-stats">
-      <article><MessageCircle/><strong>WhatsApp</strong><small>Vários números, uma operação</small></article>
-      <article><Mail/><strong>Gmail</strong><small>Cada remetente no seu lugar</small></article>
-     </div>
-     <div className="brand-live-preview-colors"><span><i style={{backgroundColor:draft.primary}}/>Cor principal <code>{draft.primary}</code></span><span><i style={{backgroundColor:draft.accent}}/>Cor de destaque <code>{draft.accent}</code></span></div>
     </div>
-   </div>
-  </section>
-  <form className="saas-panel brand-editor-form" onSubmit={save}>
-   <div className="saas-panel-heading"><div><span className="saas-eyebrow">PERSONALIZAÇÃO</span><h2>Escolha como sua marca aparece</h2><p>As mudanças aparecem na prévia acima. Elas só entram no sistema depois de salvar.</p></div><Palette size={22}/></div>
+   </section>
+   <div className="brand-editor-form">
+   <div className="brand-controls-heading"><div><span className="saas-eyebrow">PERSONALIZAÇÃO</span><h2>Edite sua marca</h2><p>As mudanças aparecem na prévia acima e só são aplicadas depois de salvar.</p></div><Palette size={22}/></div>
    <fieldset className="saas-form brand-editor-fields" disabled={busy}>
     <label>Nome da marca<input required maxLength={120} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })}/></label>
-    <label>Logo da empresa<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { upload(event.target.files?.[0]); event.target.value = ""; }}/></label>
-    <small>PNG, JPG ou WebP de até 280 KB.</small>
-    {draft.logo && <button className="text-button" type="button" onClick={() => setDraft({ ...draft, logo: "" })}>Remover logo</button>}
+    <div className="brand-logo-control"><label>Logo da empresa<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { upload(event.target.files?.[0]); event.target.value = ""; }}/></label><small>PNG, JPG ou WebP de até 280 KB.</small>{draft.logo && <button className="text-button" type="button" onClick={() => setDraft({ ...draft, logo: "" })}>Remover logo</button>}</div>
     <div className="color-fields">
-     <label>Cor principal<input type="color" value={draft.primary} onChange={event => setDraft({ ...draft, primary: event.target.value })}/></label>
-     <label>Cor de destaque<input type="color" value={draft.accent} onChange={event => setDraft({ ...draft, accent: event.target.value })}/></label>
+     <label className="brand-color-field"><span><strong>Cor principal</strong><code>{draft.primary}</code></span><input type="color" aria-label="Cor principal" value={draft.primary} onChange={event => setDraft({ ...draft, primary: event.target.value })}/></label>
+     <label className="brand-color-field"><span><strong>Cor de destaque</strong><code>{draft.accent}</code></span><input type="color" aria-label="Cor de destaque" value={draft.accent} onChange={event => setDraft({ ...draft, accent: event.target.value })}/></label>
     </div>
     <div className="brand-preset-options">
      <button className="saas-button" type="button" onClick={() => setDraft({ ...draft, ...originalColors })}>Cores originais</button>
@@ -248,6 +247,7 @@ function Brand({ context, accountId, colors, onSaved }: {
    <Feedback message={error}/>
    {!context.active && <p>Ative sua assinatura para salvar a marca.</p>}
    <div className="brand-editor-actions"><span>{dirty ? "Você tem alterações que ainda não foram salvas." : "Sua marca está atualizada."}</span><button className="saas-button primary" disabled={busy || !context.active || !dirty}><Check size={17}/>{saving ? "Salvando…" : "Salvar identidade"}</button></div>
+   </div>
   </form>
  </>;
 }
