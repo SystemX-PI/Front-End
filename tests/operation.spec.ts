@@ -88,6 +88,18 @@ test("assistente oferece atalhos quando o serviço de IA está indisponível", a
   await expect(assistant.getByRole("link", { name: "Disparo manual" })).toBeVisible();
 });
 
+test("assistente aparece depois do login sem recarregar a página", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: "Abrir assistente IA" })).toHaveCount(0);
+  await page.evaluate(() => {
+    localStorage.setItem("token", "sessao-autenticada");
+    localStorage.setItem("userType", "ADMINISTRADOR");
+    window.history.pushState({}, "", "/admin/dashboard");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await expect(page.getByRole("button", { name: "Abrir assistente IA" })).toBeVisible();
+});
+
 test("beneficiário autenticado entra pelo portal ao abrir a área SaaS", async ({ page }) => {
   await page.addInitScript(() => {
     const claims = btoa(JSON.stringify({ tipo: "CLIENTE", beneficiario: true }));

@@ -1,6 +1,6 @@
 import { useState, type FormEvent, useEffect, useRef } from "react";
 import { Bot, Send, X, Sparkles, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ApiError } from "../services/http";
 import { getUserType, isAuthenticated } from "../services/auth";
 import { assistant, type AssistantAction } from "../services/backend";
@@ -8,6 +8,7 @@ import { assistant, type AssistantAction } from "../services/backend";
 type Message = { author: "user" | "assistant"; text: string };
 
 export default function AssistantWidget() {
+  useLocation();
   const allowed = isAuthenticated() && ["ADMINISTRADOR", "FUNCIONARIO"].includes(getUserType() || "");
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
