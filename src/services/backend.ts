@@ -4,7 +4,7 @@ import { normalizeContemplation } from "./format";
 
 export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
-export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";
+export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS";
 export type ProcessStatus =
   | "CONTEMPLADO"
   | "AGUARDANDO_COMUNICACAO"
@@ -173,15 +173,6 @@ export const backend = {
       ),
   },
   integrations: {
-    notificationSummary: (inicio: string, fim: string, signal?: AbortSignal) =>
-      apiRequest<{ total: number; accepted: number; pending: number; failed: number }>(
-        `/api/integracoes/comunicacoes/historico?${new URLSearchParams({ inicio, fim })}`,
-        { signal },
-      ),
-    queueSummary: (signal?: AbortSignal) =>
-      apiRequest<{ total: number; pendentes: number; comunicados: number; comFalha: number }>(
-        "/api/integracoes/comunicacoes/fila/resumo", { signal },
-      ),
     queuePage: (page = 0, q = "", status = "", signal?: AbortSignal) => apiRequest<PageResponse<QueueItem>>(
       `/api/integracoes/comunicacoes/fila/pagina?${new URLSearchParams({ page: String(page), size: "20", q, status })}`, { signal }),
     queue: (signal?: AbortSignal) =>
@@ -199,6 +190,7 @@ export const backend = {
   users: {
     ...crudApi<UserResponse>("usuarios"),
     changePassword: (id: number, senha: string) => apiRequest<void>(`/api/usuarios/${id}/senha`, { method: "PUT", body: JSON.stringify({ senha }) }),
+    toggleStatus: (id: number, ativo: boolean, payload?: object) => apiRequest<UserResponse>(`/api/usuarios/${id}`, { method: "PUT", body: JSON.stringify({ ...payload, ativo }) }),
     list: (signal?: AbortSignal) =>
       apiRequest<UserResponse[]>("/api/usuarios", { signal }),
     create: (payload: {
@@ -214,6 +206,7 @@ export const backend = {
   },
   consortiums: {
     ...crudApi<ConsortiumResponse>("consorcios"),
+    toggleStatus: (id: number, ativo: boolean, payload?: object) => apiRequest<ConsortiumResponse>(`/api/consorcios/${id}`, { method: "PUT", body: JSON.stringify({ ...payload, ativo }) }),
     list: () => apiRequest<ConsortiumResponse[]>("/api/consorcios"),
     create: (payload: { nome: string; tipoId: number }) =>
       apiRequest<ConsortiumResponse>("/api/consorcios", {
@@ -223,6 +216,7 @@ export const backend = {
   },
   quotas: {
     ...crudApi<QuotaResponse>("cotas"),
+    toggleStatus: (id: number, ativa: boolean, payload?: object) => apiRequest<QuotaResponse>(`/api/cotas/${id}`, { method: "PUT", body: JSON.stringify({ ...payload, ativa }) }),
     list: () => apiRequest<QuotaResponse[]>("/api/cotas"),
     create: (payload: {
       numero: string;
@@ -241,13 +235,13 @@ export const backend = {
     get: (id: number, signal?: AbortSignal) => apiRequest<PortalProcessResponse>(`/api/portal/processos/${id}`, { signal }),
   },
   operation: {
-    closures: (page:number,q:string,status: 'EM_PROCESSO_DE_BAIXA' | 'FINALIZADO',signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status}),{signal}),
-    history: (id:number,page:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page='+page+'&size=20',{signal}),
-    audit: (page:number,q:string,acao:string,data:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q,acao,...(data ? {data} : {})}),{signal}),
+    pending: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status:'EM_PROCESSO_DE_BAIXA'}),{signal}),
+    history: (id:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page=0&size=100',{signal}),
+    audit: (page:number,q:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q}),{signal}),
   },
   processes: {
-    get: (id: number, signal?: AbortSignal) =>
-      apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`, { signal }),
+    get: (id: number) =>
+      apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}`),
     updateStatus: (
       id: number,
       payload: {
@@ -279,8 +273,8 @@ export const backend = {
         method: "POST",
         body: JSON.stringify({ usuarioId, observacao }),
       }),
-    getClosure: (id: number, signal?: AbortSignal) =>
-      apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, { signal }),
+    getClosure: (id: number) =>
+      apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`),
   },
 };
 

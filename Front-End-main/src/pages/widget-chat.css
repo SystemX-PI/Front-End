@@ -1,0 +1,38 @@
+.partner-chat {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100dvh;
+  color: #182745;
+  background: #f6f8fc;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+
+.partner-chat header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  background: #3341a6;
+}
+
+.partner-chat h1 { font-size: 16px; font-weight: 650; }
+.partner-chat header p { font-size: 12px; }
+.partner-transcript { overflow-y: auto; padding: 12px; }
+.partner-transcript p {
+  width: fit-content;
+  max-width: 95%;
+  margin: 0 0 8px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #e8edfa;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.partner-transcript .user { margin-left: auto; color: #fff; background: #3341a6; }
+.partner-prompts { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 10px 8px; }
+.partner-prompts button { padding: 4px 8px; border: 1px solid #b8c2e1; border-radius: 12px; font-size: 11px; }
+.partner-chat form { display: flex; gap: 6px; padding: 8px 10px 11px; background: #fff; }
+.partner-chat input { min-width: 0; flex: 1; border: 1px solid #aab6da; border-radius: 8px; padding: 8px; }
+.partner-chat form button { padding: 8px; border-radius: 8px; background: #3341a6; color: #fff; }
+.partner-chat button:disabled { opacity: 0.55; cursor: default; }

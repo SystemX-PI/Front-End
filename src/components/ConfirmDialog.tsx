@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react";
-import { Send, X } from "lucide-react";
+import { Send, X, type LucideIcon } from "lucide-react";
 
 export default function ConfirmDialog({
   open,
@@ -8,6 +8,9 @@ export default function ConfirmDialog({
   onCancel,
   onConfirm,
   confirmLabel = "Confirmar envio",
+  busy = false,
+  icon: Icon = Send,
+  danger = false,
 }: {
   open: boolean;
   title: string;
@@ -15,6 +18,9 @@ export default function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
   confirmLabel?: string;
+  busy?: boolean;
+  icon?: LucideIcon;
+  danger?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
@@ -28,18 +34,19 @@ export default function ConfirmDialog({
       ref={ref}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-description`}
-      onCancel={onCancel}
+      onCancel={(e) => { if (busy) e.preventDefault(); else onCancel(); }}
     >
       <button
         className="dialog-close"
         type="button"
         onClick={onCancel}
+        disabled={busy}
         aria-label="Fechar confirmação"
       >
         <X size={18} />
       </button>
       <span className="empty-state-icon">
-        <Send size={24} />
+        <Icon size={24} />
       </span>
       <h2 id={`${id}-title`}>{title}</h2>
       <p id={`${id}-description`}>{description}</p>
@@ -48,12 +55,13 @@ export default function ConfirmDialog({
           autoFocus
           className="button secondary"
           onClick={onCancel}
+          disabled={busy}
           type="button"
         >
           Cancelar
         </button>
-        <button className="button primary" onClick={onConfirm} type="button">
-          {confirmLabel}
+        <button className={`button ${danger ? "danger" : "primary"}`} onClick={onConfirm} disabled={busy} type="button">
+          {busy ? "Processando…" : confirmLabel}
         </button>
       </div>
     </dialog>
