@@ -102,6 +102,11 @@ export default function Closures() {
 
   async function close() {
     if (!process || busy) return;
+    if (!note.trim()) {
+      setError("Informe a observação da baixa antes de continuar.");
+      setConfirm(false);
+      return;
+    }
     setConfirm(false);
     setBusy(true);
     setError("");
@@ -179,6 +184,8 @@ export default function Closures() {
                 <thead role="rowgroup">
                   <tr role="row">
                     <th role="columnheader" scope="col">Processo</th>
+                    <th role="columnheader" scope="col">Contemplado</th>
+                    <th role="columnheader" scope="col">Grupo / cota</th>
                     <th role="columnheader" scope="col">Status</th>
                     <th role="columnheader" scope="col">Atualizado em</th>
                     <th role="columnheader" scope="col">Ação</th>
@@ -188,6 +195,8 @@ export default function Closures() {
                   {validItems.map((p) => (
                     <tr role="row" key={p.id}>
                       <td role="cell" data-label="Processo">#{p.id}</td>
+                      <td role="cell" data-label="Contemplado">{p.clienteNome || "Nome não informado"}</td>
+                      <td role="cell" data-label="Grupo / cota">{p.grupoNumero || "—"} / {p.cotaNumero || "—"}</td>
                       <td role="cell" data-label="Status">{readable(p.status)}</td>
                       <td role="cell" data-label="Atualizado em">{formatDate(p.atualizadoEm)}</td>
                       <td role="cell" data-label="Ação">
@@ -267,6 +276,10 @@ export default function Closures() {
             Contemplação #{process.contemplacaoId} · Atualizado em{" "}
             {formatDate(process.atualizadoEm)}
           </p>
+          {(process.clienteNome || process.grupoNumero || process.cotaNumero) && <p>
+            {process.clienteNome || "Contemplado sem nome"} · Grupo {process.grupoNumero || "—"} · Cota {process.cotaNumero || "—"}
+            {process.valorCredito != null ? ` · Crédito ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(process.valorCredito)}` : ""}
+          </p>}
           <Link to={"/admin/contemplados?processo=" + process.id}>
             Ver comunicação e histórico
           </Link>
@@ -288,13 +301,14 @@ export default function Closures() {
                 Observação da baixa
                 <textarea
                   value={note}
+                  required
                   maxLength={255}
                   onChange={(e) => setNote(e.target.value)}
                 />
               </label>
               <button
                 className="button primary"
-                disabled={busy}
+                disabled={busy || !note.trim()}
                 onClick={() => setConfirm(true)}
               >
                 Concluir baixa
