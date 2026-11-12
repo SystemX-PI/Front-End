@@ -92,7 +92,7 @@ export default function AssistantWidget() {
   return (
     <aside className="assistant-enterprise-bubble">
       {open ? (
-        <section className="assistant-chat-window" aria-label="Assistente Inteligente ConsorTech">
+        <section className="assistant-chat-window" role="region" aria-label="Assistente Inteligente ConsorTech">
           <header className="assistant-header">
             <strong>
               <Sparkles size={17} style={{ color: "#60a5fa" }} /> Assistente ConsorTech

@@ -242,8 +242,8 @@ export default function Contemplated() {
     </section>
     {employeeError && <InlineFeedback kind="error" message={`Não foi possível carregar os responsáveis disponíveis: ${employeeError}`}/>}
     <form className="panel admin-search-form" onSubmit={lookupById}>
-      <label className="field"><span>Consultar processo pelo ID</span><input type="number" min="1" step="1" required value={idInput} onChange={event => setIdInput(event.target.value)} placeholder="Informe o ID do processo"/></label>
-      <button className="button secondary" type="submit" disabled={loadingProcess}>{loadingProcess ? "Consultando…" : "Consultar ID"}</button>
+      <label className="field"><span>Consultar processo pelo ID</span><input aria-label="ID do processo" type="number" min="1" step="1" required value={idInput} onChange={event => setIdInput(event.target.value)} placeholder="Informe o ID do processo"/></label>
+      <button className="button secondary" type="submit" disabled={loadingProcess}>{loadingProcess ? "Consultando…" : "Consultar"}</button>
     </form>
     {feedback && <InlineFeedback kind={feedback.kind} message={feedback.message}/>}
     {loadingProcess ? <Skeleton rows={2}/> : process && <>
