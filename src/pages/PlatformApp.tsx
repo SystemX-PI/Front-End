@@ -6,6 +6,7 @@ import { planFor, workspaceLink, platformRequest, type Context, type Client } fr
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { BrandLogo } from "../components/BrandLogo";
 import { notify } from "../services/notifications";
+import { prepareBrandImage } from "../services/brandImage";
 import PlatformWhatsApp from "./PlatformWhatsApp";
 import PlanUpgrade from "./PlanUpgrade";
 import ProfileSettings from "./ProfileSettings";
@@ -32,8 +33,10 @@ function foreground(hex: string) {
 
 function brandStyle({ primary, accent }: BrandColors): CSSProperties {
  return {
-  "--tenant-primary": primary,
-  "--tenant-accent": accent,
+  "--brand-primary": primary,
+  "--brand-accent": accent,
+  "--tenant-primary": "var(--brand-primary)",
+  "--tenant-accent": "var(--brand-accent)",
   "--tenant-on-primary": foreground(primary),
  } as CSSProperties;
 }
@@ -171,19 +174,18 @@ function Brand({ context, accountId, colors, onSaved }: {
  const busy = saving || readingLogo;
  const dirty = draft.name !== saved.name || draft.logo !== saved.logo || draft.primary.toLowerCase() !== saved.primary.toLowerCase() || draft.accent.toLowerCase() !== saved.accent.toLowerCase();
 
- function upload(file: File | undefined) {
+ async function upload(file: File | undefined) {
   if (!file) return;
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 280000) {
-   setError("Envie um PNG, JPG ou WebP de até 280 KB.");
-   return;
-  }
   setError("");
   setReadingLogo(true);
-  const reader = new FileReader();
-  reader.onload = () => setDraft(current => ({ ...current, logo: String(reader.result) }));
-  reader.onerror = () => setError("Não foi possível ler a imagem. Escolha outro arquivo.");
-  reader.onloadend = () => setReadingLogo(false);
-  reader.readAsDataURL(file);
+  try {
+   const logo = await prepareBrandImage(file);
+   setDraft(current => ({ ...current, logo }));
+  } catch (uploadError) {
+   setError(uploadError instanceof Error ? uploadError.message : "Não foi possível preparar a imagem.");
+  } finally {
+   setReadingLogo(false);
+  }
  }
 
  async function save(event: FormEvent<HTMLFormElement>) {
@@ -230,12 +232,13 @@ function Brand({ context, accountId, colors, onSaved }: {
        <div className="brand-live-preview-colors"><span><i style={{backgroundColor:draft.primary}}/>Cor principal <code>{draft.primary}</code></span><span><i style={{backgroundColor:draft.accent}}/>Cor de destaque <code>{draft.accent}</code></span></div>
       </div>
      </div>
+
     </section>
     <div className="brand-editor-form">
      <div className="brand-controls-heading"><div><span className="saas-eyebrow">PERSONALIZAÇÃO</span><h2>Edite sua marca</h2><p>Mude os campos e veja o resultado ao vivo.</p></div><Palette size={22}/></div>
      <fieldset className="saas-form brand-editor-fields" disabled={busy}>
       <label>Nome da marca<input required maxLength={120} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })}/></label>
-      <div className="brand-logo-control"><label>Logo da empresa<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { upload(event.target.files?.[0]); event.target.value = ""; }}/></label><small>PNG, JPG ou WebP de até 280 KB.</small>{draft.logo && <button className="text-button" type="button" onClick={() => setDraft({ ...draft, logo: "" })}>Remover logo</button>}</div>
+      <div className="brand-logo-control"><label>Logo da empresa<input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" onChange={event => { upload(event.target.files?.[0]); event.target.value = ""; }}/></label><small>PNG, JPG ou WebP de até 280 KB. Imagens grandes são comprimidas para salvar.</small>{draft.logo && <button className="text-button" type="button" onClick={() => setDraft({ ...draft, logo: "" })}>Remover logo</button>}</div>
       <div className="color-fields">
        <label className="brand-color-field"><span><strong>Cor principal</strong><code>{draft.primary}</code></span><input type="color" aria-label="Cor principal" value={draft.primary} onChange={event => setDraft({ ...draft, primary: event.target.value })}/></label>
        <label className="brand-color-field"><span><strong>Cor de destaque</strong><code>{draft.accent}</code></span><input type="color" aria-label="Cor de destaque" value={draft.accent} onChange={event => setDraft({ ...draft, accent: event.target.value })}/></label>
@@ -250,6 +253,7 @@ function Brand({ context, accountId, colors, onSaved }: {
      <div className="brand-editor-actions"><span>{dirty ? "Você tem alterações que ainda não foram salvas." : "Sua marca está atualizada."}</span><button className="saas-button primary" disabled={busy || !context.active || !dirty}><Check size={17}/>{saving ? "Salvando…" : "Salvar identidade"}</button></div>
     </div>
    </div>
+
   </form>
  </>;
 }
