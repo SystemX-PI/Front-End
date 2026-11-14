@@ -1,0 +1,124 @@
+/* Shared interaction and typography rules for the public and authenticated UI. */
+:root {
+  --operation-border: #cbd5e1;
+  --operation-focus: #315fe8;
+  --operation-control: 44px;
+  --operation-motion: 150ms;
+}
+
+:is(.workspace, .admin-app-shell, .auth-page, .marketing-hero) h1 {
+  font-size: clamp(1.85rem, 3.2vw, 2.75rem);
+  line-height: 1.12;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.marketing-hero h1 { font-size: clamp(2.4rem, 5vw, 4.7rem); }
+:is(.workspace, .admin-app-shell, .auth-page) :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--operation-focus);
+  outline-offset: 3px;
+}
+
+:is(.workspace, .admin-app-shell, .auth-page) :is(.button, .saas-button, .nav-item) {
+  min-block-size: var(--operation-control);
+}
+
+:is(.workspace, .admin-app-shell) :is(.saas-panel, .data-panel, .panel) {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.workspace-heading, .admin-app-shell .topbar { margin-block-end: 20px; }
+.workspace-heading p, .admin-app-shell .topbar p { max-inline-size: 66ch; }
+.workspace .saas-form :is(input, select, textarea) { min-block-size: var(--operation-control); }
+.workspace .saas-form input[type="checkbox"] { min-block-size: 0; }
+.workspace .saas-form textarea { resize: vertical; }
+.workspace .sidebar-account-actions { flex-wrap: wrap; }
+.workspace .sidebar-profile strong { overflow-wrap: anywhere; }
+
+.client-queue-list button {
+  border-radius: 6px;
+  transition: background-color var(--operation-motion) ease-out;
+}
+.client-queue-list button:hover { background: color-mix(in srgb, currentColor 5%, transparent); }
+.client-queue-list button[aria-pressed="true"] {
+  box-shadow: inset 3px 0 0 var(--tenant-primary, var(--operation-focus));
+}
+.client-queue-status { font-variant-numeric: tabular-nums; }
+.client-queue-status [data-state="ACEITO"] { color: #176344; }
+.client-queue-status [data-state="FALHA"] { color: #a82932; }
+[data-theme="dark"] .client-queue-status [data-state="ACEITO"] { color: #6fdbab; }
+[data-theme="dark"] .client-queue-status [data-state="FALHA"] { color: #ff9298; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace .saas-button:active:not(:disabled),
+  .admin-app-shell .button:active:not(:disabled) {
+    transform: scale(.985, .97);
+    transition: transform 80ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-queue-list button, .confirm-dialog[open] { animation: none; transition: none; }
+}
+.operation-preview, .operation-client-list {
+  font-variant-numeric: tabular-nums;
+}
+.operation-preview {
+  background: #172338;
+  color: #f4f6f9;
+  border-radius: 14px;
+  padding: clamp(20px, 4vw, 40px);
+}
+.operation-preview header, .operation-preview dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.operation-preview-person { margin-block: 24px 8px; }
+.operation-preview-person strong { display: block; font-size: 1.4rem; }
+.operation-preview-person span, .operation-preview header small { color: #b9c9e0; }
+.operation-preview dl > div { padding-block: 12px; border-top: 1px solid #405371; }
+.operation-preview :is(dt, dd) { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.operation-client-list { list-style: none; padding: 0; }
+.operation-client-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid var(--operation-border);
+  overflow-wrap: anywhere;
+}
+.operation-client-identity a { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; font-weight: 700; }
+.operation-client-identity small { display: block; }
+.operation-client-channels { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+@media (max-width: 680px) {
+  .operation-client-list li { grid-template-columns: minmax(0, 1fr) auto; }
+  .operation-client-identity, .operation-client-channels { grid-column: 1 / -1; }
+}
+.dispatch-composer {
+  width: 100%;
+  max-width: 42rem;
+  min-width: 0;
+  padding: clamp(14px, 2vw, 22px);
+}
+
+.dispatch-composer .dispatch-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-block-start: 14px;
+}
+
+.dispatch-fields > :is(p, a, .dispatch-message, button) { grid-column: 1 / -1; }
+.dispatch-fields > button { justify-self: end; width: auto; min-height: 44px; }
+.dispatch-fields :is(label, input, select, textarea) { min-width: 0; }
+.dispatch-fields :is(input, select, textarea) { width: 100%; }
+.dispatch-fields textarea { min-height: 6rem; resize: vertical; }
+
+@media (max-width: 620px) {
+  .dispatch-composer .dispatch-fields { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,0 +1,29 @@
+.message-composer-heading { display: flex; align-items: center; gap: 12px; }
+.message-composer-heading > span {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  border-radius: 12px; color: var(--tenant-primary, #315fe8);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.message-channel-picker { grid-column: 1 / -1; min-width: 0; padding: 0; border: 0; }
+.message-channel-picker legend { margin-bottom: 6px; font-size: .85rem; font-weight: 650; }
+.message-channel-picker > div {
+  display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px;
+  border: 1px solid var(--operation-border); padding: 4px; border-radius: 12px;
+}
+.message-composer .message-channel-picker label {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding-inline: 14px; border-radius: 8px; cursor: pointer;
+}
+.message-composer .message-channel-picker label[data-selected="true"] {
+  color: var(--tenant-on-primary, white); background: var(--tenant-primary, #315fe8);
+}
+.message-channel-picker label:has(:focus-visible) { outline: 2px solid var(--operation-focus); outline-offset: 2px; }
+.message-editor { border: 1px solid var(--operation-border); border-radius: 12px; }
+.message-composer .message-editor label { display: grid; gap: 8px; padding: 12px; }
+.message-composer .message-editor textarea {
+  border: 0; border-radius: 4px; background: transparent; padding: 4px; box-shadow: none;
+}
+.message-editor footer {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  border-top: 1px solid var(--operation-border); padding: 8px 12px; font-variant-numeric: tabular-nums;
+}

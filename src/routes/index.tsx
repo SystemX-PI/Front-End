@@ -20,6 +20,7 @@ import BeneficiaryPortal from "../pages/BeneficiaryPortal";
 import AssistantWidget from "../components/AssistantWidget";
 import { getUserType, isBeneficiarySession, sessionHome } from "../services/auth";
 import type { ReactNode } from "react";
+import "../operation-design.css";
 import { isAuthenticated } from "../services/auth";
 function ProtectedApp() {
     if (!isAuthenticated()) return <Navigate to="/login" replace />;

@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ArrowUpRight, MessageCircle, Mail, Palette, Users, ShieldCheck, Sparkles, Menu, X, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, ArrowUpRight, MessageCircle, Mail, Palette, Users, Sparkles, Menu, X, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { BrandLogo } from "../components/BrandLogo";
@@ -50,89 +50,33 @@ export default function Landing() {
         <nav id="marketing-navigation" className={menu ? "is-open" : ""} aria-label="Navegação do produto">
           <a href="#recursos" onClick={() => setMenu(false)}>O que você pode fazer</a>
           <a href="#como-funciona" onClick={() => setMenu(false)}>Como funciona</a>
-          <Link to={isAuthenticated() ? sessionHome() : "/login"}>Entrar <ArrowUpRight size={15} /></Link>
-          <Link className="saas-button dark" to="/register">Começar grátis <ArrowRight size={16} /></Link>
+          <Link to={isAuthenticated() ? sessionHome() : "/login"}>{isAuthenticated() ? "Abrir painel" : "Entrar"} <ArrowUpRight size={15} /></Link>
+
         </nav>
       </header>
       <main id="inicio" tabIndex={-1}>
         <section className="marketing-hero">
           <div className="hero-copy">
-            <span className="marketing-eyebrow hero-eyebrow"><span /> SUA OPERAÇÃO. SUA MARCA.</span>
-            <h1>
-              <span>Mais conexões.</span>
-              <span>Menos abas.</span>
-              <em>A sua marca.</em>
-            </h1>
-            <p>
-              Um só espaço para <strong>WhatsApp, Gmail e sua equipe.</strong> Simplifique a rotina e dê a cada conexão a identidade da sua empresa.
-            </p>
+            <h1>Da cota contemplada ao aviso ao cliente.</h1>
+            <p>Receba os contemplados do seu sistema de consórcio, envie pelo WhatsApp ou Gmail da sua empresa e acompanhe cada envio.</p>
             <div className="hero-actions">
-              <Link className="saas-button dark large" to="/register">Experimente por 3 dias <ArrowRight size={19} /></Link>
-              <a className="text-action" href="#recursos">Conheça a plataforma <ArrowUpRight size={17} /></a>
-            </div>
-            <div className="hero-assurances">
-              <span><Check size={15} />Sem cartão de crédito</span>
-              <span><Check size={15} />Sua marca desde o primeiro dia</span>
+              <Link className="saas-button dark large" to={isAuthenticated() ? "/app" : "/register"}>
+                {isAuthenticated() ? "Abrir painel" : "Testar grátis por 3 dias"} <ArrowRight size={19} />
+              </Link>
+              <a className="text-action" href="#como-funciona">Como funciona <ArrowUpRight size={17} /></a>
             </div>
           </div>
-          <div className="product-preview" aria-label="Prévia ilustrativa da plataforma">
-            <div className="preview-browser">
-              <span /><span /><span /><small>PRÉVIA DA PLATAFORMA</small>
+          <section className="operation-preview" aria-label="Exemplo de acompanhamento de uma contemplação">
+            <header><h2>Contemplados</h2><small>Exemplo de uma cota</small></header>
+            <div className="operation-preview-person">
+              <strong>Marina Alves</strong>
+              <span>Grupo 014 · Cota 208</span>
             </div>
-            <div className="preview-content">
-              <div className="preview-greeting">
-                <span className="preview-monogram"><BrandLogo compact /></span>
-                <div>
-                  <small>SEU ESPAÇO DE TRABALHO</small>
-                  <h3>Sua empresa</h3>
-                </div>
-                <span className="live-badge">Tudo em um lugar</span>
-              </div>
-              <h2>O próximo passo fica mais simples.</h2>
-              <div className="preview-stats">
-                <article>
-                  <MessageCircle />
-                  <strong>WhatsApp</strong>
-                  <small>Vários números, uma operação</small>
-                </article>
-                <article>
-                  <Mail />
-                  <strong>Gmail</strong>
-                  <small>Cada remetente no seu lugar</small>
-                </article>
-              </div>
-              <div className="preview-channel">
-                <span className="channel-icon green"><MessageCircle /></span>
-                <div>
-                  <strong>Atendimento</strong>
-                  <small>Uma conexão para cada equipe</small>
-                </div>
-                <span className="connection-dot" />
-              </div>
-              <div className="preview-channel">
-                <span className="channel-icon purple"><Palette /></span>
-                <div>
-                  <strong>Do seu jeito</strong>
-                  <small>Logo, nome e cores da sua marca</small>
-                </div>
-                <Check size={18} />
-              </div>
-              <div className="preview-workflow">
-                <span><span className="workflow-dot" />Conectar</span>
-                <i />
-                <span>Organizar</span>
-                <i />
-                <span>Atender</span>
-              </div>
-              <div className="preview-note">
-                <ShieldCheck size={16} /> Cada cliente tem seu próprio espaço.
-              </div>
-            </div>
-            <div className="floating-label">
-              <Sparkles size={19} />
-              <span>A tecnologia é nossa.<br /><strong>A experiência é sua.</strong></span>
-            </div>
-          </div>
+            <dl>
+              <div><dt><MessageCircle size={18} /> WhatsApp</dt><dd><Check size={16} /> Envio aceito</dd></div>
+              <div><dt><Mail size={18} /> Gmail</dt><dd>Aguardando envio</dd></div>
+            </dl>
+          </section>
         </section>
 
         <section id="recursos" className="marketing-features">
