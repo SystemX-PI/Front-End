@@ -3376,3 +3376,31 @@ body {
   text-decoration: none;
 }
 .portal-brand, a.auth-brand-row { color: inherit; text-decoration: none; }
+.auth-submit,
+.auth-field .input-with-icon button,
+.admin-session-logout {
+  min-block-size: 44px;
+}
+
+.auth-field .input-with-icon button { min-inline-size: 44px; }
+.auth-field .input-with-icon button:focus-visible,
+.admin-session-logout:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-submit {
+    transition: transform 160ms cubic-bezier(.2, .75, .28, 1), background-color 120ms ease-out;
+  }
+  .auth-submit:not(:disabled):active {
+    transform: scale(.98, .96);
+    transition-duration: 70ms;
+  }
+  .auth-submit svg {
+    transition: transform 160ms ease-in-out;
+  }
+  .auth-submit:not(:disabled):is(:hover, :focus-visible) svg {
+    transform: translate(3px, -1px);
+  }
+}
