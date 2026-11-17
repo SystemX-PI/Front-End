@@ -19,3 +19,24 @@ test("login abre a area protegida sem recarregar a pagina", async ({page}) => {
  await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();
  await expect(page).toHaveURL(/app$/);
 });
+
+test("renova a sessão antes da expiração do token", async ({page}) => {
+ await page.clock.install();
+ let refreshes=0;
+ await page.route("**/api/**",async route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path.endsWith("/auth/login"))return route.fulfill({json:{token:"access",refreshToken:"refresh",tipo:"ADMINISTRADOR",expiresIn:120}});
+  if(path.endsWith("/auth/refresh")){refreshes++;return route.fulfill({json:{token:"renewed",refreshToken:"renewed-refresh",tipo:"ADMINISTRADOR",expiresIn:900}});}
+  if(path.endsWith("/platform/clients"))return route.fulfill({json:[]});
+  if(path.endsWith("/platform/context"))return route.fulfill({json:admin});
+  return route.fulfill({json:{}});
+ });
+ await page.goto("/login");
+ await page.getByLabel("E-mail",{exact:true}).fill("admin@example.com");
+ await page.getByLabel("Senha",{exact:true}).fill("senha-local-teste");
+ await page.getByRole("button",{name:"Entrar",exact:true}).click();
+ await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();
+ await page.clock.fastForward(60_001);
+ await expect.poll(()=>refreshes).toBe(1);
+ expect(await page.evaluate(()=>localStorage.getItem("token"))).toBe("renewed");
+});
