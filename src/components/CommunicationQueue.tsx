@@ -28,10 +28,12 @@ export function ChannelStatus({
               ? "green"
               : channel?.status === "FALHA"
                 ? "red"
-                : "amber"
+                : channel?.status === "PENDENTE"
+                  ? "amber"
+                  : "neutral"
           }
         >
-          {channel ? readable(channel.status) : "Sem canal"}
+          {channel ? readable(channel.status) : "Não solicitado"}
         </StatusPill>
       </span>
       {channel?.erro ? <p className="channel-error">{channel.erro}</p> : null}
