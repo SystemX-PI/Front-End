@@ -6,11 +6,13 @@ import { getUserType, isAuthenticated } from "../services/auth";
 import { assistant, type AssistantAction } from "../services/backend";
 
 type Message = { author: "user" | "assistant"; text: string };
+const quickQuestions = ["Como funciona a baixa de processo?", "Consultar contemplados", "Ver fila de WhatsApp"];
+const openStorageKey = "assistant-widget-open";
 
 export default function AssistantWidget() {
   useLocation();
   const allowed = isAuthenticated() && ["ADMINISTRADOR", "FUNCIONARIO"].includes(getUserType() || "");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => localStorage.getItem(openStorageKey) === "true");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -22,6 +24,11 @@ export default function AssistantWidget() {
   const [unavailable, setUnavailable] = useState(false);
   const [action, setAction] = useState<AssistantAction | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem(openStorageKey, String(open));
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -114,6 +121,15 @@ export default function AssistantWidget() {
               <Link to="/admin/disparo-manual" onClick={() => setOpen(false)}>Disparo manual</Link>
             </nav>
           )}
+          {!unavailable && messages.length === 1 ? (
+            <div className="assistant-quick-questions" aria-label="Sugestões de perguntas">
+              {quickQuestions.map(question => (
+                <button key={question} type="button" onClick={() => { setText(question); inputRef.current?.focus(); }}>
+                  {question}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="assistant-messages" role="log" aria-label="Conversa">
             {messages.map((message, index) => (
               <div key={index} className={`assistant-bubble-msg ${message.author}`}>
@@ -152,6 +168,7 @@ export default function AssistantWidget() {
 
           <form onSubmit={send} className="assistant-input-area">
             <input
+              ref={inputRef}
               value={text}
               maxLength={2000}
               onChange={(event) => setText(event.target.value)}

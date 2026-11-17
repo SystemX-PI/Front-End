@@ -83,9 +83,15 @@ test("assistente oferece atalhos quando o serviço de IA está indisponível", a
   await page.goto("/admin/comunicacao");
   await page.getByRole("button", { name: "Abrir assistente IA" }).click();
   const assistant = page.getByRole("region", { name: "Assistente Inteligente ConsorTech" });
-  await assistant.getByRole("textbox").fill("Consultar contemplações");
+  await assistant.getByRole("button", { name: "Ver fila de WhatsApp" }).click();
+  await expect(assistant.getByRole("textbox")).toHaveValue("Ver fila de WhatsApp");
   await assistant.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(assistant.getByRole("link", { name: "Disparo manual" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Assistente Inteligente ConsorTech" })).toBeVisible();
+  await page.getByRole("button", { name: "Fechar assistente" }).last().click();
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Assistente Inteligente ConsorTech" })).toHaveCount(0);
 });
 
 test("assistente aparece depois do login sem recarregar a página", async ({ page }) => {
