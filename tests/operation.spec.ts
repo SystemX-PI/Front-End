@@ -125,3 +125,13 @@ test("beneficiário autenticado entra pelo portal ao abrir a área SaaS", async 
   await page.getByRole("button", { name: "Historico" }).click();
   await expect(page.locator(".operation-history").getByRole("listitem")).toContainText("Em analise");
 });
+
+test("funcionário vê aviso e não acessa o teste global de canais", async ({ page }) => {
+  await session(page, "FUNCIONARIO");
+  await page.route("**/api/**", route => route.fulfill({ json: { items: [], total: 0, page: 0, size: 20 } }));
+  await page.goto("/admin/disparo-manual?modo=teste");
+  await expect(page.getByText("Apenas administradores podem testar os canais internos.")).toBeVisible();
+  await expect(page.getByLabel("Telefone ou WhatsApp do destinatário")).toHaveCount(0);
+  await expect(page.getByLabel("E-mail do destinatário")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Ir para disparo por processo" })).toBeVisible();
+});
