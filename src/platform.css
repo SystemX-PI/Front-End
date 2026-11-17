@@ -329,6 +329,9 @@
 .plan-comparison small { font-size: 9px; line-height: 1.8; color: var(--workspace-muted); }
 .plan-comparison>svg { color: var(--tenant-primary); flex-shrink: 0; }
 .checkout-payment { display: flex; flex-direction: column; gap: 15px; padding: 32px; }
+.checkout-modal-backdrop { position: fixed; inset: 0; z-index: 999; padding: 0; border: 0; background: rgb(8 18 30 / 62%); cursor: default; }
+.checkout-payment.checkout-payment-modal { position: fixed; z-index: 1000; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(540px,calc(100vw - 28px)); max-width: none; max-height: calc(100dvh - 28px); overflow: auto; outline: none; box-shadow: 0 24px 80px rgb(0 0 0 / 30%); }
+.checkout-payment.checkout-payment-modal:focus-visible { outline: 3px solid var(--tenant-accent); outline-offset: 4px; }
 .checkout-payment h2 { font-size: 23px; margin: 0; line-height: 1.4; }
 .checkout-payment>p { margin: 0; }
 .checkout-payment>small { color: var(--workspace-muted); font-size: 9px; line-height: 1.8; }
