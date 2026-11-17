@@ -82,6 +82,18 @@ export async function registerWithGoogle(
   return data;
 }
 
+export async function googleRegistrationAllowed(credential: string): Promise<boolean> {
+  const response = await request("/api/auth/google/registration-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential }),
+  }) as { canRegister?: unknown };
+  if (typeof response?.canRegister !== "boolean") {
+    throw new Error("O servidor retornou uma resposta inválida para o cadastro com Google.");
+  }
+  return response.canRegister;
+}
+
 export function storeAuthResponse(data: AuthResponse): void {
   if (
     !data ||

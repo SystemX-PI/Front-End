@@ -5,7 +5,7 @@ import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
 import { ApiError } from "../services/http";
-import { login, loginWithGoogle, sessionHome } from "../services/auth";
+import { clearSession, googleRegistrationAllowed, login, loginWithGoogle, sessionHome } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -53,10 +53,19 @@ export default function Login() {
       navigate(sessionHome(), { replace: true });
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 403) {
-        navigate("/register", {
-          replace: true,
-          state: { googleRegistrationCredential: credential },
-        });
+        clearSession();
+        try {
+          if (!await googleRegistrationAllowed(credential)) {
+            setError("Esta conta Google já possui cadastro. Entre com sua conta.");
+            return;
+          }
+          navigate("/register", {
+            replace: true,
+            state: { googleRegistrationCredential: credential, googleRegistrationApproved: true },
+          });
+        } catch (validationError) {
+          setError(validationError instanceof Error ? validationError.message : "Não foi possível validar o cadastro com Google.");
+        }
       } else {
         setError(
           requestError instanceof Error

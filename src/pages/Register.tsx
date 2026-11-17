@@ -7,18 +7,18 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import { InlineFeedback } from "../components/IntegrationUi";
-import { register, registerWithGoogle } from "../services/auth";
+import { clearSession, googleRegistrationAllowed, register, registerWithGoogle } from "../services/auth";
 
 export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const preauthorizedCredential = (location.state as { googleRegistrationCredential?: string } | null)?.googleRegistrationCredential;
+  const registrationState = location.state as { googleRegistrationCredential?: string; googleRegistrationApproved?: boolean } | null;
+  const preauthorizedCredential = registrationState?.googleRegistrationApproved ? registrationState.googleRegistrationCredential : undefined;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,8 +27,31 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleCredential, setGoogleCredential] = useState<string | null>(preauthorizedCredential || null);
+  const validatingCredential = useRef<string | null>(null);
 
-  const isCompanyStep = Boolean(googleCredential || searchParams.get("step") === "empresa");
+  const isCompanyStep = Boolean(googleCredential);
+
+  async function validateGoogleCredential(credential: string) {
+    if (validatingCredential.current === credential) return;
+    validatingCredential.current = credential;
+    setLoading(true);
+    setError("");
+    setGoogleCredential(null);
+    clearSession();
+    try {
+      if (!await googleRegistrationAllowed(credential)) {
+        setError("Esta conta Google já possui cadastro. Entre pela tela de login.");
+        return;
+      }
+      setName("");
+      setGoogleCredential(credential);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Não foi possível validar o cadastro com Google.");
+    } finally {
+      validatingCredential.current = null;
+      setLoading(false);
+    }
+  }
 
   async function handleGoogleRegistration(event: FormEvent) {
     event.preventDefault();
@@ -101,9 +124,6 @@ export default function Register() {
               setGoogleCredential(null);
               setName("");
               setError("");
-              if (searchParams.get("step") === "empresa") {
-                setSearchParams({});
-              }
             }}
           >
             <ArrowLeft size={15} /> Voltar
@@ -155,7 +175,7 @@ export default function Register() {
           <GoogleSignInButton
             purpose="register"
             busy={loading}
-            onCredential={(credential) => { setError(""); setName(""); setGoogleCredential(credential); }}
+            onCredential={(credential) => { void validateGoogleCredential(credential); }}
             onError={setError}
           />
         </div>

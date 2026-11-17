@@ -55,6 +55,10 @@ test("Google registration asks only for company name and sends the token after c
       json: { token: "mock-google-register-jwt", refreshToken: "mock-refresh-token", tipo: "CLIENTE", expiresIn: 900 },
     });
   });
+  await page.route("**/api/auth/google/registration-status", async route => {
+    expect(route.request().postDataJSON()).toEqual({credential:"mock-google-id-token"});
+    await route.fulfill({json:{canRegister:true}});
+  });
 
   await page.goto("/register");
   await page.getByRole("button", { name: "Fazer Cadastro com o Google" }).click();
@@ -73,6 +77,7 @@ test("unknown Google account goes straight to registration and waits for confirm
     body: `window.google={accounts:{id:{initialize(options){window.__googleCredentialCallback=options.callback;},renderButton(element){const button=document.createElement("button");button.type="button";button.textContent="Entrar com Google";button.onclick=()=>window.__googleCredentialCallback({credential:"new-google-id-token"});element.appendChild(button);}}}};`,
   }));
   await page.route("**/api/auth/google", route => route.fulfill({status:403,json:{message:"Esta conta Google ainda não possui cadastro."}}));
+  await page.route("**/api/auth/google/registration-status", route => route.fulfill({json:{canRegister:true}}));
   let registrations = 0;
   await page.route("**/api/auth/google/register", async route => {
     registrations++;
@@ -89,4 +94,35 @@ test("unknown Google account goes straight to registration and waits for confirm
   await page.getByRole("button", {name:"Concluir cadastro"}).click();
   await expect(page).toHaveURL(/app$/);
   expect(registrations).toBe(1);
+});
+
+test("Google cadastrado não abre o formulário e invalida a sessão anterior", async ({page}) => {
+  await page.addInitScript(()=>{
+    localStorage.setItem("token","old-session");
+    localStorage.setItem("refreshToken","old-refresh");
+    localStorage.setItem("userType","CLIENTE");
+  });
+  await page.route("https://accounts.google.com/gsi/client", route => route.fulfill({
+    contentType:"application/javascript",
+    body:`window.google={accounts:{id:{initialize(options){window.__googleCredentialCallback=options.callback;},renderButton(element){const button=document.createElement("button");button.type="button";button.textContent="Fazer Cadastro com o Google";button.onclick=()=>window.__googleCredentialCallback({credential:"existing-google-token"});element.appendChild(button);}}}};`,
+  }));
+  let registrations=0;
+  await page.route("**/api/auth/google/registration-status", async route=>{
+    expect(route.request().postDataJSON()).toEqual({credential:"existing-google-token"});
+    await route.fulfill({json:{canRegister:false}});
+  });
+  await page.route("**/api/auth/google/register", route=>{registrations++;return route.fulfill({status:409,json:{message:"Conta existente."}});});
+  await page.goto("/register");
+  await page.getByRole("button",{name:"Fazer Cadastro com o Google"}).click();
+  await expect(page.getByText("Esta conta Google já possui cadastro. Entre pela tela de login.")).toBeVisible();
+  await expect(page.getByLabel("Nome da sua empresa")).toHaveCount(0);
+  await expect(page.getByRole("link",{name:"Entrar",exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>localStorage.getItem("token"))).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem("refreshToken"))).toBeNull();
+  expect(registrations).toBe(0);
+});
+
+test("a etapa de empresa não pode ser aberta sem pré-validação Google", async ({page})=>{
+  await page.goto("/register?step=empresa");
+  await expect(page.getByLabel("Nome da sua empresa")).toHaveCount(0);
 });
