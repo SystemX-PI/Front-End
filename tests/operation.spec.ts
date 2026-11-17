@@ -6,6 +6,28 @@ test('baixa consulta, confirma uma vez e mostra comprovante',async({page})=>{awa
 test('serviço ausente e processo cancelado não permitem baixa',async({page})=>{await session(page);await page.route('**/api/**',route=>route.request().url().includes('/pagina')?route.fulfill({status:404,json:{}}):route.fulfill({json:{...process,status:'CANCELADO'}}));await page.goto('/admin/baixas');await expect(page.getByText(/aguardando a integração/)).toBeVisible();await page.getByLabel('ID do processo',{exact:true}).fill('7');await page.getByRole('button',{name:'Consultar processo',exact:true}).click();await expect(page.getByText(/não está na etapa de baixa/)).toBeVisible();await expect(page.getByRole('button',{name:'Concluir baixa'})).toHaveCount(0);});
 test('auditoria mantém os registros legíveis em cartões no celular',async({page})=>{await session(page);await page.setViewportSize({width:320,height:740});await page.route('**/api/auditoria/**',route=>route.fulfill({json:{items:[{id:1,data:'2026-10-29T11:00:00',acao:'Baixa concluída',usuarioNome:'Julio',entidade:'Processo',registroId:7}],total:1,page:0,size:20}}));await page.goto('/admin/auditoria');await expect(page.getByRole('cell',{name:'Baixa concluída'})).toBeVisible();await expect(page.getByRole('table').locator('tbody')).toHaveCSS('display','grid');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);});
 test('comunicação pede confirmação e exibe histórico do processo',async({page})=>{await session(page);await page.route('**/api/**',route=>{const url=route.request().url();if(url.includes('historico'))return route.fulfill({json:{items:[{id:1,data:'2026-10-29T11:00:00',canal:'EMAIL',status:'SUCESSO',usuarioNome:'Julio'}],total:1,page:0,size:100}});if(url.includes('/pagina'))return route.fulfill({json:{items:[{processoId:7,statusProcesso:process.status,comunicacao:{statusGeral:'PENDENTE',email:null,whatsapp:null}}],total:1,page:0,size:20}});return route.fulfill({json:process});});await page.goto('/admin/comunicacao');await page.getByRole('button',{name:'Notificar',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'Cancelar',exact:true}).click();await page.getByRole('link',{name:'Processo #7',exact:true}).click();await page.getByLabel('ID do processo',{exact:true}).fill('7');await page.getByRole('button',{name:'Consultar',exact:true}).click();await expect(page.getByRole('heading',{name:'Histórico de comunicações'})).toBeVisible();await expect(page.getByText('Email · Sucesso')).toBeVisible();});
+test('fila apresenta canais ausentes como não solicitados em estado neutro', async ({ page }) => {
+  await session(page);
+  await page.route('**/api/**', route => {
+    const url = route.request().url();
+    if (url.includes('/fila/pagina')) return route.fulfill({ json: { items: [{
+      processoId: 7,
+      statusProcesso: process.status,
+      recebidaEm: '2026-10-29T10:00:00',
+      comunicacao: { statusGeral: 'COMUNICADO_PARCIAL', email: null, whatsapp: {
+        id: 2, destinatario: '5511999998888', status: 'FALHA', erro: 'Canal desconectado',
+        criadaEm: '2026-10-29T10:00:00', enviadaEm: null,
+      } },
+    }], total: 1, page: 0, size: 20 } });
+    if (url.includes('/fila/resumo')) return route.fulfill({ json: { total: 1, pendentes: 0, comunicados: 1, comFalha: 1 } });
+    return route.fulfill({ json: { items: [], total: 0, page: 0, size: 20 } });
+  });
+  await page.goto('/admin/comunicacao');
+  await expect(page.getByText('Não solicitado')).toBeVisible();
+  await expect(page.locator('.status-neutral')).toHaveCount(1);
+  await expect(page.getByText('Canal desconectado')).toBeVisible();
+  await expect(page.locator('.status-red')).toContainText('Falha');
+});
 test('tela inicial e operação funcionam no celular',async({page})=>{await session(page);await page.setViewportSize({width:390,height:844});await page.route('**/api/**',route=>route.fulfill({status:501,json:{}}));for(const url of ['/','/admin/baixas','/admin/auditoria','/admin/comunicacao','/admin/disparo-manual']){await page.goto(url);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),url).toBe(true);}await page.goto('/');await expect(page.getByRole('heading',{name:'Seu espaço, sem complicação.'})).toBeVisible();await page.screenshot({path:'../../outputs/tela-inicial-mobile.png',fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'../../outputs/tela-inicial-desktop.png',fullPage:true});});
 
 test('cadastros de consórcio consultam e salvam alterações',async({page})=>{await session(page);let name='Consórcio inicial';let updates=0;await page.route('**/api/**',route=>{const url=route.request().url();if(url.includes('/consorcios/1')){if(route.request().method()==='PUT'){updates++;name=route.request().postDataJSON().nome;}return route.fulfill({json:{id:1,nome:name,tipoId:2,tipoNome:'Veículos'}});}if(url.includes('/tipos-consorcio'))return route.fulfill({json:{items:[{id:2,nome:'Veículos'}],total:1,page:0,size:20}});return route.fulfill({json:{items:[{id:1,nome:name,tipoId:2,tipoNome:'Veículos'}],total:1,page:0,size:20}});});await page.goto('/admin/cadastros');await expect(page.getByRole('cell',{name:'Consórcio inicial',exact:true})).toBeVisible();await page.getByRole('button',{name:'Editar',exact:true}).click();await page.getByLabel('Nome',{exact:true}).fill('Consórcio atualizado');await page.getByRole('button',{name:'Salvar',exact:true}).click();await expect(page.getByText('Cadastro salvo.')).toBeVisible();await expect(page.getByRole('cell',{name:'Consórcio atualizado',exact:true})).toBeVisible();expect(updates).toBe(1);});
