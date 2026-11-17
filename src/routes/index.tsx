@@ -18,7 +18,7 @@ import AdminChannels from "../pages/AdminChannels";
 import WidgetChat from "../pages/WidgetChat";
 import BeneficiaryPortal from "../pages/BeneficiaryPortal";
 import AssistantWidget from "../components/AssistantWidget";
-import { getUserType, isBeneficiarySession, sessionHome } from "../services/auth";
+import { getUserType, isBeneficiarySession, resumeSessionRefresh, sessionHome } from "../services/auth";
 import type { ReactNode } from "react";
 import { isAuthenticated } from "../services/auth";
 function ProtectedApp() {
@@ -38,7 +38,12 @@ function RoleRoute({ children, roles }: { children: ReactNode; roles: string[] }
 }
 function SessionListener() {
     const navigate = useNavigate();
-    useEffect(() => { const handler = () => navigate("/login", { replace: true, state: { sessionExpired: true } }); window.addEventListener("auth:session-expired", handler); return () => window.removeEventListener("auth:session-expired", handler); }, [navigate]);
+    useEffect(() => {
+        resumeSessionRefresh();
+        const handler = () => navigate("/login", { replace: true, state: { sessionExpired: true } });
+        window.addEventListener("auth:session-expired", handler);
+        return () => window.removeEventListener("auth:session-expired", handler);
+    }, [navigate]);
     return null;
 }
 export default function AppRoutes() {

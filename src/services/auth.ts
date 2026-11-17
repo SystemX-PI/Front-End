@@ -26,6 +26,37 @@ const USER_TYPES: AuthResponse["tipo"][] = [
   "USUARIO",
 ];
 
+const ACCESS_EXPIRY_KEY = "accessTokenExpiresAt";
+const REFRESH_EARLY_MS = 60_000;
+let scheduledRefresh: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRefreshAt(expiresAt: number): void {
+  if (scheduledRefresh !== null) clearTimeout(scheduledRefresh);
+  localStorage.setItem(ACCESS_EXPIRY_KEY, String(expiresAt));
+  scheduledRefresh = setTimeout(() => {
+    scheduledRefresh = null;
+    if (getToken()) void renewSession().catch(() => {});
+  }, Math.max(0, expiresAt - Date.now() - REFRESH_EARLY_MS));
+}
+
+function scheduleRefresh(expiresIn: number): void {
+  if (!Number.isFinite(expiresIn) || expiresIn <= 0) return;
+  scheduleRefreshAt(Date.now() + expiresIn * 1000);
+}
+
+export function resumeSessionRefresh(): void {
+  if (!getToken()) return;
+  const storedExpiry = Number(localStorage.getItem(ACCESS_EXPIRY_KEY));
+  if (Number.isFinite(storedExpiry) && storedExpiry > 0) {
+    scheduleRefreshAt(storedExpiry);
+    return;
+  }
+  const tokenExpiry = parseSessionClaims(getToken())?.exp;
+  if (typeof tokenExpiry === "number" && Number.isFinite(tokenExpiry)) {
+    scheduleRefreshAt(tokenExpiry * 1000);
+  }
+}
+
 export async function login(payload: LoginRequest): Promise<AuthResponse> {
   const data = (await request(
     "/api/auth/login",
@@ -90,7 +121,8 @@ export function storeAuthResponse(data: AuthResponse): void {
     typeof data.refreshToken !== "string" ||
     !data.refreshToken ||
     !USER_TYPES.includes(data.tipo) ||
-    !Number.isFinite(data.expiresIn)
+    !Number.isFinite(data.expiresIn) ||
+    data.expiresIn <= 0
   ) {
     throw new Error(
       "O backend retornou uma resposta de autenticação inválida.",
@@ -100,6 +132,7 @@ export function storeAuthResponse(data: AuthResponse): void {
   localStorage.setItem("token", data.token);
   localStorage.setItem("refreshToken", data.refreshToken);
   localStorage.setItem("userType", data.tipo);
+  scheduleRefresh(data.expiresIn);
   if (typeof data.email === "string" && data.email) {
     localStorage.setItem("userEmail", data.email);
   } else {
@@ -145,10 +178,13 @@ export async function logout(): Promise<void> {
 }
 
 export function clearSession(): void {
+  if (scheduledRefresh !== null) clearTimeout(scheduledRefresh);
+  scheduledRefresh = null;
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userType");
   localStorage.removeItem("userEmail");
+  localStorage.removeItem(ACCESS_EXPIRY_KEY);
 }
 
 let refreshInFlight: Promise<string> | null = null;
@@ -168,11 +204,12 @@ export function renewSession(): Promise<string> {
     }) as AuthResponse;
     if (localStorage.getItem("refreshToken") !== previousRefresh)
       throw new ApiError("A sessão foi alterada. Tente novamente.");
-    if (!data?.token || !data.refreshToken || !USER_TYPES.includes(data.tipo))
+    if (!data?.token || !data.refreshToken || !USER_TYPES.includes(data.tipo) || !Number.isFinite(data.expiresIn) || data.expiresIn <= 0)
       throw new ApiError("Não foi possível renovar a sessão. Tente novamente.");
     localStorage.setItem("token", data.token);
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("userType", data.tipo);
+    scheduleRefresh(data.expiresIn);
     return data.token;
   })().catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 401 && localStorage.getItem("refreshToken") === previousRefresh) {
@@ -184,7 +221,7 @@ export function renewSession(): Promise<string> {
   return refreshInFlight;
 }
 
-function parseSessionClaims(token: string | null): { tipo?: unknown; beneficiario?: unknown } | null {
+function parseSessionClaims(token: string | null): { tipo?: unknown; beneficiario?: unknown; exp?: unknown } | null {
   if (!token) return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
