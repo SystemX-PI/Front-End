@@ -8,10 +8,11 @@ export default function PlanUpgrade({ context:c, accountId, reload }: { context:
  const [params]=useSearchParams(); const reason=params.get("reason"); const stripeReturn=params.get("stripe"); const plan=planFor(c);
  const [method,setMethod]=useState<"PIX"|"CARD">("PIX");const [order,setOrder]=useState<CheckoutOrder|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [copied,setCopied]=useState(false);
  const paymentPanel=useRef<HTMLElement>(null);
+ const checkoutModalOpen=order!==null;
  const money=(cents:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
  useEffect(()=>{if(stripeReturn==="success") void reload();},[stripeReturn,reload]);
  useEffect(()=>{
-  if(!order)return;
+  if(!checkoutModalOpen)return;
   const panel=paymentPanel.current;
   if(!panel)return;
   const previouslyFocused=document.activeElement instanceof HTMLElement&&document.activeElement.tagName!=="BODY"?document.activeElement:null;
@@ -26,7 +27,7 @@ export default function PlanUpgrade({ context:c, accountId, reload }: { context:
   };
   panel.focus();panel.addEventListener("keydown",onKeyDown);
   return()=>{panel.removeEventListener("keydown",onKeyDown);if(previouslyFocused?.isConnected)previouslyFocused.focus();};
- },[Boolean(order)]);
+ },[checkoutModalOpen]);
  async function create(){if(busy)return;setBusy(true);setError("");try{if(c.stripeEnabled){const session=await platformRequest<StripeCheckout>("/subscription/stripe-checkout",accountId,"POST",{paymentMethod:method});window.location.assign(session.checkoutUrl);return;}setOrder(await platformRequest<CheckoutOrder>("/subscription/checkout",accountId,"POST",{paymentMethod:method}));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  async function confirm(){if(!order||busy)return;setBusy(true);setError("");try{setOrder(await platformRequest<CheckoutOrder>(`/subscription/checkout/${order.id}/confirm`,accountId,"POST"));await reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  async function copy(){try{await navigator.clipboard.writeText(order?.pixCode||"");setCopied(true);}catch{setError("Não foi possível copiar. Você pode selecionar o código de teste abaixo.");}}
