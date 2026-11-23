@@ -64,7 +64,12 @@ export default function Closures() {
       }
       setProcess(p);
       if (p.status === "FINALIZADO") {
-        const c = await backend.processes.getClosure(value, signal).catch(() => null);
+        const c = await backend.processes.getClosure(value, signal).catch((error: unknown) => {
+          if (error instanceof ApiError && error.status === 404) {
+            throw new Error("O comprovante da baixa não está disponível para este processo.");
+          }
+          throw error;
+        });
         if (!signal?.aborted) setClosure(c);
       }
     } catch (e) {

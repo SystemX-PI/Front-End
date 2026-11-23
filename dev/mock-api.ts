@@ -1558,6 +1558,7 @@ export function devMockPlugin(): Plugin {
             const procId = Number(portalDetailMatch[1]);
             const proc =
               processes.find((p) => p.id === procId) || processes[0];
+            const baixa = closures.get(procId);
             return sendJson({
               processo: proc,
               responsavel: "Equipe ConsorTech",
@@ -1573,7 +1574,13 @@ export function devMockPlugin(): Plugin {
                   dataUpload: yesterdayIso,
                 },
               ],
-              historico: [
+              historico: baixa ? [{
+                id: baixa.id,
+                statusAnterior: "EM_PROCESSO_DE_BAIXA",
+                novoStatus: "FINALIZADO",
+                data: baixa.data,
+                observacao: baixa.observacao,
+              }] : [
                 {
                   id: 1,
                   statusAnterior: "CONTEMPLADO",

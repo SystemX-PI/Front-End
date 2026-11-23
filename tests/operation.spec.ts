@@ -163,3 +163,30 @@ test("baixa informa conflito e mantém o processo sem comprovante", async ({ pag
   await expect(page.getByText(/A baixa só pode ser concluída na etapa/)).toBeVisible();
   await expect(page.getByText(/Baixa registrada #/)).toHaveCount(0);
 });
+
+test("consulta mostra o comprovante original e informa falha de permissão ao atualizar", async ({ page }) => {
+  await session(page, "FUNCIONARIO");
+  let autorizado = true;
+  await page.route("**/api/**", route => {
+    const url = route.request().url();
+    if (url.endsWith("/processos-contemplacao/7")) {
+      return route.fulfill({ json: { ...process, status: "FINALIZADO" } });
+    }
+    if (url.endsWith("/processos/7/baixa")) {
+      if (!autorizado) return route.fulfill({ status: 403, json: {} });
+      return route.fulfill({ json: {
+        id: 3, processoId: 7, usuarioId: 9, data: "2026-10-29T11:00:00", observacao: "Observação original",
+      } });
+    }
+    return route.fulfill({ json: { items: [], total: 0 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  await expect(page.getByText("Baixa registrada #3")).toBeVisible();
+  await expect(page.getByText("Observação original")).toBeVisible();
+  await expect(page.getByText(/Responsável #9/)).toBeVisible();
+
+  autorizado = false;
+  await page.getByRole("button", { name: "Consultar processo", exact: true }).click();
+  await expect(page.getByText(/Seu perfil não tem permissão/)).toBeVisible();
+  await expect(page.getByText("Observação original")).toHaveCount(0);
+});
