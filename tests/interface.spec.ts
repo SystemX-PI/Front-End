@@ -109,3 +109,28 @@ test("menu fixo ocupa a janela e rodape nao sobe ao rolar",async({page})=>{
   await page.screenshot({path:`test-results/fixed-sidebar-${width}.png`});
  }
 });
+
+test("retorno do Stripe só mostra plano ativo depois da confirmação do backend", async ({ page }) => {
+  await seed(page);
+  const c = { ...context(), stripeEnabled: true, simulationEnabled: false, stripeMonthlyPriceCents: 9990 };
+  let confirmations = 0;
+  await page.route("**/api/platform/**", route => {
+    if (new URL(route.request().url()).pathname.endsWith("/subscription/refresh")) {
+      confirmations++;
+      if (confirmations === 1) return route.fulfill({ json: { active: false, status: "unpaid" } });
+      c.subscription = { ...c.subscription, tier: "PRO", whatsappLimit: 3, gmailLimit: 2 };
+      c.account!.paidUntil = future();
+      return route.fulfill({ json: { active: true, status: "active" } });
+    }
+    return route.fulfill({ json: c });
+  });
+  await page.goto("/app/assinatura?stripe=success");
+  await expect(page.getByText("Você voltou do Stripe. Consulte a situação do pagamento.")).toBeVisible();
+  await expect(page.getByText("Plano ativo", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Verificar pagamento" }).click();
+  await expect(page.getByText("Pagamento ainda não confirmado pelo Stripe.")).toBeVisible();
+  await expect(page.getByText("Plano ativo", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Verificar pagamento" }).click();
+  await expect(page.getByText("Pagamento confirmado pelo Stripe.")).toBeVisible();
+  await expect(page.getByText("Plano ativo", { exact: true })).toBeVisible();
+});

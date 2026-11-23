@@ -253,9 +253,27 @@ function Brand({ context, accountId, colors, onSaved }: {
   </form>
  </>;
 }
-function Subscription({context:c,accountId}:{context:Context;accountId:string|null;reload:()=>Promise<void>}) {
+function Subscription({context:c,accountId,reload}:{context:Context;accountId:string|null;reload:()=>Promise<void>}) {
+ const [params]=useSearchParams();
+ const [paymentStatus,setPaymentStatus]=useState("");
  const plan=planFor(c);const paid=plan.tier==="PRO";const [busy,setBusy]=useState(false);const [error,setError]=useState("");
  async function openPortal(){setBusy(true);setError("");try{const session=await platformRequest<{url:string}>("/subscription/portal",accountId,"POST");window.location.assign(session.url);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- return <><PageTitle eyebrow="SUA CONTA" title="Um plano para o seu próximo passo." description="Acompanhe seu teste gratuito e escolha como ampliar suas conexões."/><Feedback message={error}/><section className="subscription-card"><div><span className="saas-badge green">{paid?"Plano Profissional":"Teste gratuito · 3 dias"}</span><h2>{paid?"Sua empresa tem mais espaço.":"Comece com um canal de cada vez."}</h2><p>{paid?`Seu acesso está ativo até ${date(c.account!.paidUntil)}.`:`Seu teste termina em ${date(c.account!.trialEndsAt)}. Ele inclui um WhatsApp e um Gmail. Amplie o plano para conectar mais contas.`}</p><ul><li><CheckCircle2/>{plan.whatsappLimit} {plan.whatsappLimit===1?"instância de WhatsApp":"instâncias de WhatsApp"}</li><li><CheckCircle2/>{plan.gmailLimit} {plan.gmailLimit===1?"conta Gmail":"contas Gmail"}</li><li><CheckCircle2/>Equipe e identidade da sua empresa</li></ul></div><div className="subscription-action"><CreditCard size={36}/><h3>{paid?"Plano ativo":"Conheça o Profissional"}</h3><p>{paid?"Gerencie suas conexões dentro das vagas do seu plano.":"Até três WhatsApps e dois Gmails, com contratação mensal pelo Stripe ou simulação local."}</p>{paid&&c.subscription?.billingProvider==="STRIPE"&&<button className="saas-button" disabled={busy} onClick={()=>void openPortal()}>{busy?<RefreshCw className="spin" size={17}/>:<CreditCard size={17}/>}Gerenciar assinatura no Stripe</button>}<Link className="saas-button primary" to={workspaceLink(paid?"/integracoes":"/upgrade",accountId)}>{paid?"Gerenciar integrações":c.stripeEnabled?"Ver plano mensal":"Ver benefícios e simular compra"}<ArrowRight size={17}/></Link>{c.subscription?.billingProvider!=="STRIPE"&&<small>{c.simulationEnabled?"Ambiente de simulação. Nenhuma cobrança real.":"A cobrança real ainda não está configurada."}</small>}</div></section></>;
+ async function refreshPayment(){
+  if(busy)return;
+  setBusy(true);setError("");
+  try{
+   const result=await platformRequest<{active:boolean;status:string}>("/subscription/refresh",accountId,"POST");
+   await reload();
+   if(result.active)setPaymentStatus("Pagamento confirmado pelo Stripe.");
+   else if(result.status==="expired")setPaymentStatus("A sessão expirou. Você pode voltar ao checkout.");
+   else if(["past_due","canceled","incomplete_expired","paused"].includes(result.status))
+    setPaymentStatus("A assinatura está sem confirmação de pagamento ativo. Confira a situação no Stripe.");
+   else setPaymentStatus("Pagamento ainda não confirmado pelo Stripe.");
+  }catch(e){setError((e as Error).message);}finally{setBusy(false);}
+ }
+ return <><PageTitle eyebrow="SUA CONTA" title="Um plano para o seu próximo passo." description="Acompanhe seu teste gratuito e escolha como ampliar suas conexões."/><Feedback message={error}/>{c.stripeEnabled&&<div className="checkout-simulation">
+  <span role="status">{paymentStatus||(params.get("stripe")==="success"?"Você voltou do Stripe. Consulte a situação do pagamento.":"Consulte a confirmação do pagamento, se necessário.")}</span>
+  <button type="button" className="text-button" disabled={busy||c.account?.suspended} onClick={()=>void refreshPayment()}><RefreshCw size={14}/>Verificar pagamento</button>
+ </div>}<section className="subscription-card"><div><span className="saas-badge green">{paid?"Plano Profissional":"Teste gratuito · 3 dias"}</span><h2>{paid?"Sua empresa tem mais espaço.":"Comece com um canal de cada vez."}</h2><p>{paid?`Seu acesso está ativo até ${date(c.account!.paidUntil)}.`:`Seu teste termina em ${date(c.account!.trialEndsAt)}. Ele inclui um WhatsApp e um Gmail. Amplie o plano para conectar mais contas.`}</p><ul><li><CheckCircle2/>{plan.whatsappLimit} {plan.whatsappLimit===1?"instância de WhatsApp":"instâncias de WhatsApp"}</li><li><CheckCircle2/>{plan.gmailLimit} {plan.gmailLimit===1?"conta Gmail":"contas Gmail"}</li><li><CheckCircle2/>Equipe e identidade da sua empresa</li></ul></div><div className="subscription-action"><CreditCard size={36}/><h3>{paid?"Plano ativo":"Conheça o Profissional"}</h3><p>{paid?"Gerencie suas conexões dentro das vagas do seu plano.":"Até três WhatsApps e dois Gmails, com contratação mensal pelo Stripe ou simulação local."}</p>{c.subscription?.billingProvider==="STRIPE"&&<button className="saas-button" disabled={busy} onClick={()=>void openPortal()}>{busy?<RefreshCw className="spin" size={17}/>:<CreditCard size={17}/>}Gerenciar assinatura no Stripe</button>}<Link className="saas-button primary" to={workspaceLink(paid?"/integracoes":"/upgrade",accountId)}>{paid?"Gerenciar integrações":c.stripeEnabled?"Ver plano mensal":"Ver benefícios e simular compra"}<ArrowRight size={17}/></Link>{!c.stripeEnabled&&<small>{c.simulationEnabled?"Ambiente de simulação. Nenhuma cobrança real.":"A cobrança real ainda não está configurada."}</small>}</div></section></>;
 }
 export function PageTitle({eyebrow,title,description}:{eyebrow:string;title:string;description:string}) {return <div className="workspace-heading"><div><span className="saas-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div></div>;}
