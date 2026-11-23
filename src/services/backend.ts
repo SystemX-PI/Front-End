@@ -1,8 +1,8 @@
-import { getToken, renewSession } from "./auth";
+import { getToken, renewSession, type AuthResponse } from "./auth";
 import { ApiError, request } from "./http";
 import { normalizeContemplation } from "./format";
 
-export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
+export type UserType = AuthResponse["tipo"];
 export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "INCERTO_EXECUCAO" | "CONCLUIDO";
 export type ReconciliationResult = "ACEITO_PROVEDOR" | "NAO_ENVIADO";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";

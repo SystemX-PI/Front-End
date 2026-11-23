@@ -14,7 +14,9 @@ export function formatPhone(value?: string | null) {
 
 export function formatDate(value?: string | null) {
   if (!value || typeof value !== "string") return "Não informado";
-  const date = new Date(value);
+  // Os DTOs operacionais enviam LocalDateTime em UTC sem sufixo.
+  const utcWithoutOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
+  const date = new Date(utcWithoutOffset.test(value) ? `${value}Z` : value);
   return Number.isNaN(date.getTime())
     ? "Data indisponível"
     : new Intl.DateTimeFormat("pt-BR", {
