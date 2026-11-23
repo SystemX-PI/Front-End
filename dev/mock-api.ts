@@ -1396,7 +1396,7 @@ export function devMockPlugin(): Plugin {
               const record = {
                 id: ++nextIdCounter,
                 processoId: procId,
-                usuarioId: Number(parsed.usuarioId || authUser.uid || 1),
+                usuarioId: authUser.uid,
                 data: new Date().toISOString(),
                 observacao: parsed.observacao ? String(parsed.observacao) : null,
               };
@@ -1445,6 +1445,7 @@ export function devMockPlugin(): Plugin {
             }
             if (typeof parsed.status === "string" && parsed.status) {
               proc.status = parsed.status;
+              proc.responsavelId = authUser.uid;
               proc.atualizadoEm = new Date().toISOString();
               const queueItem = queueItems.find((i) => i.processoId === procId);
               if (queueItem) queueItem.statusProcesso = parsed.status;

@@ -11,7 +11,6 @@ import {
 import { InlineFeedback } from "../components/IntegrationUi";
 import {
   backend,
-  sessionUserId,
   type ProcessResponse,
   type ClosureResponse,
 } from "../services/backend";
@@ -106,15 +105,8 @@ export default function Closures() {
     setBusy(true);
     setError("");
     try {
-      const uid = sessionUserId();
-      if (!uid) {
-        throw new Error(
-          "Entre novamente para identificar o responsável pela baixa.",
-        );
-      }
       const result = await backend.processes.createClosure(
         process.id,
-        uid,
         note.trim(),
       );
       setClosure(result);

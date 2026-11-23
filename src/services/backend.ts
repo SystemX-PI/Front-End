@@ -253,7 +253,6 @@ export const backend = {
       payload: {
         status: ProcessStatus;
         observacao?: string;
-        usuarioId: number;
       },
     ) =>
       apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}/status`, {
@@ -274,10 +273,10 @@ export const backend = {
         `/api/integracoes/processos/${id}/comunicacao/whatsapp`,
         { method: "POST", body: JSON.stringify({ telefone, mensagem, remetenteId }) },
       ),
-    createClosure: (id: number, usuarioId: number, observacao?: string) =>
+    createClosure: (id: number, observacao?: string) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, {
         method: "POST",
-        body: JSON.stringify({ usuarioId, observacao }),
+        body: JSON.stringify({ observacao }),
       }),
     getClosure: (id: number, signal?: AbortSignal) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, { signal }),
@@ -293,6 +292,3 @@ export const assistant = {
   message: (mensagem: string) => apiRequest<AssistantResponse>("/api/assistente/mensagens", { method: "POST", body: JSON.stringify({ mensagem }) }),
   confirm: (token: string) => apiRequest<CommunicationResponse>(`/api/assistente/acoes/${encodeURIComponent(token)}/confirmar`, { method: "POST" }),
 };
-export function sessionUserId(): number | null {
- try { const part=getToken()?.split('.')[1]; if(!part)return null;const data=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));return Number.isSafeInteger(data.uid)&&data.uid>0?data.uid:null; } catch {return null;}
-}
