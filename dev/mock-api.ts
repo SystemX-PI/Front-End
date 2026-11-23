@@ -2,6 +2,22 @@ import type { Plugin } from "vite";
 
 type MockRole = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE" | "USUARIO";
 
+// Espelha as transições manuais do backend para a API de demonstração.
+const nextProcessStatus: Record<string, string> = {
+  CONTEMPLADO: "AGUARDANDO_COMUNICACAO",
+  AGUARDANDO_COMUNICACAO: "EM_COMUNICACAO",
+  EM_COMUNICACAO: "CLIENTE_CONTATADO",
+  CLIENTE_CONTATADO: "AGUARDANDO_DOCUMENTOS",
+  AGUARDANDO_DOCUMENTOS: "DOCUMENTOS_RECEBIDOS",
+  DOCUMENTOS_RECEBIDOS: "EM_ANALISE",
+  EM_ANALISE: "EM_PROCESSO_DE_BAIXA",
+};
+
+function processTransitions(status: string): string[] {
+  if (status === "EM_PROCESSO_DE_BAIXA") return ["CANCELADO"];
+  return Object.hasOwn(nextProcessStatus, status) ? [nextProcessStatus[status], "CANCELADO"] : [];
+}
+
 function createMockJwt(payload: {
   uid: number;
   email: string;
@@ -1393,6 +1409,11 @@ export function devMockPlugin(): Plugin {
               return sendJson(existing);
             }
             if (method === "POST") {
+              const existing = closures.get(procId);
+              if (existing) return sendJson(existing);
+              if (proc.status !== "EM_PROCESSO_DE_BAIXA") {
+                return sendJson({ message: "A baixa só pode ser concluída na etapa Em processo de baixa." }, 409);
+              }
               const record = {
                 id: ++nextIdCounter,
                 processoId: procId,
@@ -1402,10 +1423,11 @@ export function devMockPlugin(): Plugin {
               };
               closures.set(procId, record);
               proc.status = "FINALIZADO";
+              proc.responsavelId = authUser.uid;
               proc.atualizadoEm = record.data;
               const queueItem = queueItems.find((i) => i.processoId === procId);
               if (queueItem) queueItem.statusProcesso = "FINALIZADO";
-              return sendJson(record, 201);
+              return sendJson(record);
             }
           }
 
@@ -1426,7 +1448,7 @@ export function devMockPlugin(): Plugin {
               return matchesStatus && matchesQuery;
             });
             return sendJson({
-              items: filtered,
+              items: filtered.map(proc => ({ ...proc, transicoesPermitidas: processTransitions(proc.status) })),
               total: filtered.length,
               totalPages: Math.max(1, Math.ceil(filtered.length / 20)),
               page: Number(searchParams.get("page") || 0),
@@ -1443,14 +1465,15 @@ export function devMockPlugin(): Plugin {
             if (!proc) {
               return sendJson({ message: "Processo não encontrado." }, 404);
             }
-            if (typeof parsed.status === "string" && parsed.status) {
-              proc.status = parsed.status;
-              proc.responsavelId = authUser.uid;
-              proc.atualizadoEm = new Date().toISOString();
-              const queueItem = queueItems.find((i) => i.processoId === procId);
-              if (queueItem) queueItem.statusProcesso = parsed.status;
+            if (typeof parsed.status !== "string" || !processTransitions(proc.status).includes(parsed.status)) {
+              return sendJson({ message: "Esta mudança de status não está disponível para a etapa atual." }, 409);
             }
-            return sendJson(proc);
+            proc.status = parsed.status;
+            proc.responsavelId = authUser.uid;
+            proc.atualizadoEm = new Date().toISOString();
+            const queueItem = queueItems.find((i) => i.processoId === procId);
+            if (queueItem) queueItem.statusProcesso = parsed.status;
+            return sendJson({ ...proc, transicoesPermitidas: processTransitions(proc.status) });
           }
 
           const processByIdMatch = pathname.match(
@@ -1462,7 +1485,7 @@ export function devMockPlugin(): Plugin {
             if (!proc) {
               return sendJson({ message: "Processo não encontrado." }, 404);
             }
-            return sendJson(proc);
+            return sendJson({ ...proc, transicoesPermitidas: processTransitions(proc.status) });
           }
 
           // 5. Assistant Endpoints (/api/assistente/*)

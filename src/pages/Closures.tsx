@@ -14,6 +14,7 @@ import {
   type ProcessResponse,
   type ClosureResponse,
 } from "../services/backend";
+import { ApiError } from "../services/http";
 import { useResource } from "../hooks/useResource";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { operationError } from "../services/operationErrors";
@@ -100,7 +101,7 @@ export default function Closures() {
   }
 
   async function close() {
-    if (!process || busy) return;
+    if (process?.status !== "EM_PROCESSO_DE_BAIXA" || closure || busy) return;
     setConfirm(false);
     setBusy(true);
     setError("");
@@ -110,10 +111,15 @@ export default function Closures() {
         note.trim(),
       );
       setClosure(result);
-      setProcess({ ...process, status: "FINALIZADO" });
+      setProcess({ ...process, status: "FINALIZADO", transicoesPermitidas: [] });
       list.refresh();
     } catch (e) {
-      setError((e as Error).message);
+      if (e instanceof ApiError && e.status === 409) {
+        list.refresh();
+        setError("A baixa só pode ser concluída na etapa Em processo de baixa. Consulte o processo novamente para ver o status atual.");
+      } else {
+        setError((e as Error).message);
+      }
     } finally {
       setBusy(false);
     }

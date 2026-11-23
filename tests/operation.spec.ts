@@ -125,3 +125,41 @@ test("beneficiário autenticado entra pelo portal ao abrir a área SaaS", async 
   await page.getByRole("button", { name: "Historico" }).click();
   await expect(page.locator(".operation-history").getByRole("listitem")).toContainText("Em analise");
 });
+
+test("andamento usa as opções da API e explica conflito", async ({ page }) => {
+  await session(page, "FUNCIONARIO");
+  await page.route("**/api/**", route => {
+    if (route.request().method() === "PATCH") {
+      expect(route.request().postDataJSON()).toEqual({ status: "EM_PROCESSO_DE_BAIXA", observacao: "" });
+      return route.fulfill({ status: 409, json: { message: "Conflito" } });
+    }
+    if (route.request().url().endsWith("/processos-contemplacao/7")) {
+      return route.fulfill({ json: { ...process, status: "EM_ANALISE", transicoesPermitidas: ["EM_PROCESSO_DE_BAIXA", "CANCELADO"] } });
+    }
+    return route.fulfill({ json: { items: [], total: 0 } });
+  });
+  await page.goto("/admin/contemplados?processo=7");
+  const status = page.getByLabel("Novo status");
+  await expect(status.locator("option")).toHaveCount(3);
+  await expect(status.locator('option[value="FINALIZADO"]')).toHaveCount(0);
+  await status.selectOption("EM_PROCESSO_DE_BAIXA");
+  await page.getByRole("button", { name: "Atualizar andamento" }).click();
+  await page.getByRole("button", { name: "Confirmar alteração" }).click();
+  await expect(page.getByText(/Consulte o processo novamente antes de tentar/)).toBeVisible();
+});
+
+test("baixa informa conflito e mantém o processo sem comprovante", async ({ page }) => {
+  await session(page, "FUNCIONARIO");
+  await page.route("**/api/**", route => {
+    if (route.request().method() === "POST" && route.request().url().endsWith("/baixa")) {
+      return route.fulfill({ status: 409, json: { message: "Conflito" } });
+    }
+    if (route.request().url().endsWith("/processos-contemplacao/7")) return route.fulfill({ json: process });
+    return route.fulfill({ json: { items: [], total: 0 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  await page.getByRole("button", { name: "Concluir baixa", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar baixa", exact: true }).click();
+  await expect(page.getByText(/A baixa só pode ser concluída na etapa/)).toBeVisible();
+  await expect(page.getByText(/Baixa registrada #/)).toHaveCount(0);
+});

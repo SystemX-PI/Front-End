@@ -47,6 +47,7 @@ export interface ProcessResponse {
   contemplacaoId: number;
   responsavelId: number | null;
   status: ProcessStatus;
+  transicoesPermitidas?: ProcessStatus[];
   criadoEm: string;
   atualizadoEm: string;
 }
