@@ -15,6 +15,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Verificação (Lint, Build e Testes)
@@ -25,10 +28,10 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js 20
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Instalar dependências
@@ -44,7 +47,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Executar testes de UI/Operação
-        run: npm run test:ui
+        run: npm run test:ui -- --workers=2
         env:
           CI: true
 
