@@ -32,6 +32,17 @@ export const readable = (value?: unknown) => {
     .replace(/^./, (letter) => letter.toUpperCase());
 };
 
+export function communicationStatus(value: unknown) {
+  switch (value) {
+    case "SUCESSO":
+    case "REALIZADA": return "Aceito pelo provedor";
+    case "SEM_RESPOSTA": return "Sem confirmação";
+    case "FALHA": return "Falha na tentativa";
+    case "PENDENTE": return "Pendente";
+    default: return readable(value);
+  }
+}
+
 export function positiveId(value: number, field: string) {
   if (!Number.isSafeInteger(value) || value <= 0)
     throw new Error(`${field}: informe um número inteiro maior que zero.`);

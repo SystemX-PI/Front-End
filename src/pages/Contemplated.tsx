@@ -1,5 +1,5 @@
 import { MessageCircle, Search } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
@@ -132,13 +132,21 @@ export default function Contemplated() {
     }
   }
 
+  const pendingResend = useRef<{ id: number; key: ReturnType<typeof crypto.randomUUID> } | null>(null);
+  const [historyRevision, setHistoryRevision] = useState(0);
+
   async function handleResend() {
     if (!process || resending) return;
     setConfirming(false);
     setResending(true);
     setFeedback(null);
     try {
-      const response = await backend.processes.resendCommunication(process.id);
+      if (pendingResend.current?.id !== process.id) {
+        pendingResend.current = { id: process.id, key: crypto.randomUUID() };
+      }
+      const response = await backend.processes.resendCommunication(process.id, pendingResend.current.key);
+      pendingResend.current = null;
+      setHistoryRevision(value => value + 1);
       setCommunication(response);
       const errors = [response.email?.erro, response.whatsapp?.erro]
         .filter(Boolean)
@@ -317,7 +325,7 @@ export default function Contemplated() {
           </div>
         ) : null}
       </section>
-      {process && <><ProcessStatusEditor key={`${process.id}-${process.status}`} process={process} onChange={setProcess}/><section className="panel"><Link className="button secondary" to={`/admin/baixas?processo=${process.id}`}>Conferir baixa deste processo</Link></section><OperationHistory key={process.id} processId={process.id}/></>}
+      {process && <><ProcessStatusEditor key={`${process.id}-${process.status}`} process={process} onChange={setProcess}/><section className="panel"><Link className="button secondary" to={`/admin/baixas?processo=${process.id}`}>Conferir baixa deste processo</Link></section><OperationHistory key={`${process.id}-${historyRevision}`} processId={process.id}/></>}
       <ConfirmDialog
         open={confirming}
         title={`Enviar comunicação do processo #${process?.id}?`}

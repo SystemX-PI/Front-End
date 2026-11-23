@@ -3,7 +3,7 @@ import { backend, type OperationEvent } from "../services/backend";
 import { operationError } from "../services/operationErrors";
 import { useResource } from "../hooks/useResource";
 import { EmptyState, ErrorState, Skeleton } from "./DataUi";
-import { formatDate, readable } from "../services/format";
+import { communicationStatus, formatDate, readable } from "../services/format";
 
 type HistoryItem = Partial<OperationEvent> & {
   channel?: string | null;
@@ -55,11 +55,12 @@ export default function OperationHistory({ processId }: { processId: number }) {
             return (
               <li key={e?.id ?? idx}>
                 <strong>
-                  {channelOrAction} · {readable(e?.status || "PENDENTE")}
+                  {channelOrAction} · {communicationStatus(e?.status || "PENDENTE")}
                 </strong>
                 <p>
                   {timestamp} · {actor}
                 </p>
+                {e?.comunicadoOriginalId != null && <p>Reenvio do comunicado #{e.comunicadoOriginalId}</p>}
                 {detail ? <p>{detail}</p> : null}
               </li>
             );

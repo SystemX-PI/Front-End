@@ -1,10 +1,10 @@
 import { Mail, MessageCircle, RefreshCw, Search, Send } from "lucide-react";
 import ConfirmDialog from "./ConfirmDialog";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useResource } from "../hooks/useResource";
 import { backend, type ChannelResponse } from "../services/backend";
-import { formatDate, readable } from "../services/format";
+import { communicationStatus, formatDate } from "../services/format";
 import { EmptyState, ErrorState, Pagination, Skeleton } from "./DataUi";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { InlineFeedback, StatusPill } from "./IntegrationUi";
@@ -24,14 +24,14 @@ export function ChannelStatus({
         <strong>{channel?.destinatario || "Não informado"}</strong>
         <StatusPill
           tone={
-            channel?.status === "SUCESSO"
+            channel?.status === "SUCESSO" || channel?.status === "REALIZADA"
               ? "green"
               : channel?.status === "FALHA"
                 ? "red"
                 : "amber"
           }
         >
-          {channel ? readable(channel.status) : "Sem canal"}
+          {channel ? communicationStatus(channel.status) : "Sem canal"}
         </StatusPill>
       </span>
       {channel?.erro ? <p className="channel-error">{channel.erro}</p> : null}
@@ -67,13 +67,16 @@ export default function CommunicationQueue() {
       ? queue.find((item) => item?.processoId === confirmId) || null
       : null;
   const size = 20;
+  const pendingRequest = useRef<{ id: number; key: ReturnType<typeof crypto.randomUUID> } | null>(null);
   async function send(id: number) {
     if (busy !== null || !Number.isSafeInteger(id) || id <= 0) return;
     setConfirmId(null);
     setBusy(id);
     setFeedback("");
     try {
-      const result = await backend.processes.resendCommunication(id);
+      if (pendingRequest.current?.id !== id) pendingRequest.current = { id, key: crypto.randomUUID() };
+      const result = await backend.processes.resendCommunication(id, pendingRequest.current.key);
+      pendingRequest.current = null;
       const channels = [result.email, result.whatsapp].filter(channel => channel != null);
       const accepted = channels.filter(channel => ["SUCESSO", "REALIZADA"].includes(channel.status)).length;
       const errors = channels.map(channel => channel.erro).filter(Boolean).join(" ");
@@ -82,7 +85,7 @@ export default function CommunicationQueue() {
         ? accepted === channels.length
           ? "Envio aceito pelos canais configurados."
           : "Envio parcial. Um canal aceitou a mensagem e o outro precisa de atenção."
-        : failed ? "Os canais não confirmaram o envio." : "Envio pendente. Confira a configuração dos canais.";
+        : failed ? "Os canais não confirmaram o envio." : "Envio sem confirmação. Confira a configuração dos canais.";
       const detail = errors ? `${message} ${errors}` : message;
       setFeedback(detail);
       notify(detail, accepted > 0 && accepted === channels.length ? "success" : failed && !accepted ? "error" : "info");
@@ -118,7 +121,7 @@ export default function CommunicationQueue() {
         <div className="data-panel-heading">
           <div>
             <h3 id="notification-summary-title">Notificações no período</h3>
-            <p>Uma tentativa por canal. Enviadas são as aceitas pelo provedor.</p>
+            <p>Uma tentativa por canal. O aceite do provedor não confirma a entrega.</p>
           </div>
           <label className="field">
             <span>Período</span>
@@ -133,7 +136,7 @@ export default function CommunicationQueue() {
           <div className="notification-metrics" aria-busy={summary.loading}>
             {([
               ["Tentativas", "total"],
-              ["Enviadas", "accepted"],
+              ["Aceitas pelo provedor", "accepted"],
               ["Pendentes", "pending"],
               ["Falhas", "failed"],
             ] as const).map(([label, key]) => (

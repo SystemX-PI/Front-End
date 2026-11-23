@@ -424,6 +424,7 @@ export function devMockPlugin(): Plugin {
       erro: string | null;
       criadaEm: string;
       enviadaEm: string | null;
+      comunicadoOriginalId?: number;
     }>
   >([
     [
@@ -602,6 +603,8 @@ export function devMockPlugin(): Plugin {
     },
   ];
 
+  const originalCommunications = new Map(queueItems.map(item => [item.processoId, structuredClone(item.comunicacao)]));
+  const communicationReplays = new Map<string, { payload: string; response: unknown }>();
   let nextIdCounter = 200;
 
   return {
@@ -1272,40 +1275,30 @@ export function devMockPlugin(): Plugin {
                 404,
               );
             }
+            const key = req.headers["idempotency-key"];
+            const replayKey = typeof key === "string" ? `${pathname}:${key}` : null;
+            const replay = replayKey && communicationReplays.get(replayKey);
+            if (replay) return sendJson(replay.response);
             const sentAt = new Date().toISOString();
-            if (queueItem.comunicacao.whatsapp) {
-              queueItem.comunicacao.whatsapp.status = "SUCESSO";
-              queueItem.comunicacao.whatsapp.erro = null;
-              queueItem.comunicacao.whatsapp.enviadaEm = sentAt;
-            }
-            if (queueItem.comunicacao.email) {
-              queueItem.comunicacao.email.status = "SUCESSO";
-              queueItem.comunicacao.email.erro = null;
-              queueItem.comunicacao.email.enviadaEm = sentAt;
-            }
-            queueItem.comunicacao.statusGeral = "COMUNICADO_NOS_DOIS";
+            const originals = originalCommunications.get(procId);
             const list = historyByProcess.get(procId) || [];
-            list.unshift({
-              id: ++nextIdCounter,
-              processoId: procId,
-              canal: "EMAIL",
-              destinatario:
-                queueItem.comunicacao.email?.destinatario ||
-                "cliente@email.com",
-              mensagem: `Reenvio oficial de comunicado para o processo #${procId}.`,
-              observacao: `Reenvio oficial de comunicado para o processo #${procId}.`,
-              usuarioNome:
-                authUser.tipo === "ADMINISTRADOR"
-                  ? "Administrador Geral"
-                  : "Operador de Atendimento",
-              data: sentAt,
-              status: "SUCESSO",
-              erro: null,
-              criadaEm: sentAt,
-              enviadaEm: sentAt,
-            });
+            for (const channel of ["email", "whatsapp"] as const) {
+              const original = originals?.[channel];
+              if (!original) continue;
+              const attempt = { ...original, id: ++nextIdCounter, status: "SUCESSO", erro: null, criadaEm: sentAt, enviadaEm: sentAt };
+              queueItem.comunicacao[channel] = attempt;
+              list.unshift({
+                ...attempt, processoId: procId, canal: channel.toUpperCase(),
+                mensagem: "", observacao: "Reenvio oficial", usuarioNome: "Operação", data: sentAt,
+                comunicadoOriginalId: original.id,
+              });
+            }
+            queueItem.comunicacao.statusGeral = originals?.email && originals.whatsapp
+              ? "COMUNICADO_NOS_DOIS" : originals?.email || originals?.whatsapp ? "COMUNICADO_PARCIAL" : "PENDENTE";
             historyByProcess.set(procId, list);
-            return sendJson(queueItem.comunicacao);
+            const response = structuredClone(queueItem.comunicacao);
+            if (replayKey) communicationReplays.set(replayKey, { payload: "", response });
+            return sendJson(response);
           }
 
           const processWhatsappMatch = pathname.match(
@@ -1320,6 +1313,14 @@ export function devMockPlugin(): Plugin {
                 404,
               );
             }
+            const key = req.headers["idempotency-key"];
+            const replayKey = typeof key === "string" ? `${pathname}:${key}` : null;
+            const payload = JSON.stringify([parsed.telefone, parsed.mensagem, parsed.remetenteId]);
+            const replay = replayKey && communicationReplays.get(replayKey);
+            if (replay) {
+              return replay.payload === payload ? sendJson(replay.response)
+                : sendJson({ message: "Esta chave já identifica outro envio." }, 409);
+            }
             const sentAt = new Date().toISOString();
             const phone = String(
               parsed.telefone ||
@@ -1327,7 +1328,7 @@ export function devMockPlugin(): Plugin {
                 "5511999999999",
             );
             queueItem.comunicacao.whatsapp = {
-              id: queueItem.comunicacao.whatsapp?.id || ++nextIdCounter,
+              id: ++nextIdCounter,
               destinatario: phone,
               status: "SUCESSO",
               erro: null,
@@ -1343,7 +1344,7 @@ export function devMockPlugin(): Plugin {
               parsed.mensagem || `Mensagem manual para o processo #${procId}.`,
             );
             list.unshift({
-              id: ++nextIdCounter,
+              id: queueItem.comunicacao.whatsapp.id,
               processoId: procId,
               canal: "WHATSAPP",
               destinatario: phone,
@@ -1360,7 +1361,12 @@ export function devMockPlugin(): Plugin {
               enviadaEm: sentAt,
             });
             historyByProcess.set(procId, list);
-            return sendJson(queueItem.comunicacao);
+            const response = {
+              processoId: procId, statusGeral: "COMUNICADO_PARCIAL",
+              email: null, whatsapp: { ...queueItem.comunicacao.whatsapp },
+            };
+            if (replayKey) communicationReplays.set(replayKey, { payload, response });
+            return sendJson(response);
           }
 
           const processHistoryMatch = pathname.match(

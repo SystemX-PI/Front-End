@@ -264,15 +264,15 @@ export const backend = {
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao`,
       ),
-    resendCommunication: (id: number) =>
+    resendCommunication: (id: number, key = crypto.randomUUID()) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/reenvio`,
-        { method: "POST" },
+        { method: "POST", headers: { "Idempotency-Key": key } },
       ),
-    sendWhatsApp: (id: number, telefone: string, mensagem: string, remetenteId?: number) =>
+    sendWhatsApp: (id: number, telefone: string, mensagem: string, remetenteId?: number, key = crypto.randomUUID()) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/whatsapp`,
-        { method: "POST", body: JSON.stringify({ telefone, mensagem, remetenteId }) },
+        { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ telefone, mensagem, remetenteId }) },
       ),
     createClosure: (id: number, observacao?: string) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, {
@@ -284,7 +284,7 @@ export const backend = {
   },
 };
 
-export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
 export interface AssistantAction {
   token: string; tipo: "NOTIFICAR_WHATSAPP"; processoId: number; telefone: string; mensagem: string; aviso: string;
 }
