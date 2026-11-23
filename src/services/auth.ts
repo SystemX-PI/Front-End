@@ -202,17 +202,9 @@ export function getToken(): string | null {
 }
 
 export function getUserType(): AuthResponse["tipo"] | null {
-  const tokenType = parseSessionClaims(getToken())?.tipo;
-  if (tokenType === "ADMINISTRADOR" || tokenType === "FUNCIONARIO" || tokenType === "CLIENTE") return tokenType;
-  if (tokenType === "USUARIO") return "CLIENTE";
-  const userType = localStorage.getItem("userType");
-  return userType === "ADMINISTRADOR" ||
-    userType === "FUNCIONARIO" ||
-    userType === "CLIENTE"
-    ? userType
-    : userType === "USUARIO"
-      ? "CLIENTE"
-      : null;
+  if (!getToken()) return null;
+  const role = parseSessionClaims(getToken())?.tipo ?? localStorage.getItem("userType");
+  return USER_TYPES.find((type) => type === role) ?? null;
 }
 
 export function isBeneficiarySession(): boolean {

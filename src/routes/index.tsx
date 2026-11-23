@@ -30,10 +30,10 @@ function DefaultRedirect() {
     if (!isAuthenticated()) return <Navigate to="/" replace />;
     return <Navigate to={sessionHome()} replace />;
 }
-function RoleRoute({ children, roles }: { children: ReactNode; roles: string[] }) {
+function RoleRoute({ children, roles }: { children: ReactNode; roles: NonNullable<ReturnType<typeof getUserType>>[] }) {
     if (!isAuthenticated()) return <Navigate to="/login" replace />;
     const currentRole = getUserType();
-    if (!roles.includes(currentRole || "")) return <AdminShell title="Acesso restrito" subtitle="Permissão necessária"><p role="alert">Seu perfil não tem acesso a esta área.</p><a href={sessionHome()}>Voltar ao meu espaço</a></AdminShell>;
+    if (!currentRole || !roles.includes(currentRole)) return <AdminShell title="Acesso restrito" subtitle="Permissão necessária"><p role="alert">Seu perfil não tem acesso a esta área.</p><a href={sessionHome()}>Voltar ao meu espaço</a></AdminShell>;
     return children;
 }
 function SessionListener() {
