@@ -10,7 +10,7 @@ Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-e
 docker compose --profile full up --build -d --wait --wait-timeout 600
 ```
 
-Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evolution, PostgreSQL e Redis. Acesse http://localhost:5173. O backend permanece em 8080; o Nginx encaminha `/api` automaticamente. Não é necessário instalar Node ou Java. Veja o guia completo em `Back-end/LOCAL.md`.
+Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evolution, PostgreSQL e Redis. Acesse http://localhost:5173. O backend permanece em 8080; o Nginx encaminha `/api` automaticamente. Não é necessário instalar Node ou Java. Veja o [guia local do Back-end](https://github.com/SystemX-PI/Back-end#subir-o-projeto-completo-com-docker).
 
 Após receber mudanças, faça `git pull --ff-only` nos dois repositórios e repita o comando com `--build`. O cache reutiliza imagens e dependências; não use `--no-cache`. As imagens são geradas localmente a partir do código recebido, sem publicação automática em um registro Docker.
 
@@ -39,7 +39,7 @@ Acesse o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Sem m
 
 Copie `.env.example` para `.env` e defina `VITE_GOOGLE_CLIENT_ID` com o Client ID público de um cliente OAuth **Web application** criado no Google Cloud. Para o Vite local, autorize as origens `http://localhost` e `http://localhost:5173` no Google Cloud. O back-end também precisa receber o mesmo Client ID em `GOOGLE_CLIENT_ID` para validar o token. O botão real do Google aparece na tela `/login`; sem Client ID, o front exibe uma orientação e mantém o login por e-mail/senha disponível.
 
-Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](../Back-end/README.md#login-com-google).
+Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](https://github.com/SystemX-PI/Back-end#login-com-google).
 
 Na tela `/register`, o botão **Fazer Cadastro com o Google** inicia um cadastro separado: depois de selecionar a conta Google, a pessoa informa somente o nome da empresa. Ao concluir, a aplicação cria a conta e abre uma sessão. O cadastro por e-mail e senha permanece disponível.
 
@@ -78,9 +78,11 @@ O build gera `dist`. `npm run test:ui` usa respostas controladas no Chromium e i
 4. Execute `npm run test:ui:real` com `SYSTEMX_E2E_PASSWORD` no ambiente. Use o mesmo valor empregado para gerar o BCrypt. A configuração exclusiva inicia o Vite na porta 5177, força o proxy para a API em 18087 e desliga o mock.
 5. A suíte altera processos e registra baixas e solicitações de comunicação. Recrie o schema descartável para repetir a execução completa. Remova as credenciais efêmeras e o banco de teste após validar.
 
-A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. Os endpoints futuros e os estados de indisponibilidade estão descritos em [CONTRATO_OPERACAO.md](CONTRATO_OPERACAO.md). Veja [a entrega do frontend](ENTREGA_FRONTEND.md) para validações e pendências de integração.
+A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. A documentação dos contratos HTTP fica no repositório de arquitetura. O roteiro de demonstração abaixo mostra como reproduzir os fluxos principais.
 
-- [Relatório da plataforma e das validações](RELATORIO_PLATAFORMA.md)
-- [Checklist de evolução da interface](CHECKLIST_FRONTEND.md)
+- [Relatório consolidado de alterações](relatorios%20de%20altera%C3%A7%C3%B5es/RELATORIO_CONSOLIDADO_ALTERACOES.md)
+- [Roteiro de demonstração e validação](docs/ensaio-demonstracao.md)
 
 A recuperação por e-mail exige o remetente Gmail da plataforma configurado no backend. O código expira em cinco minutos. O aviso do teste permanece somente na visão geral, além de uma notificação após o login.
+
+Para executar a suíte real contra o Nginx e a API do Compose de validação já em execução, use `SYSTEMX_E2E_COMPOSE=1` junto com a senha efêmera. A opção pula o servidor Vite do Playwright e reutiliza a porta 5177. O tutorial está em `Back-end/LOCAL.md` no checkout irmão.
