@@ -246,3 +246,116 @@ test('histórico exige evidência para reconciliar um despacho incerto', async (
   await expect(page.getByText('WhatsApp · Aceito pelo provedor')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reconciliar tentativa #19' })).toHaveCount(0);
 });
+
+for (const [code, message] of [
+  [402, "Esta consulta exige uma conta com plano ou teste ativo."],
+  [404, "O comprovante da baixa não está disponível para este processo."],
+  [409, "O estado do processo mudou. Consulte novamente."],
+  [500, "O servidor encontrou um problema ao consultar a baixa."],
+  [502, "O serviço de baixas está temporariamente indisponível."],
+  [503, "O serviço de baixas está temporariamente indisponível."],
+] as const) {
+  test(`comprovante distingue HTTP ${code} sem expor detalhe interno`, async ({ page }) => {
+    await session(page);
+    await page.route("**/api/**", route => {
+      const url = route.request().url();
+      if (url.endsWith("/processos/7/baixa")) return route.fulfill({ status: code, json: { message: "Detalhe interno fictício" } });
+      if (url.endsWith("/processos-contemplacao/7")) return route.fulfill({ json: { ...process, status: "FINALIZADO" } });
+      return route.fulfill({ json: { items: [], total: 0, page: 0, size: 20 } });
+    });
+    await page.goto("/admin/baixas?processo=7");
+    await expect(page.getByRole(code === 404 ? "status" : "alert").filter({ hasText: message })).toBeVisible();
+    await expect(page.getByText("Detalhe interno fictício")).toHaveCount(0);
+    if (code !== 404) await expect(page.getByText("O comprovante da baixa não está disponível para este processo.")).toHaveCount(0);
+  });
+}
+
+test("falha de rede na consulta preserva comprovante anterior e permite releitura", async ({ page }) => {
+  await session(page);
+  let offline = false;
+  await page.route("**/api/**", route => {
+    const url = route.request().url();
+    if (url.endsWith("/processos/7/baixa")) {
+      return offline ? route.abort("failed") : route.fulfill({ json: { id: 11, processoId: 7, usuarioId: 9, observacao: "Comprovante anterior" } });
+    }
+    if (url.endsWith("/processos-contemplacao/7")) return route.fulfill({ json: { ...process, status: "FINALIZADO" } });
+    return route.fulfill({ json: { items: [], page: 0, total: 0, size: 20 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  await expect(page.getByText("Comprovante anterior")).toBeVisible();
+  offline = true;
+  await page.getByRole("button", { name: "Consultar processo", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Não foi possível conectar ao servidor para consultar a baixa." })).toBeVisible();
+  await expect(page.getByText("Comprovante anterior")).toBeVisible();
+  offline = false;
+  await page.getByRole("button", { name: "Consultar novamente" }).click();
+  await expect(page.getByText("Comprovante anterior")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "Não foi possível conectar" })).toHaveCount(0);
+});
+
+test("timeout de leitura usa mensagem própria e cancelamento ao sair é silencioso", async ({ page }) => {
+  await session(page);
+  await page.addInitScript(() => {
+    const original = AbortSignal.timeout;
+    AbortSignal.timeout = () => original.call(AbortSignal, 500);
+  });
+  await page.route("**/api/**", async route => {
+    const url = route.request().url();
+    if (url.endsWith("/processos/7/baixa")) {
+      await new Promise(resolve => setTimeout(resolve, 850));
+      await route.fulfill({ json: { id: 11 } }).catch(() => {});
+      return;
+    }
+    if (url.endsWith("/processos-contemplacao/7")) return route.fulfill({ json: { ...process, status: "FINALIZADO" } });
+    return route.fulfill({ json: { items: [], page: 0, total: 0, size: 20 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  await expect(page.getByRole("alert").filter({ hasText: "A consulta demorou mais que o esperado." })).toBeVisible();
+  await page.getByRole("button", { name: "Consultar novamente" }).click();
+  await page.getByRole("link", { name: "Ver comunicação e histórico" }).click();
+  await expect(page.getByRole("heading", { name: "Contemplados", exact: true })).toBeVisible();
+  await expect(page.getByText("A consulta demorou mais que o esperado.")).toHaveCount(0);
+});
+
+test("sessão vencida durante a leitura encaminha para login ao falhar a renovação", async ({ page }) => {
+  await session(page);
+  await page.route("**/api/**", route => {
+    const url = route.request().url();
+    if (url.endsWith("/processos/7/baixa") || url.endsWith("/auth/refresh")) {
+      return route.fulfill({ status: 401, json: {} });
+    }
+    if (url.endsWith("/processos-contemplacao/7")) return route.fulfill({ json: { ...process, status: "FINALIZADO" } });
+    return route.fulfill({ json: { items: [], page: 0, total: 0, size: 20 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("O comprovante da baixa não está disponível para este processo.")).toHaveCount(0);
+});
+
+test("resultado incerto de escrita exige conferir o processo sem repetir a baixa", async ({ page }) => {
+  await session(page);
+  let posts = 0;
+  let reads = 0;
+  await page.route("**/api/**", route => {
+    const url = route.request().url();
+    if (url.endsWith("/processos/7/baixa")) {
+      posts++;
+      return route.abort("failed");
+    }
+    if (url.endsWith("/processos-contemplacao/7")) {
+      reads++;
+      return route.fulfill({ json: process });
+    }
+    return route.fulfill({ json: { items: [process], total: 1, page: 0, size: 20 } });
+  });
+  await page.goto("/admin/baixas?processo=7");
+  const close = page.getByRole("button", { name: "Concluir baixa", exact: true });
+  await close.click();
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Não foi possível confirmar se a baixa foi concluída." })).toBeVisible();
+  await expect(close).toBeDisabled();
+  await page.getByRole("button", { name: "Consultar novamente" }).click();
+  await expect(close).toBeEnabled();
+  expect(posts).toBe(1);
+  expect(reads).toBe(2);
+});
