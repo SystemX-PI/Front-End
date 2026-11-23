@@ -31,7 +31,7 @@ export function ChannelStatus({
                 : "amber"
           }
         >
-          {channel ? communicationStatus(channel.status) : "Sem canal"}
+          {channel ? communicationStatus(channel.status, channel.estadoDespacho) : "Sem canal"}
         </StatusPill>
       </span>
       {channel?.erro ? <p className="channel-error">{channel.erro}</p> : null}
@@ -81,7 +81,8 @@ export default function CommunicationQueue() {
       const accepted = channels.filter(channel => ["SUCESSO", "REALIZADA"].includes(channel.status)).length;
       const errors = channels.map(channel => channel.erro).filter(Boolean).join(" ");
       const failed = channels.some(channel => channel.status === "FALHA");
-      const message = accepted > 0
+      const queued = channels.some(channel => channel.estadoDespacho === "NA_FILA" || channel.estadoDespacho === "EM_ENVIO");
+      const message = queued ? "Solicitação na fila. Consulte o histórico para acompanhar." : accepted > 0
         ? accepted === channels.length
           ? "Envio aceito pelos canais configurados."
           : "Envio parcial. Um canal aceitou a mensagem e o outro precisa de atenção."

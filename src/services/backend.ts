@@ -3,6 +3,8 @@ import { ApiError, request } from "./http";
 import { normalizeContemplation } from "./format";
 
 export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
+export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "CONCLUIDO";
+export type ReconciliationResult = "ACEITO_PROVEDOR" | "NAO_ENVIADO";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
 export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";
 export type ProcessStatus =
@@ -59,6 +61,7 @@ export interface ChannelResponse {
   erro: string | null;
   criadaEm: string;
   enviadaEm: string | null;
+  estadoDespacho?: DispatchState | null;
 }
 
 export interface CommunicationResponse {
@@ -274,6 +277,10 @@ export const backend = {
         `/api/integracoes/processos/${id}/comunicacao/whatsapp`,
         { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ telefone, mensagem, remetenteId }) },
       ),
+    reconcileCommunication: (processId: number, attemptId: number, resultado: ReconciliationResult, evidencia: string) =>
+      apiRequest<void>(`/api/integracoes/processos/${processId}/comunicacoes/${attemptId}/reconciliacao`, {
+        method: "POST", body: JSON.stringify({ resultado, evidencia }),
+      }),
     createClosure: (id: number, observacao?: string) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, {
         method: "POST",
@@ -284,7 +291,7 @@ export const backend = {
   },
 };
 
-export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;estadoDespacho?:DispatchState | null;reconciliavel?:boolean;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
 export interface AssistantAction {
   token: string; tipo: "NOTIFICAR_WHATSAPP"; processoId: number; telefone: string; mensagem: string; aviso: string;
 }

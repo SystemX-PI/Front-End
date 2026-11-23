@@ -199,3 +199,46 @@ test("consulta mostra o comprovante original e informa falha de permissão ao at
   await expect(page.getByText(/Seu perfil não tem permissão/)).toBeVisible();
   await expect(page.getByText("Observação original")).toHaveCount(0);
 });
+
+test('histórico exige evidência para reconciliar um despacho incerto', async ({ page }) => {
+  await session(page);
+  let reconciled = false;
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/comunicacoes/19/reconciliacao')) {
+      expect(route.request().postDataJSON()).toEqual({
+        resultado: 'ACEITO_PROVEDOR',
+        evidencia: 'Aceite conferido no registro do provedor.',
+      });
+      reconciled = true;
+      return route.fulfill({ status: 204 });
+    }
+    if (path.endsWith('/comunicacoes/historico')) {
+      return route.fulfill({ json: { items: [{
+        id: 19, canal: 'WHATSAPP',
+        status: reconciled ? 'SUCESSO' : 'SEM_RESPOSTA',
+        estadoDespacho: reconciled ? 'CONCLUIDO' : 'INCERTO',
+        reconciliavel: !reconciled,
+      }], page: 0, total: 1, size: 20 } });
+    }
+    if (path.endsWith('/pagina')) {
+      return route.fulfill({ json: { items: [{
+        processoId: 7, statusProcesso: process.status,
+        comunicacao: { statusGeral: 'PENDENTE', email: null, whatsapp: null },
+      }], page: 0, total: 1, size: 20 } });
+    }
+    return route.fulfill({ json: process });
+  });
+  await page.goto('/admin/comunicacao');
+  await page.getByRole('link', { name: 'Processo #7', exact: true }).click();
+  await page.getByLabel('ID do processo', { exact: true }).fill('7');
+  await page.getByRole('button', { name: 'Consultar', exact: true }).click();
+  await page.getByRole('button', { name: 'Reconciliar tentativa #19' }).click();
+  await page.getByLabel('Resultado verificado').selectOption('ACEITO_PROVEDOR');
+  const submit = page.getByRole('button', { name: 'Registrar reconciliação' });
+  await expect(submit).toBeDisabled();
+  await page.getByLabel('Evidência verificada').fill('Aceite conferido no registro do provedor.');
+  await submit.click();
+  await expect(page.getByText('WhatsApp · Aceito pelo provedor')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reconciliar tentativa #19' })).toHaveCount(0);
+});

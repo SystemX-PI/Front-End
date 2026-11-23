@@ -32,7 +32,10 @@ export const readable = (value?: unknown) => {
     .replace(/^./, (letter) => letter.toUpperCase());
 };
 
-export function communicationStatus(value: unknown) {
+export function communicationStatus(value: unknown, dispatchState?: unknown) {
+  if (dispatchState === "NA_FILA") return "Na fila";
+  if (dispatchState === "EM_ENVIO") return "Em envio";
+  if (dispatchState === "INCERTO") return "Aguardando reconciliação";
   switch (value) {
     case "SUCESSO":
     case "REALIZADA": return "Aceito pelo provedor";

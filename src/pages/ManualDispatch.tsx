@@ -501,7 +501,7 @@ export default function ManualDispatch() {
           setFeedback({ kind: "success", message: successMsg });
           notify(successMsg, "success");
         } else {
-          const pendingMsg = `Solicitação registrada para o processo #${selectedProcessId}. Status retornado: ${communicationStatus(whatsappStatus || response.statusGeral)}.${whatsappError ? ` ${whatsappError}` : ""}`;
+          const pendingMsg = `Solicitação registrada para o processo #${selectedProcessId}. Status retornado: ${communicationStatus(whatsappStatus || response.statusGeral, response.whatsapp?.estadoDespacho)}.${whatsappError ? ` ${whatsappError}` : ""}`;
           setFeedback({ kind: "info", message: pendingMsg });
           notify(pendingMsg, "info");
         }

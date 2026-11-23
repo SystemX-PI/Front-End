@@ -15,6 +15,8 @@ export default function ProcessStatusEditor({ process, onChange }: {
   const [error, setError] = useState("");
   const options = process.transicoesPermitidas ?? [];
   const target = options.find(option => option === status);
+  const precisaEvidencia = target === "CLIENTE_CONTATADO";
+  const podeConfirmar = !!target && (!precisaEvidencia || !!note.trim());
 
   async function update() {
     if (busy || !target) return;
@@ -36,7 +38,7 @@ export default function ProcessStatusEditor({ process, onChange }: {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (target && !busy) setConfirm(true);
+    if (podeConfirmar && !busy) setConfirm(true);
   }
 
   if (process.status === "FINALIZADO" || process.status === "CANCELADO") {
@@ -56,11 +58,12 @@ export default function ProcessStatusEditor({ process, onChange }: {
         </select>
       </label>
       <label className="field">
-        Observação do andamento
-        <textarea value={note} maxLength={255} onChange={event => setNote(event.target.value)} />
+        {precisaEvidencia ? "Evidência de contato confirmado" : "Observação do andamento"}
+        <textarea required={precisaEvidencia} value={note} maxLength={255} onChange={event => setNote(event.target.value)} />
       </label>
+      {precisaEvidencia && <p>Registre como o contato foi confirmado. Aceite do provedor não comprova contato.</p>}
       {error && <p role="alert">{error}</p>}
-      <button className="button secondary" disabled={busy || !target}>Atualizar andamento</button>
+      <button className="button secondary" disabled={busy || !podeConfirmar}>Atualizar andamento</button>
       <ConfirmDialog open={confirm && !!target} title={target ? `Alterar andamento para ${readable(target)}?` : ""}
         description="Confira o novo status e a observação." confirmLabel="Confirmar alteração"
         onCancel={() => setConfirm(false)} onConfirm={() => void update()} />
