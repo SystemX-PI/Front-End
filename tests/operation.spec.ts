@@ -219,7 +219,10 @@ test('histórico exige evidência para reconciliar um despacho incerto', async (
         status: reconciled ? 'SUCESSO' : 'SEM_RESPOSTA',
         estadoDespacho: reconciled ? 'CONCLUIDO' : 'INCERTO',
         reconciliavel: !reconciled,
-      }], page: 0, total: 1, size: 20 } });
+      }, {
+        id: 20, canal: 'EMAIL', status: 'SEM_RESPOSTA',
+        estadoDespacho: 'INCERTO_EXECUCAO', reconciliavel: false,
+      }], page: 0, total: 2, size: 20 } });
     }
     if (path.endsWith('/pagina')) {
       return route.fulfill({ json: { items: [{
@@ -233,8 +236,9 @@ test('histórico exige evidência para reconciliar um despacho incerto', async (
   await page.getByRole('link', { name: 'Processo #7', exact: true }).click();
   await page.getByLabel('ID do processo', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Consultar', exact: true }).click();
+  await expect(page.getByText('Email · Aguardando encerramento do envio')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reconciliar tentativa #20' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Reconciliar tentativa #19' }).click();
-  await page.getByLabel('Resultado verificado').selectOption('ACEITO_PROVEDOR');
   const submit = page.getByRole('button', { name: 'Registrar reconciliação' });
   await expect(submit).toBeDisabled();
   await page.getByLabel('Evidência verificada').fill('Aceite conferido no registro do provedor.');

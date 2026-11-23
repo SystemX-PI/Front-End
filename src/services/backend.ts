@@ -3,7 +3,7 @@ import { ApiError, request } from "./http";
 import { normalizeContemplation } from "./format";
 
 export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
-export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "CONCLUIDO";
+export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "INCERTO_EXECUCAO" | "CONCLUIDO";
 export type ReconciliationResult = "ACEITO_PROVEDOR" | "NAO_ENVIADO";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
 export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";

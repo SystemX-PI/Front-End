@@ -35,6 +35,7 @@ export const readable = (value?: unknown) => {
 export function communicationStatus(value: unknown, dispatchState?: unknown) {
   if (dispatchState === "NA_FILA") return "Na fila";
   if (dispatchState === "EM_ENVIO") return "Em envio";
+  if (dispatchState === "INCERTO_EXECUCAO") return "Aguardando encerramento do envio";
   if (dispatchState === "INCERTO") return "Aguardando reconciliação";
   switch (value) {
     case "SUCESSO":

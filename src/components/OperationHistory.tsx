@@ -1,5 +1,5 @@
 import { useCallback, useState, type FormEvent } from "react";
-import { backend, type OperationEvent, type ReconciliationResult } from "../services/backend";
+import { backend, type OperationEvent } from "../services/backend";
 import { operationError } from "../services/operationErrors";
 import { useResource } from "../hooks/useResource";
 import { EmptyState, ErrorState, Skeleton } from "./DataUi";
@@ -23,18 +23,17 @@ export default function OperationHistory({ processId }: { processId: number }) {
   );
   const result = useResource(load);
   const [editing, setEditing] = useState<number | null>(null);
-  const [decision, setDecision] = useState<ReconciliationResult | "">("");
   const [evidence, setEvidence] = useState("");
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState("");
 
   async function reconcile(event: FormEvent<HTMLFormElement>, id: number) {
     event.preventDefault();
-    if (!evidence.trim() || !decision || saving) return;
+    if (!evidence.trim() || saving) return;
     setSaving(true);
     setFailure("");
     try {
-      await backend.processes.reconcileCommunication(processId, id, decision, evidence.trim());
+      await backend.processes.reconcileCommunication(processId, id, "ACEITO_PROVEDOR", evidence.trim());
       setEditing(null);
       result.refresh();
     } catch (err) {
@@ -90,20 +89,12 @@ export default function OperationHistory({ processId }: { processId: number }) {
                 {detail ? <p>{detail}</p> : null}
                 {e?.reconciliavel && e.id != null && (editing === e.id ? (
                   <form onSubmit={event => void reconcile(event, e.id!)} className="admin-form">
-                    <p>Confira o registro no provedor. Aceite não comprova contato.</p>
-                    <p>Para registrar que o envio não ocorreu, confirme que nenhuma execução pode retomá-lo e que há evidência de que ele não aconteceu.</p>
-                    <label className="field">Resultado verificado
-                      <select required value={decision} onChange={event => setDecision(event.target.value as ReconciliationResult | "")}>
-                        <option value="">Selecione</option>
-                        <option value="ACEITO_PROVEDOR">Aceito pelo provedor</option>
-                        <option value="NAO_ENVIADO">Envio comprovadamente não ocorreu</option>
-                      </select>
-                    </label>
+                    <p>Registre o aceite somente depois de verificá-lo no provedor. Resultados sem aceite verificado continuam bloqueados.</p>
                     <label className="field">Evidência verificada
                       <textarea required maxLength={255} value={evidence} onChange={event => setEvidence(event.target.value)} />
                     </label>
                     {failure && <p role="alert">{failure}</p>}
-                    <button className="button secondary compact" disabled={saving || !decision || !evidence.trim()}>
+                    <button className="button secondary compact" disabled={saving || !evidence.trim()}>
                       Registrar reconciliação
                     </button>
                     <button type="button" className="button secondary compact" disabled={saving} onClick={() => setEditing(null)}>
@@ -113,7 +104,6 @@ export default function OperationHistory({ processId }: { processId: number }) {
                 ) : (
                   <button className="button secondary compact" disabled={saving} type="button" onClick={() => {
                     setEditing(e.id!);
-                    setDecision("");
                     setEvidence("");
                     setFailure("");
                   }}>Reconciliar tentativa #{e.id}</button>
