@@ -68,7 +68,15 @@ npm run lint
 npm run test:ui
 ```
 
-O build gera `dist`. Os testes de interface usam respostas controladas e um navegador local; o teste real em `tests/live.spec.ts` é opcional e exige `SYSTEMX_TEST_TOKEN` de administrador e backend ativo. O servidor de testes usa 5174 para isolar a execução do desenvolvimento.
+O build gera `dist`. `npm run test:ui` usa respostas controladas no Chromium e inicia o Vite local na porta 5174.
+
+### Playwright com API e MySQL isolados
+
+1. Inicie um MySQL descartável em loopback e configure um schema vazio e um usuário exclusivo. Inicie o Spring Boot em `127.0.0.1:18087` com Flyway habilitado, esse datasource e `CORS_ALLOWED_ORIGINS=http://127.0.0.1:5177`. Use `APP_JWT_EXPIRATION_SECONDS=20` e um segredo JWT exclusivo e efêmero.
+2. Desative WhatsApp, e-mail, Stripe e pagamento simulado. Use endereços de loopback sem serviço para Evolution e qualquer conector externo. Não forneça credenciais de produção.
+3. Depois de aplicar Flyway, gere uma senha efêmera e calcule o BCrypt dela. Na mesma conexão MySQL, defina `@test_password_hash` com o hash e execute `tests/fixtures/lote07.sql`. O arquivo cria apenas usuários e processos fictícios.
+4. Execute `npm run test:ui:real` com `SYSTEMX_E2E_PASSWORD` no ambiente. Use o mesmo valor empregado para gerar o BCrypt. A configuração exclusiva inicia o Vite na porta 5177, força o proxy para a API em 18087 e desliga o mock.
+5. A suíte altera processos e registra baixas e solicitações de comunicação. Recrie o schema descartável para repetir a execução completa. Remova as credenciais efêmeras e o banco de teste após validar.
 
 A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. Os endpoints futuros e os estados de indisponibilidade estão descritos em [CONTRATO_OPERACAO.md](CONTRATO_OPERACAO.md). Veja [a entrega do frontend](ENTREGA_FRONTEND.md) para validações e pendências de integração.
 
