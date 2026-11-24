@@ -1,22 +1,26 @@
 export class ApiError extends Error {
   readonly status: number;
   readonly fields: Record<string, string>;
+  readonly transport?: "timeout" | "network";
 
   constructor(
     message: string,
     status = 0,
     fields: Record<string, string> = {},
+    transport?: "timeout" | "network",
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.fields = fields;
+    this.transport = transport;
   }
 }
 
 const statusMessages: Record<number, string> = {
   400: "Confira os campos informados e tente novamente.",
   401: "Sua sessão expirou. Entre novamente.",
+  402: "Esta ação exige uma conta com plano ou teste ativo.",
   403: "Seu perfil não tem permissão para realizar esta ação.",
   404: "O registro ou recurso solicitado não foi encontrado.",
   409: "Operacao em conflito: confira valores duplicados ou registros vinculados.",
@@ -94,28 +98,27 @@ export async function request(
   if (options.body) headers.set("Content-Type", "application/json");
   headers.set("Accept", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  let response: Response;
+  const timeout = AbortSignal.timeout(30000);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  let responseStatus = 0;
   try {
-    response = await fetch(
+    const response = await fetch(
       `${(import.meta.env.VITE_API_URL || "").replace(/\/$/, "")}${path}`,
-      {
-        ...options,
-        headers,
-        signal: options.signal ?? AbortSignal.timeout(30000),
-      },
+      { ...options, headers, signal },
     );
+    responseStatus = response.status;
+    return await parseApiResponse<unknown>(response, authentication);
   } catch (error) {
-    if (
-      error instanceof DOMException &&
-      error.name === "AbortError" &&
-      options.signal?.aborted
-    )
-      throw error;
+    if (options.signal?.aborted || error instanceof ApiError) throw error;
+    if (timeout.aborted || (error instanceof DOMException && error.name === "TimeoutError")) {
+      throw new ApiError(
+        "A resposta demorou mais que o esperado. Confira o status antes de repetir a operação.",
+        responseStatus, {}, "timeout",
+      );
+    }
     throw new ApiError(
-      error instanceof DOMException && error.name === "TimeoutError"
-        ? "A resposta demorou mais que o esperado. Confira o status antes de repetir a operação."
-        : "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      responseStatus, {}, "network",
     );
   }
-  return parseApiResponse<unknown>(response, authentication);
 }

@@ -1,8 +1,10 @@
-import { getToken, renewSession } from "./auth";
+import { getToken, renewSession, type AuthResponse } from "./auth";
 import { ApiError, request } from "./http";
 import { normalizeContemplation } from "./format";
 
-export type UserType = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE";
+export type UserType = AuthResponse["tipo"];
+export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "INCERTO_EXECUCAO" | "CONCLUIDO";
+export type ReconciliationResult = "ACEITO_PROVEDOR" | "NAO_ENVIADO";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
 export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";
 export type ProcessStatus =
@@ -47,6 +49,7 @@ export interface ProcessResponse {
   contemplacaoId: number;
   responsavelId: number | null;
   status: ProcessStatus;
+  transicoesPermitidas?: ProcessStatus[];
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -58,6 +61,7 @@ export interface ChannelResponse {
   erro: string | null;
   criadaEm: string;
   enviadaEm: string | null;
+  estadoDespacho?: DispatchState | null;
 }
 
 export interface CommunicationResponse {
@@ -253,7 +257,6 @@ export const backend = {
       payload: {
         status: ProcessStatus;
         observacao?: string;
-        usuarioId: number;
       },
     ) =>
       apiRequest<ProcessResponse>(`/api/processos-contemplacao/${id}/status`, {
@@ -264,27 +267,31 @@ export const backend = {
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao`,
       ),
-    resendCommunication: (id: number) =>
+    resendCommunication: (id: number, key = crypto.randomUUID()) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/reenvio`,
-        { method: "POST" },
+        { method: "POST", headers: { "Idempotency-Key": key } },
       ),
-    sendWhatsApp: (id: number, telefone: string, mensagem: string, remetenteId?: number) =>
+    sendWhatsApp: (id: number, telefone: string, mensagem: string, remetenteId?: number, key = crypto.randomUUID()) =>
       apiRequest<CommunicationResponse>(
         `/api/integracoes/processos/${id}/comunicacao/whatsapp`,
-        { method: "POST", body: JSON.stringify({ telefone, mensagem, remetenteId }) },
+        { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ telefone, mensagem, remetenteId }) },
       ),
-    createClosure: (id: number, usuarioId: number, observacao?: string) =>
+    reconcileCommunication: (processId: number, attemptId: number, resultado: ReconciliationResult, evidencia: string) =>
+      apiRequest<void>(`/api/integracoes/processos/${processId}/comunicacoes/${attemptId}/reconciliacao`, {
+        method: "POST", body: JSON.stringify({ resultado, evidencia }),
+      }),
+    createClosure: (id: number, observacao?: string) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, {
         method: "POST",
-        body: JSON.stringify({ usuarioId, observacao }),
+        body: JSON.stringify({ observacao }),
       }),
     getClosure: (id: number, signal?: AbortSignal) =>
       apiRequest<ClosureResponse>(`/api/integracoes/processos/${id}/baixa`, { signal }),
   },
 };
 
-export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;estadoDespacho?:DispatchState | null;reconciliavel?:boolean;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
 export interface AssistantAction {
   token: string; tipo: "NOTIFICAR_WHATSAPP"; processoId: number; telefone: string; mensagem: string; aviso: string;
 }
@@ -293,6 +300,3 @@ export const assistant = {
   message: (mensagem: string) => apiRequest<AssistantResponse>("/api/assistente/mensagens", { method: "POST", body: JSON.stringify({ mensagem }) }),
   confirm: (token: string) => apiRequest<CommunicationResponse>(`/api/assistente/acoes/${encodeURIComponent(token)}/confirmar`, { method: "POST" }),
 };
-export function sessionUserId(): number | null {
- try { const part=getToken()?.split('.')[1]; if(!part)return null;const data=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));return Number.isSafeInteger(data.uid)&&data.uid>0?data.uid:null; } catch {return null;}
-}

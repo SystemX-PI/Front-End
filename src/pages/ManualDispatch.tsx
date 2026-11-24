@@ -13,7 +13,7 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import { ChannelStatus } from "../components/CommunicationQueue";
@@ -39,7 +39,7 @@ import {
   type QueueItem,
   type UserResponse,
 } from "../services/backend";
-import { digits, formatDate, formatPhone, readable } from "../services/format";
+import { communicationStatus, digits, formatDate, formatPhone, readable } from "../services/format";
 import { notify } from "../services/notifications";
 import { platformRequest, type Context } from "../services/platform";
 
@@ -455,22 +455,34 @@ export default function ManualDispatch() {
     setConfirmOpen(true);
   }
 
+  const pendingDispatch = useRef<{ signature: string; key: ReturnType<typeof crypto.randomUUID> } | null>(null);
+
   async function executeManualDispatch() {
     if (selectedProcessId === null || !hasSelectedTarget || sending) return;
     setConfirmOpen(false);
     setSending(true);
     setFeedback(null);
 
+    const cleanPhone = digits(effectivePhone);
+    const cleanMessage = message.trim();
+    const signature = JSON.stringify(channelMode === "WHATSAPP"
+      ? [selectedProcessId, channelMode, cleanPhone, cleanMessage, selectedSenderId]
+      : [selectedProcessId, channelMode]);
+    if (pendingDispatch.current?.signature !== signature) {
+      pendingDispatch.current = { signature, key: crypto.randomUUID() };
+    }
+    const key = pendingDispatch.current.key;
+
     try {
       if (channelMode === "WHATSAPP") {
-        const cleanPhone = digits(effectivePhone);
-        const cleanMessage = message.trim();
         const response = await backend.processes.sendWhatsApp(
           selectedProcessId,
           cleanPhone,
           cleanMessage,
           selectedSenderId ?? undefined,
+          key,
         );
+        pendingDispatch.current = null;
         setManualCommOverride(response);
         setHistoryRevision((value) => value + 1);
         queueResource.refresh();
@@ -478,24 +490,25 @@ export default function ManualDispatch() {
 
         const whatsappError = response.whatsapp?.erro;
         const whatsappStatus = response.whatsapp?.status;
-        if (whatsappError || whatsappStatus === "FALHA") {
+        if (whatsappStatus === "FALHA") {
           const errorMsg =
             whatsappError ||
             "O backend registrou falha ao tentar enviar a mensagem pelo WhatsApp.";
           setFeedback({ kind: "error", message: errorMsg });
           notify(errorMsg, "error");
         } else if (response.whatsapp && (whatsappStatus === "SUCESSO" || whatsappStatus === "REALIZADA")) {
-          const successMsg = `Disparo manual de WhatsApp confirmado para o processo #${selectedProcessId} (${formatPhone(cleanPhone)}). Registro #${response.whatsapp.id} no histórico.`;
+          const successMsg = `Envio de WhatsApp aceito pelo provedor para o processo #${selectedProcessId} (${formatPhone(cleanPhone)}). Registro #${response.whatsapp.id} no histórico.`;
           setFeedback({ kind: "success", message: successMsg });
           notify(successMsg, "success");
         } else {
-          const pendingMsg = `Solicitação registrada para o processo #${selectedProcessId}. Status retornado: ${readable(whatsappStatus || response.statusGeral)}.`;
+          const pendingMsg = `Solicitação registrada para o processo #${selectedProcessId}. Status retornado: ${communicationStatus(whatsappStatus || response.statusGeral, response.whatsapp?.estadoDespacho)}.${whatsappError ? ` ${whatsappError}` : ""}`;
           setFeedback({ kind: "info", message: pendingMsg });
           notify(pendingMsg, "info");
         }
       } else {
         const response =
-          await backend.processes.resendCommunication(selectedProcessId);
+          await backend.processes.resendCommunication(selectedProcessId, key);
+        pendingDispatch.current = null;
         setManualCommOverride(response);
         setHistoryRevision((value) => value + 1);
         queueResource.refresh();
@@ -508,7 +521,7 @@ export default function ManualDispatch() {
           setFeedback({ kind: "error", message: errors });
           notify(errors, "error");
         } else if (response.statusGeral !== "PENDENTE") {
-          const successMsg = `Reenvio oficial processado para o processo #${selectedProcessId}. Status geral: ${readable(response.statusGeral)}.`;
+          const successMsg = `Reenvio aceito em pelo menos um canal para o processo #${selectedProcessId}. Status geral: ${readable(response.statusGeral)}.`;
           setFeedback({ kind: "success", message: successMsg });
           notify(successMsg, "success");
         } else {
