@@ -4,7 +4,7 @@ Plataforma por contas de clientes, com React, TypeScript e Vite. Inclui landing 
 
 ## Docker: forma recomendada para a equipe
 
-Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-end`, execute:
+Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-end`, prepare o `.env` e seus segredos conforme o [guia de instalação](https://github.com/SystemX-PI/Back-end#subir-o-projeto-completo-com-docker). Em seguida, execute:
 
 ```powershell
 docker compose --profile full up --build -d --wait --wait-timeout 600
@@ -14,7 +14,7 @@ Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evol
 
 Após receber mudanças, faça `git pull --ff-only` nos dois repositórios e repita o comando com `--build`. O cache reutiliza imagens e dependências; não use `--no-cache`. As imagens são geradas localmente a partir do código recebido, sem publicação automática em um registro Docker.
 
-Se a API já estiver rodando em localhost:8080, também é possível iniciar **somente o frontend**, nesta pasta:
+Para iniciar **somente o frontend** com uma API acessível pela rede do Docker na porta 8080, prepare o `.env` a partir de `.env.example` e execute nesta pasta:
 
 ```powershell
 docker compose up --build -d --wait --wait-timeout 600
@@ -37,7 +37,7 @@ Acesse o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Sem m
 
 ### Login com Google
 
-Copie `.env.example` para `.env` e defina `VITE_GOOGLE_CLIENT_ID` com o Client ID público de um cliente OAuth **Web application** criado no Google Cloud. Para o Vite local, autorize as origens `http://localhost` e `http://localhost:5173` no Google Cloud. O back-end também precisa receber o mesmo Client ID em `GOOGLE_CLIENT_ID` para validar o token. O botão real do Google aparece na tela `/login`; sem Client ID, o front exibe uma orientação e mantém o login por e-mail/senha disponível.
+Copie `.env.example` para `.env`. O exemplo usa o Client ID público do SystemX em `VITE_GOOGLE_CLIENT_ID`. O back-end precisa do mesmo ID em `GOOGLE_CLIENT_ID` para validar o token. Cadastre no Google Cloud as origens exatas usadas no navegador, como `http://localhost:5173`. Variáveis `VITE_*` ficam públicas no bundle. O login por e-mail e senha continua disponível.
 
 Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](https://github.com/SystemX-PI/Back-end#login-com-google).
 
