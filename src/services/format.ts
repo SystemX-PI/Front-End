@@ -14,7 +14,9 @@ export function formatPhone(value?: string | null) {
 
 export function formatDate(value?: string | null) {
   if (!value || typeof value !== "string") return "Não informado";
-  const date = new Date(value);
+  // Os DTOs operacionais enviam LocalDateTime em UTC sem sufixo.
+  const utcWithoutOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
+  const date = new Date(utcWithoutOffset.test(value) ? `${value}Z` : value);
   return Number.isNaN(date.getTime())
     ? "Data indisponível"
     : new Intl.DateTimeFormat("pt-BR", {
@@ -31,6 +33,21 @@ export const readable = (value?: unknown) => {
     .replaceAll("_", " ")
     .replace(/^./, (letter) => letter.toUpperCase());
 };
+
+export function communicationStatus(value: unknown, dispatchState?: unknown) {
+  if (dispatchState === "NA_FILA") return "Na fila";
+  if (dispatchState === "EM_ENVIO") return "Em envio";
+  if (dispatchState === "INCERTO_EXECUCAO") return "Aguardando encerramento do envio";
+  if (dispatchState === "INCERTO") return "Aguardando reconciliação";
+  switch (value) {
+    case "SUCESSO":
+    case "REALIZADA": return "Aceito pelo provedor";
+    case "SEM_RESPOSTA": return "Sem confirmação";
+    case "FALHA": return "Falha na tentativa";
+    case "PENDENTE": return "Pendente";
+    default: return readable(value);
+  }
+}
 
 export function positiveId(value: number, field: string) {
   if (!Number.isSafeInteger(value) || value <= 0)

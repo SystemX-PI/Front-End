@@ -4,17 +4,17 @@ Plataforma por contas de clientes, com React, TypeScript e Vite. Inclui landing 
 
 ## Docker: forma recomendada para a equipe
 
-Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-end`, execute:
+Clone este repositório como `Front-End` ao lado de `Back-end`. Na pasta `Back-end`, prepare o `.env` e seus segredos conforme o [guia de instalação](https://github.com/SystemX-PI/Back-end#subir-o-projeto-completo-com-docker). Em seguida, execute:
 
 ```powershell
 docker compose --profile full up --build -d --wait --wait-timeout 600
 ```
 
-Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evolution, PostgreSQL e Redis. Acesse http://localhost:5173. O backend permanece em 8080; o Nginx encaminha `/api` automaticamente. Não é necessário instalar Node ou Java. Veja o guia completo em `Back-end/LOCAL.md`.
+Ou execute `./start.ps1` na pasta `Back-end`. Isso inicia site, API, MySQL, Evolution, PostgreSQL e Redis. Acesse http://localhost:5173. O backend permanece em 8080; o Nginx encaminha `/api` automaticamente. Não é necessário instalar Node ou Java. Veja o [guia local do Back-end](https://github.com/SystemX-PI/Back-end#subir-o-projeto-completo-com-docker).
 
 Após receber mudanças, faça `git pull --ff-only` nos dois repositórios e repita o comando com `--build`. O cache reutiliza imagens e dependências; não use `--no-cache`. As imagens são geradas localmente a partir do código recebido, sem publicação automática em um registro Docker.
 
-Se a API já estiver rodando em localhost:8080, também é possível iniciar **somente o frontend**, nesta pasta:
+Para iniciar **somente o frontend** com uma API acessível pela rede do Docker na porta 8080, prepare o `.env` a partir de `.env.example` e execute nesta pasta:
 
 ```powershell
 docker compose up --build -d --wait --wait-timeout 600
@@ -37,9 +37,9 @@ Acesse o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Sem m
 
 ### Login com Google
 
-Copie `.env.example` para `.env` e defina `VITE_GOOGLE_CLIENT_ID` com o Client ID público de um cliente OAuth **Web application** criado no Google Cloud. Para o Vite local, autorize as origens `http://localhost` e `http://localhost:5173` no Google Cloud. O back-end também precisa receber o mesmo Client ID em `GOOGLE_CLIENT_ID` para validar o token. O botão real do Google aparece na tela `/login`; sem Client ID, o front exibe uma orientação e mantém o login por e-mail/senha disponível.
+Copie `.env.example` para `.env`. O exemplo usa o Client ID público do SystemX em `VITE_GOOGLE_CLIENT_ID`. O back-end precisa do mesmo ID em `GOOGLE_CLIENT_ID` para validar o token. Cadastre no Google Cloud as origens exatas usadas no navegador, como `http://localhost:5173`. Variáveis `VITE_*` ficam públicas no bundle. O login por e-mail e senha continua disponível.
 
-Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](../Back-end/README.md#login-com-google).
+Se a conta Google ainda não tiver cadastro, a tela de login encaminha diretamente ao cadastro e pede o nome da empresa. A conta só é criada após confirmar em **Concluir cadastro**. Se o e-mail já pertencer a uma conta local, entre com a senha local e vincule Google em **Meu perfil**; isso evita associação automática somente por e-mail. A configuração do Google Cloud, os comandos de execução e a política de produção estão documentados no [guia do Back-end](https://github.com/SystemX-PI/Back-end#login-com-google).
 
 Na tela `/register`, o botão **Fazer Cadastro com o Google** inicia um cadastro separado: depois de selecionar a conta Google, a pessoa informa somente o nome da empresa. Ao concluir, a aplicação cria a conta e abre uma sessão. O cadastro por e-mail e senha permanece disponível.
 
@@ -68,11 +68,21 @@ npm run lint
 npm run test:ui
 ```
 
-O build gera `dist`. Os testes de interface usam respostas controladas e um navegador local; o teste real em `tests/live.spec.ts` é opcional e exige `SYSTEMX_TEST_TOKEN` de administrador e backend ativo. O servidor de testes usa 5174 para isolar a execução do desenvolvimento.
+O build gera `dist`. `npm run test:ui` usa respostas controladas no Chromium e inicia o Vite local na porta 5174.
 
-A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. Os endpoints futuros e os estados de indisponibilidade estão descritos em [CONTRATO_OPERACAO.md](CONTRATO_OPERACAO.md). Veja [a entrega do frontend](ENTREGA_FRONTEND.md) para validações e pendências de integração.
+### Playwright com API e MySQL isolados
 
-- [Relatório da plataforma e das validações](RELATORIO_PLATAFORMA.md)
-- [Checklist de evolução da interface](CHECKLIST_FRONTEND.md)
+1. Inicie um MySQL descartável em loopback e configure um schema vazio e um usuário exclusivo. Inicie o Spring Boot em `127.0.0.1:18087` com Flyway habilitado, esse datasource e `CORS_ALLOWED_ORIGINS=http://127.0.0.1:5177`. Use `APP_JWT_EXPIRATION_SECONDS=20` e um segredo JWT exclusivo e efêmero.
+2. Desative WhatsApp, e-mail, Stripe e pagamento simulado. Use endereços de loopback sem serviço para Evolution e qualquer conector externo. Não forneça credenciais de produção.
+3. Depois de aplicar Flyway, gere uma senha efêmera e calcule o BCrypt dela. Na mesma conexão MySQL, defina `@test_password_hash` com o hash e execute `tests/fixtures/lote07.sql`. O arquivo cria apenas usuários e processos fictícios.
+4. Execute `npm run test:ui:real` com `SYSTEMX_E2E_PASSWORD` no ambiente. Use o mesmo valor empregado para gerar o BCrypt. A configuração exclusiva inicia o Vite na porta 5177, força o proxy para a API em 18087 e desliga o mock.
+5. A suíte altera processos e registra baixas e solicitações de comunicação. Recrie o schema descartável para repetir a execução completa. Remova as credenciais efêmeras e o banco de teste após validar.
+
+A operação de consórcios está disponível em `/admin/dashboard`, com cadastros, comunicação, contemplados, baixas e auditoria. Administradores e funcionários encontram o acesso no seu espaço; clientes acompanham processos em `/portal`. A documentação dos contratos HTTP fica no repositório de arquitetura. O roteiro de demonstração abaixo mostra como reproduzir os fluxos principais.
+
+- [Relatório consolidado de alterações](relatorios%20de%20altera%C3%A7%C3%B5es/RELATORIO_CONSOLIDADO_ALTERACOES.md)
+- [Roteiro de demonstração e validação](docs/ensaio-demonstracao.md)
 
 A recuperação por e-mail exige o remetente Gmail da plataforma configurado no backend. O código expira em cinco minutos. O aviso do teste permanece somente na visão geral, além de uma notificação após o login.
+
+Para executar a suíte real contra o Nginx e a API do Compose de validação já em execução, use `SYSTEMX_E2E_COMPOSE=1` junto com a senha efêmera. A opção pula o servidor Vite do Playwright e reutiliza a porta 5177. O tutorial está em `Back-end/LOCAL.md` no checkout irmão.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -11,24 +11,29 @@ import {
 import { InlineFeedback } from "../components/IntegrationUi";
 import {
   backend,
-  sessionUserId,
   type ProcessResponse,
   type ClosureResponse,
 } from "../services/backend";
+import { ApiError } from "../services/http";
 import { useResource } from "../hooks/useResource";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { operationError } from "../services/operationErrors";
+import { closureReadFailure, unavailable } from "../services/operationErrors";
 import { formatDate, readable } from "../services/format";
 
 export default function Closures() {
   const [params, setParams] = useSearchParams();
-  const page = Math.max(1, Number(params.get("page")) || 1);
-  const [search, setSearch] = useState(params.get("q") || "");
+  const requestedPage = Number(params.get("page"));
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 2147483647 ? requestedPage : 1;
+  const search = params.get("q") || "";
   const q = useDebouncedValue(search);
   const finalized = params.get("status") === "FINALIZADO";
   const load = useCallback(
     (signal: AbortSignal) =>
-      backend.operation.closures(page - 1, q, finalized ? "FINALIZADO" : "EM_PROCESSO_DE_BAIXA", signal).catch(operationError),
+      backend.operation.closures(page - 1, q, finalized ? "FINALIZADO" : "EM_PROCESSO_DE_BAIXA", signal).catch((failure: unknown) => {
+        if (signal.aborted) throw failure;
+        if (unavailable(failure)) throw new Error("A listagem de baixas está aguardando a integração do serviço.");
+        throw new Error(closureReadFailure(failure).message);
+      }),
     [page, q, finalized],
   );
   const list = useResource(load);
@@ -43,45 +48,88 @@ export default function Closures() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState("");
+  const [retryId, setRetryId] = useState<string | null>(null);
+  const [missingReceipt, setMissingReceipt] = useState(false);
+  const [requiresReview, setRequiresReview] = useState(false);
+  const selectedId = useRef("");
+  const lookup = useRef<AbortController | null>(null);
+  const lastPage = Math.max(1, Math.ceil((list.data?.total ?? 0) / (list.data?.size || 20)));
 
-  const lookupById = useCallback(async (rawId: string, signal?: AbortSignal) => {
+  useEffect(() => {
+    if (list.loading || list.error || !list.data || list.data.page !== page - 1 || page <= lastPage) return;
+    setParams(current => {
+      const next = new URLSearchParams(current);
+      next.set("page", String(lastPage));
+      return next;
+    }, { replace: true });
+  }, [lastPage, list.data, list.error, list.loading, page, setParams]);
+
+  const lookupById = useCallback(async (rawId: string) => {
+    lookup.current?.abort();
+    const controller = new AbortController();
+    lookup.current = controller;
+    const { signal } = controller;
     setBusy(true);
     setError("");
-    setProcess(null);
-    setClosure(null);
-    setNote("");
+    setRetryId(null);
+    setMissingReceipt(false);
+    if (selectedId.current !== rawId) {
+      selectedId.current = rawId;
+      setProcess(null);
+      setClosure(null);
+      setNote("");
+      setRequiresReview(false);
+    }
     try {
       const value = Number(rawId);
       if (!Number.isSafeInteger(value) || value < 1) {
-        throw new Error("Informe um processo válido.");
+        setError("Informe um processo válido.");
+        return;
       }
       const p = await backend.processes.get(value, signal);
-      if (signal?.aborted) return;
-      if (!p || !Number.isSafeInteger(p.id) || typeof p.status !== "string") {
-        throw new Error(
-          "O servidor retornou dados incompletos para o processo.",
-        );
+      if (signal.aborted) return;
+      if (!p || p.id !== value || typeof p.status !== "string") {
+        setError("O servidor retornou dados incompletos para o processo.");
+        return;
       }
       setProcess(p);
       if (p.status === "FINALIZADO") {
-        const c = await backend.processes.getClosure(value, signal).catch(() => null);
-        if (!signal?.aborted) setClosure(c);
+        try {
+          const c = await backend.processes.getClosure(value, signal);
+          if (!signal.aborted) setClosure(c);
+        } catch (failure) {
+          if (signal.aborted) return;
+          if (failure instanceof ApiError && failure.status === 404) {
+            setClosure(null);
+            setMissingReceipt(true);
+            return;
+          }
+          throw failure;
+        }
+      } else {
+        setClosure(null);
       }
-    } catch (e) {
-      if (!signal?.aborted) setError((e as Error).message);
+      setRequiresReview(false);
+    } catch (failure) {
+      if (signal.aborted) return;
+      if (failure instanceof ApiError && [401, 403, 404].includes(failure.status)) setClosure(null);
+      const result = closureReadFailure(failure);
+      setError(result.message);
+      if (result.retry) setRetryId(rawId);
     } finally {
-      if (!signal?.aborted) setBusy(false);
+      if (!signal.aborted) setBusy(false);
     }
-  }, [setBusy, setError, setProcess, setClosure, setNote]);
+  }, [setBusy, setError, setRetryId, setMissingReceipt, setProcess, setClosure, setNote, setRequiresReview]);
 
   useEffect(() => {
-    const trimmed = paramProcessId.trim();
-    if (!trimmed) return;
-    const controller = new AbortController();
-    queueMicrotask(() => {
-      if (!controller.signal.aborted) void lookupById(trimmed, controller.signal);
+    let disposed = false;
+    if (paramProcessId) void Promise.resolve().then(() => {
+      if (!disposed) void lookupById(paramProcessId);
     });
-    return () => controller.abort();
+    return () => {
+      disposed = true;
+      lookup.current?.abort();
+    };
   }, [paramProcessId, lookupById]);
 
   async function inspect(event: FormEvent) {
@@ -101,27 +149,29 @@ export default function Closures() {
   }
 
   async function close() {
-    if (!process || busy) return;
+    if (process?.status !== "EM_PROCESSO_DE_BAIXA" || closure || busy || requiresReview) return;
     setConfirm(false);
     setBusy(true);
     setError("");
     try {
-      const uid = sessionUserId();
-      if (!uid) {
-        throw new Error(
-          "Entre novamente para identificar o responsável pela baixa.",
-        );
-      }
       const result = await backend.processes.createClosure(
         process.id,
-        uid,
         note.trim(),
       );
       setClosure(result);
-      setProcess({ ...process, status: "FINALIZADO" });
+      setProcess({ ...process, status: "FINALIZADO", transicoesPermitidas: [] });
       list.refresh();
     } catch (e) {
-      setError((e as Error).message);
+      if (e instanceof ApiError && e.status === 409) {
+        list.refresh();
+        setError("A baixa só pode ser concluída na etapa Em processo de baixa. Consulte o processo novamente para ver o status atual.");
+      } else if (e instanceof ApiError && (e.transport || e.status >= 500)) {
+        setError("Não foi possível confirmar se a baixa foi concluída. Consulte o processo antes de tentar novamente.");
+      } else {
+        setError(closureReadFailure(e).message);
+      }
+      setRequiresReview(true);
+      if (closureReadFailure(e).retry) setRetryId(String(process.id));
     } finally {
       setBusy(false);
     }
@@ -157,14 +207,13 @@ export default function Closures() {
           <input
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
               const nextParams: Record<string, string> = {
                 q: e.target.value,
                 page: "1",
               };
               if (finalized) nextParams.status = "FINALIZADO";
               if (paramProcessId) nextParams.processo = paramProcessId;
-              setParams(nextParams);
+              setParams(nextParams, { replace: true });
             }}
           />
         </label>
@@ -193,17 +242,10 @@ export default function Closures() {
                       <td role="cell" data-label="Ação">
                         <button
                           className="button secondary"
+                          disabled={busy}
                           onClick={() => {
-                            if (p.status === "FINALIZADO") {
-                              setId(String(p.id));
-                              void lookupById(String(p.id));
-                              return;
-                            }
                             setId(String(p.id));
-                            setProcess(p);
-                            setClosure(null);
-                            setError("");
-                            setNote("");
+                            void lookupById(String(p.id));
                           }}
                         >
                           Conferir processo #{p.id}
@@ -216,8 +258,8 @@ export default function Closures() {
             </div>
             <Pagination
               page={page}
-              total={list.data?.total || validItems.length}
-              size={20}
+              total={list.data?.total ?? validItems.length}
+              size={list.data?.size || 20}
               onChange={(n) => {
                 const nextParams: Record<string, string> = {
                   q: search,
@@ -246,11 +288,14 @@ export default function Closures() {
             min="1"
             step="1"
             value={id}
+            disabled={busy}
             onChange={(e) => {
               setId(e.target.value);
               setProcess(null);
               setClosure(null);
               setError("");
+              setRetryId(null);
+              setMissingReceipt(false);
             }}
           />
         </label>
@@ -259,6 +304,8 @@ export default function Closures() {
         </button>
       </form>
       {error && <InlineFeedback message={error} kind="error" />}
+      {retryId && <button type="button" className="button secondary" disabled={busy}
+        onClick={() => void lookupById(retryId)}>Consultar novamente</button>}
       {process && (
         <section className="panel admin-form">
           <h2>Processo #{process.id}</h2>
@@ -278,6 +325,8 @@ export default function Closures() {
               </p>
               <p>{closure.observacao}</p>
             </div>
+          ) : process.status === "FINALIZADO" ? (
+            missingReceipt && <p role="status">O comprovante da baixa não está disponível para este processo.</p>
           ) : process.status === "EM_PROCESSO_DE_BAIXA" ? (
             <>
               <p>
@@ -294,7 +343,7 @@ export default function Closures() {
               </label>
               <button
                 className="button primary"
-                disabled={busy}
+                disabled={busy || requiresReview}
                 onClick={() => setConfirm(true)}
               >
                 Concluir baixa

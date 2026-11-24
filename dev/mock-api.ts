@@ -2,6 +2,22 @@ import type { Plugin } from "vite";
 
 type MockRole = "ADMINISTRADOR" | "FUNCIONARIO" | "CLIENTE" | "USUARIO";
 
+// Espelha as transições manuais do backend para a API de demonstração.
+const nextProcessStatus: Record<string, string> = {
+  CONTEMPLADO: "AGUARDANDO_COMUNICACAO",
+  AGUARDANDO_COMUNICACAO: "EM_COMUNICACAO",
+  EM_COMUNICACAO: "CLIENTE_CONTATADO",
+  CLIENTE_CONTATADO: "AGUARDANDO_DOCUMENTOS",
+  AGUARDANDO_DOCUMENTOS: "DOCUMENTOS_RECEBIDOS",
+  DOCUMENTOS_RECEBIDOS: "EM_ANALISE",
+  EM_ANALISE: "EM_PROCESSO_DE_BAIXA",
+};
+
+function processTransitions(status: string): string[] {
+  if (status === "EM_PROCESSO_DE_BAIXA") return ["CANCELADO"];
+  return Object.hasOwn(nextProcessStatus, status) ? [nextProcessStatus[status], "CANCELADO"] : [];
+}
+
 function createMockJwt(payload: {
   uid: number;
   email: string;
@@ -408,6 +424,7 @@ export function devMockPlugin(): Plugin {
       erro: string | null;
       criadaEm: string;
       enviadaEm: string | null;
+      comunicadoOriginalId?: number;
     }>
   >([
     [
@@ -586,6 +603,8 @@ export function devMockPlugin(): Plugin {
     },
   ];
 
+  const originalCommunications = new Map(queueItems.map(item => [item.processoId, structuredClone(item.comunicacao)]));
+  const communicationReplays = new Map<string, { payload: string; response: unknown }>();
   let nextIdCounter = 200;
 
   return {
@@ -1256,40 +1275,30 @@ export function devMockPlugin(): Plugin {
                 404,
               );
             }
+            const key = req.headers["idempotency-key"];
+            const replayKey = typeof key === "string" ? `${pathname}:${key}` : null;
+            const replay = replayKey && communicationReplays.get(replayKey);
+            if (replay) return sendJson(replay.response);
             const sentAt = new Date().toISOString();
-            if (queueItem.comunicacao.whatsapp) {
-              queueItem.comunicacao.whatsapp.status = "SUCESSO";
-              queueItem.comunicacao.whatsapp.erro = null;
-              queueItem.comunicacao.whatsapp.enviadaEm = sentAt;
-            }
-            if (queueItem.comunicacao.email) {
-              queueItem.comunicacao.email.status = "SUCESSO";
-              queueItem.comunicacao.email.erro = null;
-              queueItem.comunicacao.email.enviadaEm = sentAt;
-            }
-            queueItem.comunicacao.statusGeral = "COMUNICADO_NOS_DOIS";
+            const originals = originalCommunications.get(procId);
             const list = historyByProcess.get(procId) || [];
-            list.unshift({
-              id: ++nextIdCounter,
-              processoId: procId,
-              canal: "EMAIL",
-              destinatario:
-                queueItem.comunicacao.email?.destinatario ||
-                "cliente@email.com",
-              mensagem: `Reenvio oficial de comunicado para o processo #${procId}.`,
-              observacao: `Reenvio oficial de comunicado para o processo #${procId}.`,
-              usuarioNome:
-                authUser.tipo === "ADMINISTRADOR"
-                  ? "Administrador Geral"
-                  : "Operador de Atendimento",
-              data: sentAt,
-              status: "SUCESSO",
-              erro: null,
-              criadaEm: sentAt,
-              enviadaEm: sentAt,
-            });
+            for (const channel of ["email", "whatsapp"] as const) {
+              const original = originals?.[channel];
+              if (!original) continue;
+              const attempt = { ...original, id: ++nextIdCounter, status: "SUCESSO", erro: null, criadaEm: sentAt, enviadaEm: sentAt };
+              queueItem.comunicacao[channel] = attempt;
+              list.unshift({
+                ...attempt, processoId: procId, canal: channel.toUpperCase(),
+                mensagem: "", observacao: "Reenvio oficial", usuarioNome: "Operação", data: sentAt,
+                comunicadoOriginalId: original.id,
+              });
+            }
+            queueItem.comunicacao.statusGeral = originals?.email && originals.whatsapp
+              ? "COMUNICADO_NOS_DOIS" : originals?.email || originals?.whatsapp ? "COMUNICADO_PARCIAL" : "PENDENTE";
             historyByProcess.set(procId, list);
-            return sendJson(queueItem.comunicacao);
+            const response = structuredClone(queueItem.comunicacao);
+            if (replayKey) communicationReplays.set(replayKey, { payload: "", response });
+            return sendJson(response);
           }
 
           const processWhatsappMatch = pathname.match(
@@ -1304,6 +1313,14 @@ export function devMockPlugin(): Plugin {
                 404,
               );
             }
+            const key = req.headers["idempotency-key"];
+            const replayKey = typeof key === "string" ? `${pathname}:${key}` : null;
+            const payload = JSON.stringify([parsed.telefone, parsed.mensagem, parsed.remetenteId]);
+            const replay = replayKey && communicationReplays.get(replayKey);
+            if (replay) {
+              return replay.payload === payload ? sendJson(replay.response)
+                : sendJson({ message: "Esta chave já identifica outro envio." }, 409);
+            }
             const sentAt = new Date().toISOString();
             const phone = String(
               parsed.telefone ||
@@ -1311,7 +1328,7 @@ export function devMockPlugin(): Plugin {
                 "5511999999999",
             );
             queueItem.comunicacao.whatsapp = {
-              id: queueItem.comunicacao.whatsapp?.id || ++nextIdCounter,
+              id: ++nextIdCounter,
               destinatario: phone,
               status: "SUCESSO",
               erro: null,
@@ -1327,7 +1344,7 @@ export function devMockPlugin(): Plugin {
               parsed.mensagem || `Mensagem manual para o processo #${procId}.`,
             );
             list.unshift({
-              id: ++nextIdCounter,
+              id: queueItem.comunicacao.whatsapp.id,
               processoId: procId,
               canal: "WHATSAPP",
               destinatario: phone,
@@ -1344,7 +1361,12 @@ export function devMockPlugin(): Plugin {
               enviadaEm: sentAt,
             });
             historyByProcess.set(procId, list);
-            return sendJson(queueItem.comunicacao);
+            const response = {
+              processoId: procId, statusGeral: "COMUNICADO_PARCIAL",
+              email: null, whatsapp: { ...queueItem.comunicacao.whatsapp },
+            };
+            if (replayKey) communicationReplays.set(replayKey, { payload, response });
+            return sendJson(response);
           }
 
           const processHistoryMatch = pathname.match(
@@ -1393,19 +1415,25 @@ export function devMockPlugin(): Plugin {
               return sendJson(existing);
             }
             if (method === "POST") {
+              const existing = closures.get(procId);
+              if (existing) return sendJson(existing);
+              if (proc.status !== "EM_PROCESSO_DE_BAIXA") {
+                return sendJson({ message: "A baixa só pode ser concluída na etapa Em processo de baixa." }, 409);
+              }
               const record = {
                 id: ++nextIdCounter,
                 processoId: procId,
-                usuarioId: Number(parsed.usuarioId || authUser.uid || 1),
+                usuarioId: authUser.uid,
                 data: new Date().toISOString(),
                 observacao: parsed.observacao ? String(parsed.observacao) : null,
               };
               closures.set(procId, record);
               proc.status = "FINALIZADO";
+              proc.responsavelId = authUser.uid;
               proc.atualizadoEm = record.data;
               const queueItem = queueItems.find((i) => i.processoId === procId);
               if (queueItem) queueItem.statusProcesso = "FINALIZADO";
-              return sendJson(record, 201);
+              return sendJson(record);
             }
           }
 
@@ -1426,7 +1454,7 @@ export function devMockPlugin(): Plugin {
               return matchesStatus && matchesQuery;
             });
             return sendJson({
-              items: filtered,
+              items: filtered.map(proc => ({ ...proc, transicoesPermitidas: processTransitions(proc.status) })),
               total: filtered.length,
               totalPages: Math.max(1, Math.ceil(filtered.length / 20)),
               page: Number(searchParams.get("page") || 0),
@@ -1443,13 +1471,15 @@ export function devMockPlugin(): Plugin {
             if (!proc) {
               return sendJson({ message: "Processo não encontrado." }, 404);
             }
-            if (typeof parsed.status === "string" && parsed.status) {
-              proc.status = parsed.status;
-              proc.atualizadoEm = new Date().toISOString();
-              const queueItem = queueItems.find((i) => i.processoId === procId);
-              if (queueItem) queueItem.statusProcesso = parsed.status;
+            if (typeof parsed.status !== "string" || !processTransitions(proc.status).includes(parsed.status)) {
+              return sendJson({ message: "Esta mudança de status não está disponível para a etapa atual." }, 409);
             }
-            return sendJson(proc);
+            proc.status = parsed.status;
+            proc.responsavelId = authUser.uid;
+            proc.atualizadoEm = new Date().toISOString();
+            const queueItem = queueItems.find((i) => i.processoId === procId);
+            if (queueItem) queueItem.statusProcesso = parsed.status;
+            return sendJson({ ...proc, transicoesPermitidas: processTransitions(proc.status) });
           }
 
           const processByIdMatch = pathname.match(
@@ -1461,7 +1491,7 @@ export function devMockPlugin(): Plugin {
             if (!proc) {
               return sendJson({ message: "Processo não encontrado." }, 404);
             }
-            return sendJson(proc);
+            return sendJson({ ...proc, transicoesPermitidas: processTransitions(proc.status) });
           }
 
           // 5. Assistant Endpoints (/api/assistente/*)
@@ -1534,6 +1564,7 @@ export function devMockPlugin(): Plugin {
             const procId = Number(portalDetailMatch[1]);
             const proc =
               processes.find((p) => p.id === procId) || processes[0];
+            const baixa = closures.get(procId);
             return sendJson({
               processo: proc,
               responsavel: "Equipe ConsorTech",
@@ -1549,7 +1580,13 @@ export function devMockPlugin(): Plugin {
                   dataUpload: yesterdayIso,
                 },
               ],
-              historico: [
+              historico: baixa ? [{
+                id: baixa.id,
+                statusAnterior: "EM_PROCESSO_DE_BAIXA",
+                novoStatus: "FINALIZADO",
+                data: baixa.data,
+                observacao: baixa.observacao,
+              }] : [
                 {
                   id: 1,
                   statusAnterior: "CONTEMPLADO",

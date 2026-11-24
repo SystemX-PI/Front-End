@@ -1,9 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { backend, type OperationEvent } from "../services/backend";
 import { operationError } from "../services/operationErrors";
 import { useResource } from "../hooks/useResource";
 import { EmptyState, ErrorState, Skeleton } from "./DataUi";
-import { formatDate, readable } from "../services/format";
+import { communicationStatus, formatDate, readable } from "../services/format";
 
 type HistoryItem = Partial<OperationEvent> & {
   channel?: string | null;
@@ -22,6 +22,27 @@ export default function OperationHistory({ processId }: { processId: number }) {
     [processId, page],
   );
   const result = useResource(load);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [evidence, setEvidence] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [failure, setFailure] = useState("");
+
+  async function reconcile(event: FormEvent<HTMLFormElement>, id: number) {
+    event.preventDefault();
+    if (!evidence.trim() || saving) return;
+    setSaving(true);
+    setFailure("");
+    try {
+      await backend.processes.reconcileCommunication(processId, id, "ACEITO_PROVEDOR", evidence.trim());
+      setEditing(null);
+      result.refresh();
+    } catch (err) {
+      setFailure(err instanceof Error ? err.message : "Não foi possível reconciliar a tentativa.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const items: HistoryItem[] = Array.isArray(result.data?.items)
     ? result.data.items
     : Array.isArray(result.data)
@@ -30,7 +51,11 @@ export default function OperationHistory({ processId }: { processId: number }) {
 
   return (
     <section className="panel data-panel">
-      <h3>Histórico de comunicações</h3>
+      <div className="split-actions">
+        <h3>Histórico de comunicações</h3>
+        <button type="button" className="button secondary compact" disabled={result.loading}
+          onClick={result.refresh}>Atualizar histórico</button>
+      </div>
       {result.data && <p>{result.data.total} registros</p>}
       {result.loading ? (
         <Skeleton />
@@ -55,12 +80,35 @@ export default function OperationHistory({ processId }: { processId: number }) {
             return (
               <li key={e?.id ?? idx}>
                 <strong>
-                  {channelOrAction} · {readable(e?.status || "PENDENTE")}
+                  {channelOrAction} · {communicationStatus(e?.status || "PENDENTE", e?.estadoDespacho)}
                 </strong>
                 <p>
                   {timestamp} · {actor}
                 </p>
+                {e?.comunicadoOriginalId != null && <p>Reenvio do comunicado #{e.comunicadoOriginalId}</p>}
                 {detail ? <p>{detail}</p> : null}
+                {e?.reconciliavel && e.id != null && (editing === e.id ? (
+                  <form onSubmit={event => void reconcile(event, e.id!)} className="admin-form">
+                    <p>Registre o aceite somente depois de verificá-lo no provedor. Resultados sem aceite verificado continuam bloqueados.</p>
+                    <label className="field">Evidência verificada
+                      <textarea required maxLength={255} value={evidence} onChange={event => setEvidence(event.target.value)} />
+                    </label>
+                    {failure && <p role="alert">{failure}</p>}
+                    <button className="button secondary compact" disabled={saving || !evidence.trim()}>
+                      Registrar reconciliação
+                    </button>
+                    <button type="button" className="button secondary compact" disabled={saving} onClick={() => setEditing(null)}>
+                      Cancelar
+                    </button>
+                  </form>
+                ) : (
+                  <button className="button secondary compact" disabled={saving} type="button" onClick={() => {
+                    setEditing(e.id!);
+                    setEvidence("");
+                    setFailure("");
+                  }}>Reconciliar tentativa #{e.id}</button>
+                ))}
+
               </li>
             );
           })}

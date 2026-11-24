@@ -76,7 +76,9 @@ export default function AssistantWidget() {
         ...current,
         { author: "assistant", text: result.whatsapp?.status === "SUCESSO"
           ? "O WhatsApp aceitou a mensagem. Consulte o histórico do processo."
-          : result.whatsapp?.erro || "O envio não foi confirmado pelo WhatsApp. Consulte o histórico do processo." },
+          : result.whatsapp?.estadoDespacho === "NA_FILA" || result.whatsapp?.estadoDespacho === "EM_ENVIO"
+            ? "Solicitação na fila. Consulte o histórico do processo para acompanhar."
+            : result.whatsapp?.erro || "O envio não foi confirmado pelo WhatsApp. Consulte o histórico do processo." },
       ]);
       setAction(null);
     } catch (error) {
