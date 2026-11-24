@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testIgnore: "live.spec.ts",
+  testIgnore: ["live.spec.ts", "stripe-live.spec.ts"],
   fullyParallel: false,
   reporter: process.env.CI ? [["list"], ["github"], ["html", { open: "never" }]] : "list",
   use: {
