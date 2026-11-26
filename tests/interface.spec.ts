@@ -11,8 +11,26 @@ test("landing, cadastro sem caracteres corrompidos e campos com uma unica borda"
  await page.goto("/");await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:"test-results/landing-desktop.png",fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:"test-results/landing-mobile.png",fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test("administrador ve clientes e totais por conta",async({page})=>{
- await seed(page,"ADMINISTRADOR");await page.route("**/api/platform/**",route=>route.fulfill({json:route.request().url().includes("/clients")?[{id:7,nome:"Aurora",email:"aurora@example.com",trialEndsAt:future(),paidUntil:null,suspended:false,instances:3,gmails:2,users:5}]:context("ADMINISTRADOR")}));await page.goto("/app");await expect(page.getByRole("heading",{name:"Seus clientes, em perspectiva."})).toBeVisible();await expect(page.getByRole("navigation").getByRole("link",{name:"Operação de consórcios",exact:true})).toHaveAttribute("href","/admin/dashboard");await expect(page.getByRole("navigation").getByRole("link",{name:"Clientes",exact:true})).toBeVisible();await expect(page.getByRole("link",{name:"Abrir conta"})).toHaveAttribute("href","/app?account=7");await page.screenshot({path:"test-results/admin-clients.png",fullPage:true});
+test("administrador gerencia empresas sem menu operacional em desktop e mobile", async ({ page }) => {
+ const companies = { items: [{ id: 7, nome: "Aurora", email: "aurora@example.test", trialEndsAt: future(), paidUntil: null, suspended: false, instances: 3, gmails: 2, users: 5 }], total: 1, page: 0, size: 20 };
+ await seed(page, "ADMINISTRADOR");
+ await page.route("**/api/platform/clients/summary", route => route.fulfill({json:{total:1,active:1,subscribed:0,pending:1,instances:3,mailboxes:2,members:5}}));
+ await page.route("**/api/platform/clients/page?*", route => route.fulfill({json:companies}));
+ await page.goto("/app");
+ await expect(page).toHaveURL(/admin\/dashboard$/);
+ await expect(page.getByRole("heading", { name: "Visão geral" })).toBeVisible();
+ const navigation = page.getByRole("navigation", { name: "Navegação administrativa" });
+ for (const label of ["Contemplados", "Baixas pendentes", "Disparo manual", "Meu espaço"]) {
+  await expect(navigation.getByRole("link", { name: label, exact: true })).toHaveCount(0);
+ }
+ await navigation.getByRole("link", { name: "Empresas clientes" }).click();
+ await expect(page.getByRole("link", { name: "Ver detalhes de Aurora" })).toHaveAttribute("href", "/admin/empresas/7");
+ await page.setViewportSize({width: 360, height: 800});
+ await page.getByRole("button", {name:"Abrir menu"}).click();
+ await navigation.getByRole("link", {name:"Empresas clientes"}).focus();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("button", {name:"Abrir menu"})).toBeFocused();
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 
 test("menu consistente, responsividade e tema escuro",async({page})=>{
@@ -20,7 +38,7 @@ test("menu consistente, responsividade e tema escuro",async({page})=>{
  for(const width of [1440,768,360,320]){await page.setViewportSize({width,height:950});for(const path of ["/app","/app/integracoes","/app/widget","/app/whatsapp","/app/gmail","/app/equipe","/app/marca","/app/assinatura","/app/perfil","/app/upgrade"]){await page.goto(path);await expect(page.locator(".workspace-heading h1")).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${path} ${width}`).toBe(true);expect(await page.locator("body").innerText()).not.toMatch(/Ã[£§¡©ª³]|Â·/);}}
  await page.setViewportSize({width:1440,height:800});await page.goto("/app");await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toBeVisible();await expect(page.locator(".workspace-topbar").getByText("Titular da conta")).toHaveCount(0);await expect(page.locator(".workspace-account").getByRole("button",{name:"Sair",exact:true})).toBeVisible();
  const before=await page.locator(".workspace-account").boundingBox();await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));const after=await page.locator(".workspace-account").boundingBox();expect(Math.abs(before!.y-after!.y)).toBeLessThan(2);expect(after!.y+after!.height).toBeLessThanOrEqual(800);await page.goto("/app/integracoes");await expect(page.getByRole("heading",{name:"Central de integrações."})).toBeVisible();await expect(page.getByRole("heading",{name:"Uso do seu plano"})).toHaveCount(0);
- await page.setViewportSize({width:390,height:844});await page.goto("/app");await page.screenshot({path:"test-results/workspace-overview-mobile.png",fullPage:true});await page.goto("/app/whatsapp");await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Integrações",exact:true}).focus();await page.keyboard.press("Escape");await expect(page.getByRole("button",{name:"Abrir menu"})).toBeFocused();await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Integrações",exact:true}).click();await page.getByRole("button",{name:"Abrir menu"}).click();await expect(page.getByRole("navigation").getByRole("link",{name:"WhatsApp",exact:true})).toBeVisible();await page.screenshot({path:"test-results/workspace-mobile.png",fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.goto("/app");await page.screenshot({path:"test-results/workspace-desktop.png",fullPage:true});await page.getByRole("button",{name:"Tema escuro",exact:true}).click();await page.screenshot({path:"test-results/workspace-dark.png",fullPage:true});
+ await page.setViewportSize({width:390,height:844});await page.goto("/app");await page.screenshot({path:"test-results/workspace-overview-mobile.png",fullPage:true});await page.goto("/app/whatsapp");await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Canais internos",exact:true}).focus();await page.keyboard.press("Escape");await expect(page.getByRole("button",{name:"Abrir menu"})).toBeFocused();await page.getByRole("button",{name:"Abrir menu"}).click();await page.getByRole("navigation").getByRole("link",{name:"Canais internos",exact:true}).click();await page.getByRole("button",{name:"Abrir menu"}).click();await expect(page.getByRole("navigation").getByRole("link",{name:"WhatsApp",exact:true})).toBeVisible();await page.screenshot({path:"test-results/workspace-mobile.png",fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.goto("/app");await page.screenshot({path:"test-results/workspace-desktop.png",fullPage:true});await page.getByRole("button",{name:"Tema escuro",exact:true}).click();await page.screenshot({path:"test-results/workspace-dark.png",fullPage:true});
 });
 
 test("WhatsApp desconecta, reconecta por QR e adiciona outra instancia",async({page})=>{

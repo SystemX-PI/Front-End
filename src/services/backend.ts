@@ -7,17 +7,19 @@ export type DispatchState = "NA_FILA" | "EM_ENVIO" | "INCERTO" | "INCERTO_EXECUC
 export type ReconciliationResult = "ACEITO_PROVEDOR" | "NAO_ENVIADO";
 export type CommunicationStatus = "PENDENTE" | "REALIZADA" | "SUCESSO" | "SEM_RESPOSTA" | "FALHA";
 export type CommunicationSummary = "PENDENTE" | "COMUNICADO_PARCIAL" | "COMUNICADO_NOS_DOIS" | "FALHA";
-export type ProcessStatus =
-  | "CONTEMPLADO"
-  | "AGUARDANDO_COMUNICACAO"
-  | "EM_COMUNICACAO"
-  | "CLIENTE_CONTATADO"
-  | "AGUARDANDO_DOCUMENTOS"
-  | "DOCUMENTOS_RECEBIDOS"
-  | "EM_ANALISE"
-  | "EM_PROCESSO_DE_BAIXA"
-  | "FINALIZADO"
-  | "CANCELADO";
+export const processStatuses = [
+  "CONTEMPLADO",
+  "AGUARDANDO_COMUNICACAO",
+  "EM_COMUNICACAO",
+  "CLIENTE_CONTATADO",
+  "AGUARDANDO_DOCUMENTOS",
+  "DOCUMENTOS_RECEBIDOS",
+  "EM_ANALISE",
+  "EM_PROCESSO_DE_BAIXA",
+  "FINALIZADO",
+  "CANCELADO",
+] as const;
+export type ProcessStatus = typeof processStatuses[number];
 
 export interface UserResponse {
   id: number;
@@ -247,7 +249,10 @@ export const backend = {
   operation: {
     closures: (page:number,q:string,status: 'EM_PROCESSO_DE_BAIXA' | 'FINALIZADO',signal?:AbortSignal) => apiRequest<PageResponse<ProcessResponse>>('/api/processos-contemplacao/pagina?'+new URLSearchParams({page:String(page),size:'20',q,status}),{signal}),
     history: (id:number,page:number,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/integracoes/processos/'+id+'/comunicacoes/historico?page='+page+'&size=20',{signal}),
-    audit: (page:number,q:string,acao:string,data:string,signal?:AbortSignal) => apiRequest<PageResponse<OperationEvent>>('/api/auditoria/pagina?'+new URLSearchParams({page:String(page),size:'20',q,acao,...(data ? {data} : {})}),{signal}),
+    audit: (page:number,q:string,acao:string,data:string,signal?:AbortSignal, options?: { companyId?: number; tenant?: boolean }) =>
+      apiRequest<PageResponse<OperationEvent>>((options?.tenant ? "/api/platform/operation/history?" : "/api/auditoria/pagina?") +
+        new URLSearchParams({page:String(page),size:'20',q,acao,...(data ? {data} : {}),
+          ...(options?.companyId ? { contaId: String(options.companyId) } : {})}), {signal}),
   },
   processes: {
     get: (id: number, signal?: AbortSignal) =>
@@ -291,7 +296,7 @@ export const backend = {
   },
 };
 
-export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;estadoDespacho?:DispatchState | null;reconciliavel?:boolean;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number}
+export interface OperationEvent {id:number;data:string;acao?:string;canal?:string;status?:string;comunicadoOriginalId?:number | null;estadoDespacho?:DispatchState | null;reconciliavel?:boolean;usuarioNome?:string;observacao?:string;entidade?:string;registroId?:number;contaId?:number|null}
 export interface AssistantAction {
   token: string; tipo: "NOTIFICAR_WHATSAPP"; processoId: number; telefone: string; mensagem: string; aviso: string;
 }

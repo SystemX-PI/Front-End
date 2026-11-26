@@ -213,7 +213,8 @@ export function isBeneficiarySession(): boolean {
 
 export function sessionHome(): string {
   if (isBeneficiarySession()) return "/portal";
-  return getUserType() === "FUNCIONARIO" ? "/admin/dashboard" : "/app";
+  const role = getUserType();
+  return role === "FUNCIONARIO" || role === "ADMINISTRADOR" ? "/admin/dashboard" : "/app";
 }
 
 export function isAuthenticated(): boolean {

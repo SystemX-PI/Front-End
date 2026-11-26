@@ -11,10 +11,14 @@ import {
   Send,
   Users,
   UserRound,
+  Building2,
+  CreditCard,
+  LifeBuoy,
 } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import ThemeSwitcher from "./ThemeSwitcher";
+import { useOperationBase } from "../hooks/useOperationBase";
 import { getUserType, logout } from "../services/auth";
 
 const navigation = [
@@ -34,6 +38,15 @@ const navigation = [
     { to: "/app", label: "Meu espaço", icon: LayoutDashboard, adminOnly: true },
   ] },
 ];
+const platformNavigation = [{ label: "Plataforma", links: [
+  { to: "/admin/dashboard", label: "Visão geral", icon: LayoutDashboard },
+  { to: "/admin/empresas", label: "Empresas clientes", icon: Building2 },
+  { to: "/admin/usuarios", label: "Usuários e acessos", icon: Users },
+  { to: "/admin/assinaturas", label: "Planos e assinaturas", icon: CreditCard },
+  { to: "/admin/auditoria", label: "Auditoria", icon: ClipboardList },
+  { to: "/admin/configuracoes", label: "Configurações", icon: PlugZap },
+  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },
+] }];
 
 export default function AdminShell({
   title,
@@ -45,6 +58,7 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const operationBase = useOperationBase();
   const [menuOpen, setMenuOpen] = useState(false);
   const isAdmin = getUserType() === "ADMINISTRADOR";
   const email = localStorage.getItem("userEmail") || "";
@@ -66,6 +80,11 @@ export default function AdminShell({
     }
   }
 
+  if (operationBase === "/app") return <>
+    <header className="workspace-heading"><div><h1>{title}</h1><p>{subtitle}</p></div></header>
+    {children}
+  </>;
+
   return (
     <div className="app-shell admin-app-shell">
       <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
@@ -79,15 +98,20 @@ export default function AdminShell({
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
         </div>
-        <nav id="main-navigation" className="sidebar-nav" aria-label="Navegação administrativa">
-          {navigation.map(({ label, links }) => (
+        <nav id="main-navigation" className="sidebar-nav" aria-label={isAdmin ? "Navegação administrativa" : "Navegação da operação"}
+          onKeyDown={event => {
+            if (event.key !== "Escape" || !menuOpen) return;
+            setMenuOpen(false);
+            event.currentTarget.closest("aside")?.querySelector<HTMLButtonElement>(".mobile-menu-toggle")?.focus();
+          }}>
+          {(isAdmin ? platformNavigation : navigation).map(({ label, links }) => (
             <div className="admin-nav-group" key={label}>
               <p className="admin-section-label">{label}</p>
-              {links.filter(link => !link.adminOnly || isAdmin).map(({ to, label, icon: Icon }) => (
+              {links.filter(link => !("adminOnly" in link) || !link.adminOnly).map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
-                  end
+                  end={to !== "/admin/empresas"}
                   onClick={() => setMenuOpen(false)}
                   className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
                 >
@@ -106,13 +130,14 @@ export default function AdminShell({
             <div className="breadcrumb">
               <span>ConsorTech</span>
               <b>/</b>
-              <span>Administração</span>
+              <span>{isAdmin ? "Gestão da plataforma" : "Operação interna"}</span>
             </div>
             <h1>{title}</h1>
             <p>{subtitle}</p>
           </div>
           <div className="user-chip">
             <ThemeSwitcher />
+            {isAdmin && <Link to="/app/perfil" aria-label="Meu perfil" title="Meu perfil"><UserRound size={17} aria-hidden="true" /></Link>}
             <span className="user-copy">
               <strong>{email || "Usuário conectado"}</strong>
               <small>{isAdmin ? "Administrador" : "Operação"}</small>

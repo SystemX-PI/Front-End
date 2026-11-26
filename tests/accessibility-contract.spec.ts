@@ -108,7 +108,7 @@ test("edição de registro preserva o perfil USUARIO retornado pelo backend", as
   });
   await page.goto("/admin/usuarios");
   await page.getByRole("button", { name: "Editar", exact: true }).click();
-  await expect(page.getByLabel("Perfil")).toHaveValue("USUARIO");
+  await expect(page.getByRole("main").getByLabel("Perfil")).toHaveValue("USUARIO");
   await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(page.getByText("Cadastro salvo.")).toBeVisible();
   expect(saved).toMatchObject({ tipo: "USUARIO" });
