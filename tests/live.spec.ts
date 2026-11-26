@@ -56,9 +56,17 @@ test("titular, equipe, administrador e beneficiário mantêm papéis e escopos",
   await expect(page.getByRole("heading", { name: "Acesso restrito" })).toBeVisible();
   await page.evaluate(() => localStorage.clear());
 
-  await login(page, "admin", /\/app$/);
-  await expect(page.getByRole("heading", { name: "Seus clientes, em perspectiva." })).toBeVisible();
+  await login(page, "admin", /\/admin\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Visão geral" })).toBeVisible();
   expect((await request.get("/api/platform/clients", { headers: await auth(page) })).status()).toBe(200);
+  const adminHeaders = await auth(page);
+  await page.getByRole("link", { name: "Empresas clientes" }).click();
+  await page.getByRole("link", { name: "Ver detalhes de Empresa E2E A" }).click();
+  await expect(page.getByRole("heading", { name: "Usuários associados" })).toBeVisible();
+  await expect(page.getByText("Equipe A", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Planos e assinaturas" }).click();
+  await expect(page.getByRole("heading", { name: "Eventos recentes do Stripe" })).toBeVisible();
+  expect((await request.get("/api/platform/clients/billing-events", { headers: adminHeaders })).status()).toBe(200);
   await page.evaluate(() => localStorage.clear());
 
   await login(page, "beneficiary", /\/portal$/);
@@ -172,7 +180,7 @@ test("andamento respeita as transições e registra histórico no MySQL", async 
 });
 
 test("comunicação preserva fila e histórico quando provedores estão desativados", async ({ page, request }) => {
-  await login(page, "admin", /\/app$/);
+  await login(page, "admin", /\/admin\/dashboard$/);
   const path = "/api/integracoes/processos/7304";
   const headers = await auth(page);
   const before = await request.get("/api/integracoes/comunicacoes/fila/resumo", { headers });
@@ -194,4 +202,36 @@ test("comunicação preserva fila e histórico quando provedores estão desativa
   expect((await persisted.json()).total).toBe(4);
   const fresh = await request.get(endpoint + "/7304", { headers });
   expect(await fresh.json()).toMatchObject({ status: "AGUARDANDO_COMUNICACAO" });
+});
+
+test("titular opera processos e equipe da própria empresa pelo navegador", async ({ page, request }) => {
+  await login(page, "owner", /\/app$/);
+  await expect(page.getByRole("heading", { name: "Operação da empresa" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Contemplados", exact: true }).click();
+  await page.getByLabel("Buscar por número, origem ou código externo").fill("LOTE07-TITULAR");
+  await page.getByRole("link", { name: "Processo #7307" }).click();
+  await expect(page).toHaveURL(/app\/contemplados\?processo=7307$/);
+
+  const headers = await auth(page);
+  expect((await request.get(endpoint + "/7303", { headers })).status()).toBe(404);
+  expect((await request.post(receipt(7303), { headers, data: {observacao:"Fora da empresa"} })).status()).toBe(404);
+  expect((await request.post(receipt(7307), { headers, data: {observacao:"Concluído pelo titular"} })).status()).toBe(200);
+  await page.goto("/app/baixas?processo=7307");
+  await expect(page.getByText("Concluído pelo titular", {exact:true})).toBeVisible();
+
+  await page.goto("/app/comunicacao");
+  await expect(page.getByRole("heading", {name:"Comunicação", exact:true})).toBeVisible();
+  await page.goto("/app/historico");
+  await expect(page.getByText("Baixa concluída", {exact:true}).last()).toBeVisible();
+  await page.goto("/app/equipe");
+  await expect(page.getByRole("button", {name:"Adicionar usuário"})).toBeVisible();
+  const user = await request.post("/api/platform/users", {
+    headers: await auth(page),
+    data: { name: "Operador E2E", email: "operador-paineis@example.test", password: process.env.SYSTEMX_E2E_PASSWORD },
+  });
+  expect(user.status()).toBe(201);
+  await page.reload();
+  await expect(page.getByText("Operador E2E", {exact:true})).toBeVisible();
+  await page.goto("/admin/empresas");
+  await expect(page.getByRole("heading", {name:"Acesso restrito"})).toBeVisible();
 });
