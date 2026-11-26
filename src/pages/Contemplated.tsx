@@ -1,7 +1,9 @@
 import { MessageCircle, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
+import { CompanyProcesses } from "./CompanyOperation";
 import AdminShell from "../components/AdminShell";
+import { useOperationBase } from "../hooks/useOperationBase";
 import { InlineFeedback, StatusPill } from "../components/IntegrationUi";
 import { EmptyState, Skeleton } from "../components/DataUi";
 import ProcessStatusEditor from "../components/ProcessStatusEditor";
@@ -14,26 +16,14 @@ import {
   backend,
   type CommunicationResponse,
   type ProcessResponse,
-  type ProcessStatus,
+  processStatuses,
 } from "../services/backend";
 import { formatDate, readable } from "../services/format";
 
 type Feedback = { kind: "info" | "success" | "error"; message: string } | null;
 
-const statuses: ProcessStatus[] = [
-  "CONTEMPLADO",
-  "AGUARDANDO_COMUNICACAO",
-  "EM_COMUNICACAO",
-  "CLIENTE_CONTATADO",
-  "AGUARDANDO_DOCUMENTOS",
-  "DOCUMENTOS_RECEBIDOS",
-  "EM_ANALISE",
-  "EM_PROCESSO_DE_BAIXA",
-  "FINALIZADO",
-  "CANCELADO",
-];
-
 export default function Contemplated() {
+  const operationBase = useOperationBase();
   const [params, setParams] = useSearchParams();
   const urlProcessParam = params.get("processo");
   const [input, setInput] = useState({ param: urlProcessParam, value: urlProcessParam || "" });
@@ -183,6 +173,7 @@ export default function Contemplated() {
       title="Contemplados"
       subtitle="Consulta individual dos processos disponíveis na API"
     >
+      {operationBase === "/app" && <CompanyProcesses/>}
       <section className="admin-page-heading">
         <div>
           <h2>Consultar processo</h2>
@@ -213,7 +204,7 @@ export default function Contemplated() {
             onChange={(event) => setFilterStatus(event.target.value)}
           >
             <option value="">Todos os status</option>
-            {statuses.map((status) => (
+            {processStatuses.map((status) => (
               <option key={status} value={status}>
                 {readable(status)}
               </option>
@@ -282,19 +273,19 @@ export default function Contemplated() {
                       </button>
                       <Link
                         className="button secondary compact"
-                        to={`/admin/disparo-manual?processo=${filteredProcess.id}`}
+                        to={`${operationBase}/disparo-manual?processo=${filteredProcess.id}`}
                       >
                         <MessageCircle size={14} />
                         Disparo manual
                       </Link>
-                      <button
+                      {operationBase === "/admin" && <button
                         className="button primary compact"
                         type="button"
                         disabled={resending}
                         onClick={() => setConfirming(true)}
                       >
                         {resending ? "Solicitando..." : "Solicitar reenvio"}
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>
@@ -325,7 +316,7 @@ export default function Contemplated() {
           </div>
         ) : null}
       </section>
-      {process && <><ProcessStatusEditor key={`${process.id}-${process.status}`} process={process} onChange={setProcess}/><section className="panel"><Link className="button secondary" to={`/admin/baixas?processo=${process.id}`}>Conferir baixa deste processo</Link></section><OperationHistory key={`${process.id}-${historyRevision}`} processId={process.id}/></>}
+      {process && <><ProcessStatusEditor key={`${process.id}-${process.status}`} process={process} onChange={setProcess}/><section className="panel"><Link className="button secondary" to={`${operationBase}/baixas?processo=${process.id}`}>Conferir baixa deste processo</Link></section><OperationHistory key={`${process.id}-${historyRevision}`} processId={process.id}/></>}
       <ConfirmDialog
         open={confirming}
         title={`Enviar comunicação do processo #${process?.id}?`}

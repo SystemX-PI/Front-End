@@ -76,7 +76,7 @@ export default function OperationHistory({ processId }: { processId: number }) {
               e?.usuarioNome ||
               e?.destinatario ||
               "Responsável não informado";
-            const detail = e?.observacao || e?.erro || e?.mensagem || "";
+            const detail = e?.observacao || e?.erro || "";
             return (
               <li key={e?.id ?? idx}>
                 <strong>
@@ -87,6 +87,7 @@ export default function OperationHistory({ processId }: { processId: number }) {
                 </p>
                 {e?.comunicadoOriginalId != null && <p>Reenvio do comunicado #{e.comunicadoOriginalId}</p>}
                 {detail ? <p>{detail}</p> : null}
+                {e?.mensagem && <details><summary>Ver mensagem</summary><p>{e.mensagem}</p></details>}
                 {e?.reconciliavel && e.id != null && (editing === e.id ? (
                   <form onSubmit={event => void reconcile(event, e.id!)} className="admin-form">
                     <p>Registre o aceite somente depois de verificá-lo no provedor. Resultados sem aceite verificado continuam bloqueados.</p>

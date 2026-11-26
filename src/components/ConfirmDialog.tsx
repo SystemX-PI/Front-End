@@ -8,6 +8,8 @@ export default function ConfirmDialog({
   onCancel,
   onConfirm,
   confirmLabel = "Confirmar envio",
+  busy = false,
+  error,
 }: {
   open: boolean;
   title: string;
@@ -15,6 +17,8 @@ export default function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
   confirmLabel?: string;
+  busy?: boolean;
+  error?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -38,13 +42,14 @@ export default function ConfirmDialog({
       aria-describedby={`${id}-description`}
       onCancel={event => {
         event.preventDefault();
-        onCancel();
+        if (!busy) onCancel();
       }}
     >
       <button
         className="dialog-close"
         type="button"
         onClick={onCancel}
+        disabled={busy}
         aria-label="Fechar confirmação"
       >
         <X size={18} />
@@ -54,17 +59,19 @@ export default function ConfirmDialog({
       </span>
       <h2 id={`${id}-title`}>{title}</h2>
       <p id={`${id}-description`}>{description}</p>
+      {error && <p role="alert">{error}</p>}
       <div className="dialog-actions">
         <button
           ref={cancelRef}
           className="button secondary"
           onClick={onCancel}
+          disabled={busy}
           type="button"
         >
           Cancelar
         </button>
-        <button className="button primary" onClick={onConfirm} type="button">
-          {confirmLabel}
+        <button className="button primary" onClick={onConfirm} type="button" disabled={busy}>
+          {busy ? "Aguarde…" : confirmLabel}
         </button>
       </div>
     </dialog>

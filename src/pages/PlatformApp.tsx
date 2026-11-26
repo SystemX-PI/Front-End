@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, ChevronRight, CreditCard, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Palette, Plus, PlugZap, RefreshCw, Sparkles, UserRound, Users, X } from "lucide-react";
+import { ArrowRight, ArrowDownToLine, BellRing, ClipboardList, History, Send, Check, CheckCircle2, ChevronRight, CreditCard, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Palette, Plus, PlugZap, RefreshCw, Sparkles, UserRound, Users, X } from "lucide-react";
 import { logout } from "../services/auth";
-import { planFor, workspaceLink, platformRequest, type Context, type Client } from "../services/platform";
+import { planFor, workspaceLink, platformRequest, type Context } from "../services/platform";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { BrandLogo } from "../components/BrandLogo";
 import { notify } from "../services/notifications";
@@ -11,6 +11,11 @@ import PlanUpgrade from "./PlanUpgrade";
 import ProfileSettings from "./ProfileSettings";
 import PartnerWidget from "./PartnerWidget";
 import Team from "./Team";
+import Contemplated from "./Contemplated";
+import Closures from "./Closures";
+import Communication from "./Communication";
+import Audit from "./Audit";
+import { CompanyDispatch, CompanyIndicators, CompanyRecords, CompanySpace } from "./CompanyOperation";
 import "../platform.css";
 import "../workspace-polish.css";
 
@@ -56,8 +61,8 @@ export default function PlatformApp() {
  const href=(path="")=>`/app${path}${accountId?`?account=${encodeURIComponent(accountId)}`:""}`;
  if(loading || settledScope!==accountId) return <main className="saas-loading"><span className="spinner"/>Abrindo seu espaço…</main>;
  if(!context || error) return <main className="saas-loading"><Feedback message={error}/><button className="saas-button" onClick={()=>void load()}>Tentar novamente</button><Link to="/app">Voltar</Link></main>;
- const admin=context.role==="ADMINISTRADOR"; const manager=admin || context.role==="CLIENTE"; const account=context.account; const clientsOnly=admin && !account;
- const labels:Record<string,string>={overview:clientsOnly?"Clientes":"Visão geral",integracoes:"Integrações",whatsapp:"WhatsApp",gmail:"Gmail",widget:"Widget parceiro",equipe:"Equipe",marca:"Identidade da marca",assinatura:"Assinatura",upgrade:"Ampliar plano",perfil:"Meu perfil"};
+ const admin=context.role==="ADMINISTRADOR"; const manager=admin || context.role==="CLIENTE"; const account=context.account;
+ const labels:Record<string,string>={overview:"Visão geral",contemplados:"Contemplados",baixas:"Baixas pendentes",comunicacao:"Comunicação","disparo-manual":"Disparo manual",cadastros:"Cadastros",historico:"Histórico",canais:"Canais internos",espaco:"Meu espaço",integracoes:"Integrações",whatsapp:"WhatsApp",gmail:"Gmail",widget:"Widget parceiro",equipe:"Equipe",marca:"Identidade da marca",assinatura:"Assinatura",upgrade:"Ampliar plano",perfil:"Meu perfil"};
  const title=labels[section] || labels.overview;
  const savedColors = {
   primary: color(account?.primaryColor, originalColors.primary),
@@ -81,37 +86,56 @@ export default function PlatformApp() {
  async function signOut() { try {await logout();}catch {notify("Sessão encerrada neste dispositivo.","info");} navigate("/login",{replace:true}); }
  return <div className={customBrand ? "workspace has-custom-brand" : "workspace"} style={style}><a className="skip-link" href="#workspace-content">Pular para o conteúdo</a>
   <button className="workspace-drawer-backdrop" aria-label="Fechar navegação" hidden={!menu} onClick={()=>setMenu(false)}/>
-  <aside className={`workspace-sidebar ${menu?"is-open":""}`}><Link className="workspace-brand" to={href()}>{account?.logo?<img src={account.logo} alt={account.brandName}/>:<BrandLogo compact/>}<strong>{account?.brandName || "ConsorTech"}</strong></Link><button className="workspace-menu" aria-label={menu?"Fechar menu":"Abrir menu"} aria-expanded={menu} aria-controls="workspace-navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
+  <aside className={`workspace-sidebar ${menu?"is-open":""}`}><Link className="workspace-brand" to={admin ? "/admin/dashboard" : href()}>{account?.logo?<img src={account.logo} alt={account.brandName}/>:<BrandLogo compact/>}<strong>{account?.brandName || "ConsorTech"}</strong></Link><button className="workspace-menu" aria-label={menu?"Fechar menu":"Abrir menu"} aria-expanded={menu} aria-controls="workspace-navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
    <nav id="workspace-navigation" aria-label="Navegação principal" onClick={()=>setMenu(false)}
     onKeyDown={event => {
      if (event.key !== "Escape" || !menu) return;
      setMenu(false);
      event.currentTarget.closest("aside")?.querySelector<HTMLButtonElement>(".workspace-menu")?.focus();
     }}>
-    {(admin || context.role==="FUNCIONARIO") && <Link className="text-button" to="/admin/dashboard">Operação de consórcios</Link>}
-    <small>{clientsOnly?"PLATAFORMA":"SEU ESPAÇO"}</small>
-    {admin&&<NavLink end to="/app" className={!account?"selected":""}><Building2 size={18}/>Clientes{account&&<ArrowLeft size={15}/>}</NavLink>}
-    {!clientsOnly&&<><NavLink end to={href()} className={section==="overview"?"selected":""}><LayoutDashboard size={18}/>Visão geral</NavLink><small>APLICAÇÕES</small><div className="integration-nav"><NavLink to={href("/integracoes")} className={section==="integracoes"?"selected":undefined}><PlugZap size={18}/>Integrações</NavLink><div className="integration-subpages" role="group" aria-label="Subpáginas de Integrações"><NavLink className={section==="whatsapp"?"selected":undefined} to={href("/whatsapp")}><MessageCircle size={16}/>WhatsApp</NavLink><NavLink className={section==="gmail"?"selected":undefined} to={href("/gmail")}><Mail size={16}/>Gmail</NavLink>{manager&&<NavLink className={section==="widget"?"selected":undefined} to={href("/widget")}><Sparkles size={16}/>Widget parceiro</NavLink>}</div></div><small>CONTA</small><NavLink to={href("/equipe")} className={section==="equipe"?"selected":""}><Users size={18}/>Equipe</NavLink>{manager&&<><NavLink to={href("/marca")} className={section==="marca"?"selected":""}><Palette size={18}/>Sua marca</NavLink><NavLink to={href("/assinatura")} className={section==="assinatura"?"selected":""}><CreditCard size={18}/>Assinatura</NavLink></>}</>}
+    {admin ? <><NavLink to="/admin/dashboard"><LayoutDashboard size={18}/>Gestão da plataforma</NavLink><NavLink to="/app/perfil"><UserRound size={18}/>Meu perfil</NavLink></> : <>
+      <small>SUA EMPRESA</small>
+      <NavLink end to={href()}><LayoutDashboard size={18}/>Visão geral</NavLink>
+      {manager && <>
+        <NavLink to={href("/contemplados")}><ClipboardList size={18}/>Contemplados</NavLink>
+        <NavLink to={href("/baixas")}><ArrowDownToLine size={18}/>Baixas pendentes</NavLink>
+        <NavLink to={href("/comunicacao")}><BellRing size={18}/>Comunicação</NavLink>
+        <NavLink to={href("/disparo-manual")}><Send size={18}/>Disparo manual</NavLink>
+        <NavLink to={href("/cadastros")}><ClipboardList size={18}/>Cadastros</NavLink>
+        <NavLink to={href("/historico")}><History size={18}/>Histórico</NavLink>
+      </>}
+      <small>CONFIGURAÇÕES</small>
+      <NavLink to={href("/equipe")}><Users size={18}/>Equipe</NavLink>
+      <div className="integration-nav"><NavLink to={href(manager ? "/canais" : "/integracoes")}><PlugZap size={18}/>{manager ? "Canais internos" : "Integrações"}</NavLink>
+        <div className="integration-subpages" role="group" aria-label="Subpáginas de Integrações">
+          <NavLink to={href("/whatsapp")}><MessageCircle size={16}/>WhatsApp</NavLink>
+          <NavLink to={href("/gmail")}><Mail size={16}/>Gmail</NavLink>
+          {manager && <NavLink to={href("/widget")}><Sparkles size={16}/>Widget parceiro</NavLink>}
+        </div>
+      </div>
+      {manager && <>
+        <NavLink to={href("/espaco")}><UserRound size={18}/>Meu espaço</NavLink>
+        <NavLink to={href("/marca")}><Palette size={18}/>Sua marca</NavLink>
+        <NavLink to={href("/assinatura")}><CreditCard size={18}/>Assinatura</NavLink>
+      </>}
+    </>}
    </nav><div className="workspace-account"><Link to={href("/perfil")} className="sidebar-profile" onClick={()=>setMenu(false)}><span className="sidebar-avatar">{context.photo?<img src={context.photo} alt={`Foto de ${context.name}`}/>:<UserRound size={20}/>}</span><span><strong>{context.name}</strong><small>{admin?"Administrador":context.role==="CLIENTE"?"Titular da conta":"Equipe"}</small></span></Link><div className="sidebar-account-actions"><Link to={href("/perfil")} onClick={()=>setMenu(false)}><UserRound size={15}/>Meu perfil</Link><button type="button" onClick={()=>void signOut()}><LogOut size={15}/>Sair</button></div></div>
   </aside>
   <div className="workspace-column"><header className="workspace-topbar"><div className="workspace-breadcrumb">{account?<Link to={href()}>{account.brandName}</Link>:<span>Plataforma</span>}<ChevronRight size={14}/>{["whatsapp","gmail"].includes(section)&&<><Link to={href("/integracoes")}>Integrações</Link><ChevronRight size={14}/></>}<strong>{title}</strong></div><div className="workspace-profile"><ThemeSwitcher/></div></header>
    <main className="workspace-main" id="workspace-content" tabIndex={-1}>
-    {admin&&account&&<div className="account-inspection"><span><Building2 size={17}/>Gerenciando a conta <strong>{account.nome}</strong></span><Link to="/app"><ArrowLeft size={16}/>Voltar aos clientes</Link></div>}
-    {section==="overview"&&!clientsOnly&&account&&<div className={`trial-strip ${!context.active?"expired":""}`}><span><span className="connection-dot"/>{account.suspended?"Conta suspensa":planFor(context).tier==="PRO"?`Assinatura ativa até ${date(account.paidUntil)}${context.subscription?.billingProvider==="STRIPE"?" · Stripe":context.simulationEnabled?" · simulação":""}`:context.active?`Seu teste gratuito termina em ${date(account.trialEndsAt)}. Aproveite seu espaço.`:"Seus três dias gratuitos terminaram. Ative a assinatura para continuar."}</span>{manager&&<Link to={href("/assinatura")}>Ver assinatura <ArrowRight size={15}/></Link>}</div>}
-    {!manager&&["widget","marca","assinatura","upgrade"].includes(section)?<section className="saas-panel"><h1>Acesso restrito</h1><p role="alert">Esta configuração está disponível para o titular da conta.</p><Link to={href("/integracoes")}>Voltar às integrações</Link></section>:section==="perfil"?<ProfileSettings context={context} reload={load}/>:clientsOnly?<ClientDirectory/>:section==="upgrade"&&manager?<PlanUpgrade context={context} accountId={accountId} reload={load}/>:section==="whatsapp"?<PlatformWhatsApp context={context} accountId={accountId} reload={load}/>:section==="gmail"?<Mailboxes context={context} accountId={accountId} reload={load}/>:section==="widget"?<PartnerWidget context={context} accountId={accountId}/>:section==="equipe"?<Team context={context} accountId={accountId} reload={load}/>:section==="marca"&&manager?<Brand key={location.key} context={context} accountId={accountId} colors={savedColors} onSaved={applySavedBrand}/>:section==="assinatura"&&manager?<Subscription context={context} accountId={accountId} reload={load}/>:section==="integracoes"?<Integrations context={context} href={href}/>:<Overview context={context} href={href}/>}
+    {section==="overview"&&account&&<div className={`trial-strip ${!context.active?"expired":""}`}><span><span className="connection-dot"/>{account.suspended?"Conta suspensa":planFor(context).tier==="PRO"?`Assinatura ativa até ${date(account.paidUntil)}${context.subscription?.billingProvider==="STRIPE"?" · Stripe":context.simulationEnabled?" · simulação":""}`:context.active?`Seu teste gratuito termina em ${date(account.trialEndsAt)}. Aproveite seu espaço.`:"Seus três dias gratuitos terminaram. Ative a assinatura para continuar."}</span>{manager&&<Link to={href("/assinatura")}>Ver assinatura <ArrowRight size={15}/></Link>}</div>}
+    {!manager&&["widget","marca","assinatura","upgrade","contemplados","baixas","comunicacao","disparo-manual","cadastros","historico","espaco","canais"].includes(section)?<section className="saas-panel"><h1>Acesso restrito</h1><p role="alert">Esta configuração está disponível para o titular da conta.</p><Link to={href("/integracoes")}>Voltar às integrações</Link></section>:section==="perfil"?<ProfileSettings context={context} reload={load}/>:section==="upgrade"&&manager?<PlanUpgrade context={context} accountId={accountId} reload={load}/>:section==="whatsapp"?<PlatformWhatsApp context={context} accountId={accountId} reload={load}/>:section==="gmail"?<Mailboxes context={context} accountId={accountId} reload={load}/>:section==="widget"?<PartnerWidget context={context} accountId={accountId}/>:section==="equipe"?<Team context={context} accountId={accountId} reload={load}/>:section==="marca"&&manager?<Brand key={location.key} context={context} accountId={accountId} colors={savedColors} onSaved={applySavedBrand}/>:section==="assinatura"&&manager?<Subscription context={context} accountId={accountId} reload={load}/>:section==="contemplados"?<Contemplated/>
+    :section==="baixas"?<Closures/>
+    :section==="comunicacao"?<Communication/>
+    :section==="disparo-manual"?<CompanyDispatch key={location.search} context={context}/>
+    :section==="cadastros"?<CompanyRecords/>
+    :section==="historico"?<Audit tenant/>
+    :section==="espaco"?<CompanySpace context={context}/>
+    :["integracoes","canais"].includes(section)?<Integrations context={context} href={href}/>
+    :<>{context.role==="CLIENTE" && <CompanyIndicators/>}<Overview context={context} href={href}/></>}
    </main><footer className="workspace-footer"><span>{account?.brandName || "ConsorTech"}</span><span>Seu espaço de trabalho, conectado.</span></footer>
   </div>
  </div>;
-}
-function ClientDirectory() {
- const [clients,setClients]=useState<Client[]>([]);const [error,setError]=useState("");const [busy,setBusy]=useState(false);const [creating,setCreating]=useState(false);const [query,setQuery]=useState("");
- const load=useCallback(()=>platformRequest<Client[]>("/clients",null).then(setClients).catch(e=>setError(e.message)),[]);
- useEffect(()=>{void load();},[load]);
- async function create(event:FormEvent<HTMLFormElement>) {event.preventDefault();const form=event.currentTarget;const data=new FormData(form);setBusy(true);setError("");try{await platformRequest("/clients",null,"POST",{name:data.get("name"),email:data.get("email"),password:data.get("password")});form.reset();setCreating(false);await load();notify("Cliente criado com três dias gratuitos.","success");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function toggle(c:Client){setBusy(true);try{await platformRequest(`/clients/${c.id}/active`,null,"PUT",{active:c.suspended});await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- const filtered=clients.filter(c=>`${c.nome} ${c.email||""}`.toLowerCase().includes(query.toLowerCase()));
- return <><div className="workspace-heading"><div><span className="saas-eyebrow">ADMINISTRAÇÃO</span><h1>Seus clientes, em perspectiva.</h1><p>Acompanhe as contas e o que cada empresa conectou à plataforma.</p></div><button className="saas-button primary" onClick={()=>setCreating(!creating)}><Plus size={17}/>Novo cliente</button></div><div className="saas-metrics">{[{label:"Contas de clientes",value:clients.length,icon:Building2},{label:"Instâncias de WhatsApp",value:clients.reduce((n,c)=>n+Number(c.instances),0),icon:MessageCircle},{label:"Gmails configurados",value:clients.reduce((n,c)=>n+Number(c.gmails),0),icon:Mail},{label:"Usuários das equipes",value:clients.reduce((n,c)=>n+Number(c.users),0),icon:Users}].map(({label,value,icon:Icon})=><article key={label}><span><Icon size={20}/></span><small>{label}</small><strong>{value}</strong></article>)}</div><Feedback message={error}/>{creating&&<section className="saas-panel"><div className="saas-panel-heading"><h2>Nova conta de cliente</h2><button className="icon-button" aria-label="Fechar formulário" onClick={()=>setCreating(false)}><X/></button></div><form className="saas-form inline-form" onSubmit={create}><label>Nome da empresa<input name="name" required maxLength={120}/></label><label>E-mail do titular<input name="email" type="email" required/></label><label>Senha inicial<input name="password" type="password" minLength={6} required autoComplete="new-password"/></label><button disabled={busy} className="saas-button primary">Criar cliente</button></form></section>}
- <section className="saas-panel"><div className="saas-panel-heading"><div><h2>Contas da plataforma</h2><p>Selecione um cliente para gerenciar suas aplicações e configurações.</p></div><label className="saas-search"><span className="sr-only">Buscar clientes</span><input placeholder="Buscar empresa ou e-mail" value={query} onChange={e=>setQuery(e.target.value)}/></label></div>{filtered.length?<div className="client-grid">{filtered.map(c=><article className="client-card" key={c.id}><div className="client-card-top"><span className="account-avatar">{c.nome.slice(0,2).toUpperCase()}</span><span className={`saas-badge ${c.suspended?"muted":(c.professional&&c.paidUntil&&new Date(c.paidUntil)>new Date())||new Date(c.trialEndsAt)>new Date()?"green":"amber"}`}>{c.suspended?"Suspenso":c.professional&&c.paidUntil&&new Date(c.paidUntil)>new Date()?"Assinatura ativa":new Date(c.trialEndsAt)>new Date()?"Em teste":"Teste encerrado"}</span></div><h3>{c.nome}</h3><p>{c.email || "Conta existente da operação"}</p><div className="client-counts"><span><MessageCircle size={16}/><strong>{c.instances}</strong>WhatsApp</span><span><Mail size={16}/><strong>{c.gmails}</strong>Gmail</span><span><Users size={16}/><strong>{c.users}</strong>Usuários</span></div><div className="client-card-actions"><Link className="saas-button primary" to={`/app?account=${c.id}`}>Abrir conta <ArrowRight size={16}/></Link><button className="text-button" disabled={busy} onClick={()=>void toggle(c)}>{c.suspended?"Reativar":"Suspender"}</button></div></article>)}</div>:<Empty icon={<Building2/>} title="Nenhum cliente encontrado" description="Crie uma conta ou ajuste sua busca para continuar."/>}</section></>;
 }
 function Overview({context:c,href}:{context:Context;href:(path?:string)=>string}) {
  const plan=planFor(c);

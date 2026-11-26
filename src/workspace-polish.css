@@ -352,3 +352,9 @@
   .brand-editor-fields .color-fields { grid-template-columns: minmax(0, 1fr); }
   .brand-editor-actions > span { flex: 1 0 100%; }
 }
+
+.workspace-sidebar nav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--tenant-primary) 24%, #16332f);
+  box-shadow: inset 3px 0 0 var(--tenant-accent);
+  color: #fff;
+}

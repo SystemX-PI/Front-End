@@ -17,11 +17,11 @@ async function list<T>(endpoint: string, signal: AbortSignal) {
   return items;
 }
 
-export async function loadProcesses(signal: AbortSignal) {
+export async function loadProcesses(signal: AbortSignal, company = false) {
   const queue = await list<QueueItem>("/api/integracoes/comunicacoes/fila/pagina", signal);
   let namesUnavailable = false;
   const clients = queue.some(item => item.comunicacao.email?.destinatario)
-    ? await list<UserResponse>("/api/clientes/pagina", signal).catch(error => {
+    ? await list<UserResponse>(company ? "/api/platform/operation/records" : "/api/clientes/pagina", signal).catch(error => {
       if (signal.aborted) throw error;
       namesUnavailable = true;
       return [];

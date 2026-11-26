@@ -1,11 +1,10 @@
 import { useEffect } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import ForgotPassword from "../pages/ForgotPassword";
 import Landing from "../pages/Landing";
 import PlatformApp from "../pages/PlatformApp";
-import AdminShell from "../components/AdminShell";
 import Dashboard from "../pages/Dashboard";
 import Clients from "../pages/Clients";
 import Registries from "../pages/Registries";
@@ -18,22 +17,32 @@ import AdminChannels from "../pages/AdminChannels";
 import WidgetChat from "../pages/WidgetChat";
 import BeneficiaryPortal from "../pages/BeneficiaryPortal";
 import AssistantWidget from "../components/AssistantWidget";
+import { PlatformCompanies, PlatformCompany, PlatformOverview, PlatformSettings } from "../pages/PlatformManagement";
 import { getUserType, isBeneficiarySession, sessionHome } from "../services/auth";
 import type { ReactNode } from "react";
 import { isAuthenticated } from "../services/auth";
 function ProtectedApp() {
+    const location = useLocation();
     if (!isAuthenticated()) return <Navigate to="/login" replace />;
     if (isBeneficiarySession() || getUserType() === "FUNCIONARIO") return <Navigate to={sessionHome()} replace />;
+    if (getUserType() === "ADMINISTRADOR") {
+        if (location.pathname === "/app/perfil" && !location.search) return <PlatformApp />;
+        const account = new URLSearchParams(location.search).get("account");
+        return <Navigate to={account && /^[1-9]\d*$/.test(account) ? `/admin/empresas/${account}` : sessionHome()} replace />;
+    }
     return <PlatformApp />;
 }
 function DefaultRedirect() {
     if (!isAuthenticated()) return <Navigate to="/" replace />;
     return <Navigate to={sessionHome()} replace />;
 }
+function RoleDashboard() {
+    return getUserType() === "ADMINISTRADOR" ? <PlatformOverview /> : <Dashboard />;
+}
 function RoleRoute({ children, roles }: { children: ReactNode; roles: NonNullable<ReturnType<typeof getUserType>>[] }) {
     if (!isAuthenticated()) return <Navigate to="/login" replace />;
     const currentRole = getUserType();
-    if (!currentRole || !roles.includes(currentRole)) return <AdminShell title="Acesso restrito" subtitle="Permissão necessária"><p role="alert">Seu perfil não tem acesso a esta área.</p><a href={sessionHome()}>Voltar ao meu espaço</a></AdminShell>;
+    if (!currentRole || !roles.includes(currentRole)) return <main className="saas-loading"><h1>Acesso restrito</h1><p role="alert">Seu perfil não tem acesso a esta área.</p><Link to={sessionHome()}>Voltar ao meu espaço</Link></main>;
     return children;
 }
 function SessionListener() {
@@ -51,7 +60,13 @@ export default function AppRoutes() {
         <Route path="/integracoes/whatsapp" element={<Navigate to="/app/whatsapp" replace />} />
         <Route path="/integracoes/gmail" element={<Navigate to="/app/gmail" replace />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/dashboard" element={<RoleRoute roles={["ADMINISTRADOR", "FUNCIONARIO"]}><Dashboard /></RoleRoute>} />
+        <Route path="/admin/dashboard" element={<RoleRoute roles={["ADMINISTRADOR", "FUNCIONARIO"]}><RoleDashboard /></RoleRoute>} />
+        <Route path="/admin/empresas" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformCompanies /></RoleRoute>} />
+        <Route path="/admin/empresas/:id" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformCompany /></RoleRoute>} />
+        <Route path="/admin/assinaturas" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformCompanies key="billing" mode="billing" /></RoleRoute>} />
+        <Route path="/admin/configuracoes" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformSettings /></RoleRoute>} />
+        <Route path="/admin/suporte" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformCompanies key="support" mode="support" /></RoleRoute>} />
+        <Route path="/admin/suporte/:id" element={<RoleRoute roles={["ADMINISTRADOR"]}><PlatformCompany support /></RoleRoute>} />
         <Route path="/admin/clientes" element={<RoleRoute roles={["ADMINISTRADOR", "FUNCIONARIO"]}><Clients /></RoleRoute>} />
         <Route path="/admin/cadastros" element={<RoleRoute roles={["ADMINISTRADOR", "FUNCIONARIO"]}><Registries /></RoleRoute>} />
         <Route path="/admin/contemplados" element={<RoleRoute roles={["ADMINISTRADOR", "FUNCIONARIO"]}><Contemplated /></RoleRoute>} />

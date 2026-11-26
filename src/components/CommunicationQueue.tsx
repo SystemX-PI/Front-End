@@ -8,6 +8,7 @@ import { communicationStatus, formatDate } from "../services/format";
 import { EmptyState, ErrorState, Pagination, Skeleton } from "./DataUi";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { InlineFeedback, StatusPill } from "./IntegrationUi";
+import { useOperationBase } from "../hooks/useOperationBase";
 import { notify } from "../services/notifications";
 
 export function ChannelStatus({
@@ -40,6 +41,7 @@ export function ChannelStatus({
 }
 
 export default function CommunicationQueue() {
+  const operationBase = useOperationBase();
   const [confirmId,setConfirmId] = useState<number|null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -158,7 +160,7 @@ export default function CommunicationQueue() {
           <div className="split-actions">
             <Link
               className="button secondary compact"
-              to="/admin/disparo-manual"
+              to={`${operationBase}/disparo-manual`}
             >
               <MessageCircle size={15} />
               Disparo manual
@@ -237,7 +239,7 @@ export default function CommunicationQueue() {
                         {hasValidId ? (
                           <Link
                             className="text-link"
-                            to={`/admin/contemplados?processo=${item.processoId}`}
+                            to={`${operationBase}/contemplados?processo=${item.processoId}`}
                           >
                             {item.idExterno || `Processo #${item.processoId}`}
                           </Link>
@@ -256,13 +258,13 @@ export default function CommunicationQueue() {
                         {hasValidId ? (
                           <Link
                             className="button secondary compact"
-                            to={`/admin/disparo-manual?processo=${item.processoId}`}
+                            to={`${operationBase}/disparo-manual?processo=${item.processoId}`}
                           >
                             <MessageCircle size={14} />
                             Mensagem manual
                           </Link>
                         ) : null}
-                        <button
+                        {operationBase === "/admin" && <button
                           type="button"
                           className="button primary compact"
                           disabled={busy !== null || !hasValidId}
@@ -280,7 +282,7 @@ export default function CommunicationQueue() {
                             : statusGeral === "PENDENTE"
                               ? "Notificar"
                               : "Reenviar"}
-                        </button>
+                        </button>}
                       </div>
                     </div>
                     <div className="channel-grid">

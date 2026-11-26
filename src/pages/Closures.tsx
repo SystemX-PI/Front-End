@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AdminShell from "../components/AdminShell";
+import { useOperationBase } from "../hooks/useOperationBase";
 import ConfirmDialog from "../components/ConfirmDialog";
 import {
   EmptyState,
@@ -21,6 +22,7 @@ import { closureReadFailure, unavailable } from "../services/operationErrors";
 import { formatDate, readable } from "../services/format";
 
 export default function Closures() {
+  const operationBase = useOperationBase();
   const [params, setParams] = useSearchParams();
   const requestedPage = Number(params.get("page"));
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 2147483647 ? requestedPage : 1;
@@ -314,7 +316,7 @@ export default function Closures() {
             Contemplação #{process.contemplacaoId} · Atualizado em{" "}
             {formatDate(process.atualizadoEm)}
           </p>
-          <Link to={"/admin/contemplados?processo=" + process.id}>
+          <Link to={`${operationBase}/contemplados?processo=${process.id}`}>
             Ver comunicação e histórico
           </Link>
           {closure ? (
